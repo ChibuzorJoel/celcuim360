@@ -1,0 +1,23 @@
+@media (max-width: 991.98px) {
+  /* Make dropdowns appear as stacked lists */
+  .navbar-nav .dropdown-menu {
+    display: none; /* hide by default */
+    position: static !important;
+    float: none !important;
+    transform: none !important;
+    border: 0;
+    box-shadow: none;
+    margin-top: 0 !important;
+    background: transparent !important;
+    padding-left: 1rem;
+  }
+
+  /* When parent is active (Bootstrap adds .show) */
+  .navbar-nav .dropdown.show .dropdown-menu {
+    display: block; /* show stacked dropdown */
+  }
+
+  .dropdown-item {
+    padding-left: 2rem !important;
+  }
+}

@@ -1,0 +1,134 @@
+/* --- Overlapping Project Item Styling (Keep this from previous fix) --- */
+.project-item {
+    position: relative; 
+    z-index: 1; 
+}
+
+.project-content {
+    position: absolute;
+    top: 65%; /* Controls overlap position */
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 90%; 
+    background-color: #fff !important;
+    border-radius: 1rem;
+    box-shadow: 0 0 45px rgba(0, 0, 0, 0.1); 
+    z-index: 10; 
+}
+
+.project-content-inner {
+    text-align: center;
+}
+
+/* --- Owl Carousel Styling for Navigation --- */
+
+/* Position the navigation arrows horizontally next to the items */
+.project-carousel.owl-carousel .owl-nav {
+    position: absolute;
+    width: 100%;
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%);
+    margin-top: -20px; /* Adjust vertical placement */
+    z-index: 5; /* Below the content card (z-index: 10) */
+}
+
+/* Style the buttons */
+.project-carousel.owl-carousel .owl-nav button.owl-prev,
+.project-carousel.owl-carousel .owl-nav button.owl-next {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.8) !important; /* Semi-transparent white background */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: var(--bs-primary) !important;
+    font-size: 24px !important;
+    transition: all 0.3s;
+}
+
+.project-carousel.owl-carousel .owl-nav button.owl-prev {
+    left: -25px; /* Position left arrow outside */
+}
+
+.project-carousel.owl-carousel .owl-nav button.owl-next {
+    right: -25px; /* Position right arrow outside */
+}
+
+.project-carousel.owl-carousel .owl-nav button:hover {
+    background: var(--bs-primary) !important;
+    color: #fff !important;
+}
+/* 1. Style the main testimonial box */
+.testimonial-item {
+    box-shadow: 0 0 45px rgba(0, 0, 0, 0.1); 
+    border: none !important;
+    padding: 3rem !important; 
+    min-height: 350px; 
+}
+
+/* 2. Style and Position the Custom Navigation Arrows */
+/* The .owl-nav container is placed absolutely, relative to the .testimonial-carousel (which has position-relative) */
+.testimonial-carousel .owl-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    left: 0;
+    margin-top: -30px; /* Fine-tune vertical position */
+}
+
+.testimonial-carousel .owl-nav button {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    color: var(--bs-primary) !important; 
+    background: #fff !important; 
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.08); 
+    transition: .5s;
+    /* This line HIDES the default "prev" and "next" text */
+    font-size: 0 !important; 
+}
+
+/* Re-add the icon using a pseudo-element */
+.testimonial-carousel .owl-nav button::after {
+    content: ''; /* Clear the hidden text */
+    /* Font Awesome settings */
+    font-family: "Font Awesome 5 Free"; 
+    font-weight: 900; 
+    font-size: 1.5rem; 
+    color: var(--bs-primary);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Assign specific positions and icons */
+.testimonial-carousel .owl-nav .owl-prev {
+    left: -20px; /* Move slightly outside the main box */
+}
+.testimonial-carousel .owl-nav .owl-prev::after {
+    content: '\f053'; /* FontAwesome left arrow icon */
+}
+
+.testimonial-carousel .owl-nav .owl-next {
+    right: -20px; /* Move slightly outside the main box */
+}
+.testimonial-carousel .owl-nav .owl-next::after {
+    content: '\f054'; /* FontAwesome right arrow icon */
+}
+
+/* Hover effect */
+.testimonial-carousel .owl-nav button:hover {
+    background: var(--bs-primary) !important;
+}
+.testimonial-carousel .owl-nav button:hover::after {
+    color: #fff; 
+}
+
+/* 3. Image Styling */
+.testimonial-item img {
+    border: 3px solid var(--bs-primary) !important; 
+    padding: 0 !important; 
+}

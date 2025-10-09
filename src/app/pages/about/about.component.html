@@ -54,40 +54,20 @@
                             </div>
                         </div>
                         <div class="row g-4 text-center align-items-center justify-content-center">
-                            <div class="col-sm-4">
-                                <div class="bg-primary rounded p-4">
-                                    <div class="d-flex align-items-center justify-content-center">
-                                        <span class="counter-value fs-1 fw-bold text-dark" data-toggle="counter-up">32</span>
-                                        <h4 class="text-dark fs-1 mb-0" style="font-weight: 600; font-size: 25px;">k+</h4>
-                                    </div>
-                                    <div class="w-100 d-flex align-items-center justify-content-center">
-                                        <p class="text-white mb-0">Project Complete</p>
-                                    </div>
-                                </div>
+                    <div class="col-sm-4" *ngFor="let item of counterData">
+                        <div class="{{item.bgColor}} rounded p-4">
+                            <div class="d-flex align-items-center justify-content-center">
+
+                                <span #counterValue class="fs-1 fw-bold {{item.numColor}}">0</span>
+
+                                <h4 class="{{item.numColor}} fs-1 mb-0 fw-bold">{{item.suffix}}</h4>
                             </div>
-                            <div class="col-sm-4">
-                                <div class="bg-dark rounded p-4">
-                                    <div class="d-flex align-items-center justify-content-center">
-                                        <span class="counter-value fs-1 fw-bold text-white" data-toggle="counter-up">21</span>
-                                        <h4 class="text-white fs-1 mb-0" style="font-weight: 600; font-size: 25px;">+</h4>
-                                    </div>
-                                    <div class="w-100 d-flex align-items-center justify-content-center">
-                                        <p class="mb-0">Years Of Experience</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div class="bg-primary rounded p-4">
-                                    <div class="d-flex align-items-center justify-content-center">
-                                        <span class="counter-value fs-1 fw-bold text-dark" data-toggle="counter-up">97</span>
-                                        <h4 class="text-dark fs-1 mb-0" style="font-weight: 600; font-size: 25px;">+</h4>
-                                    </div>
-                                    <div class="w-100 d-flex align-items-center justify-content-center">
-                                        <p class="text-white mb-0">Team Members</p>
-                                    </div>
-                                </div>
+                            <div class="w-100 d-flex align-items-center justify-content-center">
+                                <p class="{{item.textColor}} mb-0">{{item.label}}</p>
                             </div>
                         </div>
+                    </div>
+                </div>
                     </div>
                 </div>
             </div>

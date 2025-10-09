@@ -1,0 +1,60 @@
+/* --- Overlapping Project Item Styling (Keep this from previous fix) --- */
+.project-item {
+    position: relative; 
+    z-index: 1; 
+}
+
+.project-content {
+    position: absolute;
+    top: 65%; /* Controls overlap position */
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 90%; 
+    background-color: #fff !important;
+    border-radius: 1rem;
+    box-shadow: 0 0 45px rgba(0, 0, 0, 0.1); 
+    z-index: 10; 
+}
+
+.project-content-inner {
+    text-align: center;
+}
+
+/* --- Owl Carousel Styling for Navigation --- */
+
+/* Position the navigation arrows horizontally next to the items */
+.project-carousel.owl-carousel .owl-nav {
+    position: absolute;
+    width: 100%;
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%);
+    margin-top: -20px; /* Adjust vertical placement */
+    z-index: 5; /* Below the content card (z-index: 10) */
+}
+
+/* Style the buttons */
+.project-carousel.owl-carousel .owl-nav button.owl-prev,
+.project-carousel.owl-carousel .owl-nav button.owl-next {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.8) !important; /* Semi-transparent white background */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: var(--bs-primary) !important;
+    font-size: 24px !important;
+    transition: all 0.3s;
+}
+
+.project-carousel.owl-carousel .owl-nav button.owl-prev {
+    left: -25px; /* Position left arrow outside */
+}
+
+.project-carousel.owl-carousel .owl-nav button.owl-next {
+    right: -25px; /* Position right arrow outside */
+}
+
+.project-carousel.owl-carousel .owl-nav button:hover {
+    background: var(--bs-primary) !important;
+    color: #fff !important;
+}
