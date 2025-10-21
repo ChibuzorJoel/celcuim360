@@ -21,3 +21,30 @@
     padding-left: 2rem !important;
   }
 }
+
+
+.navbar-logo {
+  height: 300px !important;          /* Increase this value to make logo bigger */
+  max-height: 60px !important;      /* Prevent it from stretching navbar */
+  width: auto;           /* Maintain the image aspect ratio */
+  transition: all 0.3s ease; /* Smooth resizing (optional) */
+}
+
+
+.position-absolute{
+  background-color: black;
+}
+
+.text-muted{
+  color: black;
+}
+
+
+
+  .contact-link {
+    color: black !important;
+  }
+  .contact-link i {
+    color: black !important;
+  }
+

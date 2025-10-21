@@ -3,16 +3,40 @@
         <div class="row gx-0 align-items-center" style="height: 45px;">
             <div class="col-lg-8 text-center text-lg-start mb-lg-0">
                 <div class="d-flex flex-wrap">
-                    <a href="javascript:void(0)" class="text-muted me-4"><i class="fas fa-map-marker-alt text-primary me-2"></i>Find A Location</a>
-                    <a href="tel:+01234567890" class="text-muted me-4"><i class="fas fa-phone-alt text-primary me-2"></i>+01234567890</a>
-                    <a href="mailto:Example@gmail.com" class="text-muted me-0"><i class="fas fa-envelope text-primary me-2"></i>Example@gmail.com</a>
-                </div>
+                    <!-- <a href="javascript:void(0)" class="text-muted me-4"><i class="fas fa-map-marker-alt text-primary me-2"></i>Find A Location</a> -->
+            <a href="tel:+01234567890" class="contact-link me-4">
+              <i class="fas fa-phone-alt me-2"></i>
+              +234 8128 3604 37
+            </a>
+
+            <a href="mailto:Example@gmail.com" class="contact-link me-0">
+              <i class="fas fa-envelope me-2"></i>
+              contact@cecium360solutions.com
+            </a>
+
+
+ </div>
             </div>
             <div class="col-lg-4 text-center text-lg-end">
                 <div class="d-flex align-items-center justify-content-end">
-                    <a href="javascript:void(0)" class="btn btn-primary btn-square rounded-circle nav-fill me-3"><i class="fab fa-facebook-f text-white"></i></a>
-                    <a href="javascript:void(0)" class="btn btn-primary btn-square rounded-circle nav-fill me-3"><i class="fab fa-twitter text-white"></i></a>
-                    <a href="javascript:void(0)" class="btn btn-primary btn-square rounded-circle nav-fill me-3"><i class="fab fa-instagram text-white"></i></a>
+                                  <a href="https://www.facebook.com/share/17DGzmoLe4/" 
+                                      class="btn btn-primary btn-square rounded-circle nav-fill me-3" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer">
+                                      <i class="fab fa-facebook-f text-white"></i>
+                                   </a>
+                                    <a href="https://www.instagram.com/celcium360solutions?igsh=ZmMweHRsaWtwcGoy" 
+                                      class="btn btn-primary btn-square rounded-circle nav-fill me-3" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer">
+                                      <i class="fab fa-instagram text-white"></i>
+                                   </a>
+                                    <a href="http://tiktok.com/@celcium360solutions" 
+                                      class="btn btn-primary btn-square rounded-circle nav-fill me-3" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer">
+                                     <i class="fa-brands fa-tiktok"></i>
+                                   </a>
                     <a href="javascript:void(0)" class="btn btn-primary btn-square rounded-circle nav-fill me-0"><i class="fab fa-linkedin-in text-white"></i></a>
                 </div>
             </div>
@@ -20,14 +44,18 @@
     </div>
 </div>
 <div class="container-fluid sticky-top px-0">
-    <div class="position-absolute bg-dark" style="left: 0; top: 0; width: 100%; height: 100%;">
+    <div class="position-absolute" style="left: 0; top: 0; width: 100%; height: 100%;">
     </div>
     <div class="container px-0">
         <nav class="navbar navbar-expand-lg navbar-dark bg-white py-3 px-4">
             
-            <a routerLink="/" class="navbar-brand p-0">
+            <!-- <a routerLink="/" class="navbar-brand p-0">
                 <h1 class="text-primary m-0"><i class="fas fa-donate me-3"></i>Investa</h1>
-            </a>
+            </a> -->
+
+                       <a routerLink="/" class="navbar-brand d-flex align-items-center p-0">
+                          <img src="../../../assets/img/celcium360logo.png" alt="Investa Logo" class="navbar-logo">
+                        </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
                     data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" 
@@ -40,12 +68,12 @@
   <a routerLink="/home" class="nav-item nav-link" (click)="closeMobileMenu()">Home</a>
   <a routerLink="/about" class="nav-item nav-link" (click)="closeMobileMenu()">About</a>
   <a routerLink="/services" class="nav-item nav-link" (click)="closeMobileMenu()">Services</a>
-  <a routerLink="/project" class="nav-item nav-link" (click)="closeMobileMenu()">Projects</a>
+  <!-- <a routerLink="/project" class="nav-item nav-link" (click)="closeMobileMenu()">Solutions</a> -->
     
 </div>
     <div class="dropdown">
     <a class="dropdown-toggle" style="color: black;margin-bottom: 10px; margin-top: 10px; margin-right: 10px;" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-      Pages
+      Solutions
     </a>
 
     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -56,10 +84,25 @@
       <a routerLink="/404" class="dropdown-item" (click)="closeMobileMenu()">404 Page</a>
     </ul>
   </div>
-    <a routerLink="/contact" style="color: black; margin-left: -20px;" class="nav-item nav-link" (click)="closeMobileMenu()">Contact</a> 
+
+   <div class="dropdown">
+    <a class="dropdown-toggle" style="color: black;margin-bottom: 10px; margin-top: 10px; margin-right: 10px;" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+      Training & Courses
+    </a>
+
+    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+    <a routerLink="/blog" class="dropdown-item" (click)="closeMobileMenu()">Our Blog</a>
+      <a routerLink="/team" class="dropdown-item" (click)="closeMobileMenu()">Our Team</a>
+      <a routerLink="/testimonial" class="dropdown-item" (click)="closeMobileMenu()">Testimonial</a>
+      <a routerLink="/faqs" class="dropdown-item" (click)="closeMobileMenu()">FAQs</a>
+      <a routerLink="/404" class="dropdown-item" (click)="closeMobileMenu()">404 Page</a>
+    </ul>
+  </div>
+  
+    <a routerLink="/contact" style="color: black; margin-left: -20px;" class="nav-item nav-link" (click)="closeMobileMenu()">Contact Us</a> 
                 <div class="d-flex align-items-center flex-nowrap pt-xl-0">
-                    <button class="btn btn-primary btn-md-square mx-2" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i></button>
-                    <a routerLink="/contact" class="btn btn-primary rounded-pill text-white py-2 px-4 ms-2 flex-wrap flex-sm-shrink-0">Start Investa</a>
+                    <!-- <button class="btn btn-primary btn-md-square mx-2" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i></button> -->
+                    <a routerLink="/contact" class="btn btn-primary rounded-pill text-white py-2 px-4 ms-2 flex-wrap flex-sm-shrink-0">Book a consultation</a>
                 </div>
             </div>
         </nav>
