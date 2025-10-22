@@ -1,5 +1,8 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -15,6 +18,8 @@ import { TeamComponent } from './pages/pages_section/team/team.component';
 import { TestimonialComponent } from './pages/pages_section/testimonial/testimonial.component';
 import { FaqsComponent } from './pages/pages_section/faqs/faqs.component';
 import { Page404Component } from './pages/pages_section/page404/page404.component';
+import { AdminDashboardComponent } from './core/admin-dashboard/admin-dashboard.component';
+import { LoginComponent } from './core/login/login.component';
 
 @NgModule({
   declarations: [
@@ -30,11 +35,16 @@ import { Page404Component } from './pages/pages_section/page404/page404.componen
     TeamComponent,
     TestimonialComponent,
     FaqsComponent,
-    Page404Component
+    Page404Component,
+    AdminDashboardComponent,
+    LoginComponent
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    ReactiveFormsModule,
+    HttpClientModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

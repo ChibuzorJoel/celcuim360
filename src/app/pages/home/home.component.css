@@ -1,62 +1,8 @@
-/* --- Overlapping Project Item Styling (Keep this from previous fix) --- */
-.project-item {
-    position: relative; 
-    z-index: 1; 
+ .project-item {
+  height: 100%;
 }
-
-.project-content {
-    position: absolute;
-    top: 65%; /* Controls overlap position */
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: 90%; 
-    background-color: #fff !important;
-    border-radius: 1rem;
-    box-shadow: 0 0 45px rgba(0, 0, 0, 0.1); 
-    z-index: 10; 
-}
-
-.project-content-inner {
-    text-align: center;
-}
-
-/* --- Owl Carousel Styling for Navigation --- */
-
-/* Position the navigation arrows horizontally next to the items */
-.project-carousel.owl-carousel .owl-nav {
-    position: absolute;
-    width: 100%;
-    top: 50%; /* Center vertically */
-    transform: translateY(-50%);
-    margin-top: -20px; /* Adjust vertical placement */
-    z-index: 5; /* Below the content card (z-index: 10) */
-}
-
-/* Style the buttons */
-.project-carousel.owl-carousel .owl-nav button.owl-prev,
-.project-carousel.owl-carousel .owl-nav button.owl-next {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.8) !important; /* Semi-transparent white background */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    color: var(--bs-primary) !important;
-    font-size: 24px !important;
-    transition: all 0.3s;
-}
-
-.project-carousel.owl-carousel .owl-nav button.owl-prev {
-    left: -25px; /* Position left arrow outside */
-}
-
-.project-carousel.owl-carousel .owl-nav button.owl-next {
-    right: -25px; /* Position right arrow outside */
-}
-
-.project-carousel.owl-carousel .owl-nav button:hover {
-    background: var(--bs-primary) !important;
-    color: #fff !important;
+.project-content{
+    height: 310px;
 }
 /* 1. Style the main testimonial box */
 .testimonial-item {
@@ -131,4 +77,112 @@
 .testimonial-item img {
     border: 3px solid var(--bs-primary) !important; 
     padding: 0 !important; 
+}
+/* Service section equal height styling */
+.service-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.service-item .service-img {
+    flex-shrink: 0; /* Prevent image container from shrinking */
+}
+
+.service-item .service-img img {
+    width: 100%;
+    height: 200px; /* Fixed height for all images */
+    object-fit: cover; /* Ensures images fill the space without distortion */
+}
+
+.service-item .service-content {
+    flex-grow: 1; /* Allows content area to grow and fill remaining space */
+    display: flex;
+    flex-direction: column;
+}
+
+.service-item .service-content-inner {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.service-item .service-content-inner p {
+    flex-grow: 1; /* Makes paragraph take available space, pushing button down */
+}
+
+/* Ensure the row container properly aligns items */
+.row.g-4.justify-content-center.text-center {
+    align-items: stretch; /* Makes all items in row equal height */
+}
+/* Blog section equal height styling */
+.blog-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.blog-item .project-img {
+    flex-shrink: 0; /* Prevent image container from shrinking */
+}
+
+.blog-item .project-img img {
+    width: 100%;
+    height: 200px; /* Fixed height for all blog images */
+    object-fit: cover; /* Ensures images fill the space without distortion */
+}
+
+.blog-item .my-4 {
+    flex-grow: 1; /* Allows the title area to grow and fill available space */
+    display: flex;
+    align-items: center; /* Vertically center the title */
+}
+
+.blog-item .my-4 a {
+    width: 100%; /* Ensure link takes full width */
+}
+
+/* Ensure the row container properly aligns items */
+.row.g-4.justify-content-center {
+    align-items: stretch; /* Makes all blog items in row equal height */
+}
+/* Team section equal height styling */
+.team-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.team-item .team-img {
+    flex-shrink: 0; /* Prevent image container from shrinking */
+    position: relative;
+    overflow: hidden;
+}
+
+.team-item .team-img img {
+    width: 100%;
+    height: 300px; /* Fixed height for all team images */
+    object-fit: cover; /* Ensures images fill the space without distortion */
+}
+
+.team-item .team-content {
+    flex-grow: 1; /* Allows content area to grow and fill remaining space */
+    display: flex;
+    flex-direction: column;
+}
+
+.team-item .team-content-inner {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center the content */
+}
+
+/* Ensure the row container properly aligns items */
+.row.g-4.justify-content-center {
+    align-items: stretch; /* Makes all team items in row equal height */
+}
+.carousel-inner{
+    max-width: 1200px;
+    margin-left: 35px;
 }

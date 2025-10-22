@@ -1,0 +1,61 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h2>Admin Login</h2>
+      <p>Access your dashboard</p>
+    </div>
+
+    <form (ngSubmit)="submit()" #loginForm="ngForm" class="login-form">
+      <div class="form-group">
+        <div class="input-container">
+          <input 
+            type="email" 
+            [(ngModel)]="email" 
+            name="email" 
+            required 
+            class="form-input"
+            placeholder=" "
+          />
+          <label class="input-label">Email Address</label>
+          <span class="input-icon">📧</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="input-container">
+          <input 
+            type="password" 
+            [(ngModel)]="password" 
+            name="password" 
+            required 
+            class="form-input"
+            placeholder=" "
+          />
+          <label class="input-label">Password</label>
+          <span class="input-icon">🔒</span>
+        </div>
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn-login" 
+        [disabled]="loading"
+        [class.loading]="loading"
+      >
+        <span class="btn-text">
+          {{ loading ? 'Authenticating...' : 'Login to Dashboard' }}
+        </span>
+        <span class="btn-spinner" *ngIf="loading">⏳</span>
+      </button>
+
+      <div *ngIf="error" class="error-message">
+        <span class="error-icon">⚠️</span>
+        {{ error }}
+      </div>
+    </form>
+
+    <div class="login-footer">
+      <p>Secure Admin Access</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,124 @@
+<button class="btn btn-logout" (click)="logout()">Logout</button>
+
+<div class="admin-dashboard">
+  <div class="dashboard-header">
+    <h2>Contact Form Records</h2>
+    <p>Manage all submitted contact forms</p>
+  </div>
+
+  <!-- Controls Section -->
+  <div class="controls-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (input)="onSearchChange()"
+        placeholder="Search records..." 
+        class="search-input"
+      >
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn btn-download" (click)="downloadPDF()">
+        📄 Download All Records
+      </button>
+      <button class="btn btn-delete-page" (click)="openDeletePageModal()">
+        🗑️ Delete Current Page
+      </button>
+    </div>
+  </div>
+
+  <!-- Records Table -->
+  <div class="table-container">
+    <table class="records-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone Number</th>
+          <th class="message-column">Message</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of paginatedRecords">
+          <td class="name-cell">{{ record.name }}</td>
+          <td class="email-cell">{{ record.email }}</td>
+          <td class="phone-cell">{{ record.phone }}</td>
+          <td class="message-cell">
+            <div class="message-content">{{ record.message }}</div>
+          </td>
+          <td class="actions-cell">
+            <button 
+              class="btn-delete" 
+              (click)="openDeleteSingleModal(record.id, record.name)"
+              title="Delete Record"
+            >
+              🗑️
+            </button>
+          </td>
+        </tr>
+        
+        <tr *ngIf="paginatedRecords.length === 0">
+          <td colspan="5" class="no-records">
+            No records found
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-container" *ngIf="totalPages > 1">
+    <div class="pagination-info">
+      Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - 
+      {{ Math.min(currentPage * itemsPerPage, records.length) }} of {{ records.length }} records
+    </div>
+    
+    <div class="pagination-controls">
+      <button 
+        class="pagination-btn" 
+        [disabled]="currentPage === 1"
+        (click)="prevPage()"
+      >
+        ‹ Previous
+      </button>
+      
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of pages" 
+          class="page-btn" 
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+      </div>
+      
+      <button 
+        class="pagination-btn" 
+        [disabled]="currentPage === totalPages"
+        (click)="nextPage()"
+      >
+        Next ›
+      </button>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modalTitle }}</h3>
+        <button class="modal-close" (click)="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>{{ modalMessage }}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-confirm" (click)="confirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>

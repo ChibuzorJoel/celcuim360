@@ -10,23 +10,35 @@ import { TeamComponent } from './pages/pages_section/team/team.component';
 import { TestimonialComponent } from './pages/pages_section/testimonial/testimonial.component';
 import { FaqsComponent } from './pages/pages_section/faqs/faqs.component';
 import { Page404Component } from './pages/pages_section/page404/page404.component';
+import { AdminDashboardComponent } from './core/admin-dashboard/admin-dashboard.component';
+import { AuthGuard } from './core/authguard/auth.guard';
+import { LoginComponent } from './core/login/login.component';
 
 const routes: Routes = [
-  {path: '', component: HomeComponent},
-  {path: 'home', component: HomeComponent},
-  {path: 'about', component: AboutComponent},
-  {path: 'services', component: ServicesComponent},
-  {path: 'project', component: ProjectComponent},
-  {path: 'contact', component: ContactComponent},
-  {path: 'blog', component: BlogComponent},
-  {path: 'team', component: TeamComponent},
-  {path: 'testimonial', component: TestimonialComponent},
-  {path: 'faqs', component: FaqsComponent},
-  {path: '**', component: Page404Component}
+  // 🔐 Auth routes
+  { path: 'login', component: LoginComponent },
+
+  // 🧭 Public site routes
+  { path: '', component: HomeComponent },
+  { path: 'home', component: HomeComponent },
+  { path: 'about', component: AboutComponent },
+  { path: 'services', component: ServicesComponent },
+  { path: 'project', component: ProjectComponent },
+  { path: 'contact', component: ContactComponent },
+  { path: 'blog', component: BlogComponent },
+  { path: 'team', component: TeamComponent },
+  { path: 'testimonial', component: TestimonialComponent },
+  { path: 'faqs', component: FaqsComponent },
+
+  // 🔒 Admin route (protected)
+  { path: 'dashboard', component: AdminDashboardComponent, canActivate: [AuthGuard] },
+
+  // 🚫 404 Page
+  { path: '**', component: Page404Component }
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}
