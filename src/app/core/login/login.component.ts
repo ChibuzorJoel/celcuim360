@@ -22,7 +22,7 @@ export class LoginComponent {
     this.auth.login(this.email, this.password).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/admin-dashboard']);
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading = false;
