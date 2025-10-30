@@ -2,7 +2,7 @@
 <div class="header-carousel owl-carousel">
     <div class="header-carousel-item">
         <div class="header-carousel-item-img-1 position-relative">
-            <video #videoPlayer class="w-100" autoplay loop muted playsinline>
+            <video #videoPlayer class="w-100" style="min-height: 420px;" autoplay loop muted playsinline>
                 <source src="assets/lib/celcium slider.mp4" type="video/mp4">
             </video>
         </div>
@@ -14,9 +14,8 @@
                     Work Smarter. Lead Better. Grow Sustainably.
                 </h1>
                 <p class="mb-5 fs-5 animate__animated animate__fadeInUp" style="animation-delay: 1.5s;">
-                    Celcium360 Solutions empowers organizations and professionals to bridge the gap between purpose and
-                    performance — through people-centered growth, mindset transformation, and strategic business
-                    solutions.
+                    Celcium360 Solutions builds workplaces where people and performance thrive — through practical
+                    systems, human-centered solutions, and purposeful growth.
                 </p>
                 <a class="btn btn-primary rounded-pill py-3 px-5 mb-4 me-4 animate__animated animate__fadeInUp"
                     style="animation-delay: 1.7s;" href="#">Explore WorkSmart 360</a>
@@ -32,7 +31,6 @@
 <div class="container-fluid about bg-light py-5">
     <div class="container py-5">
         <div class="row g-5 align-items-center">
-
             <div class="col-lg-6 col-xl-5 wow fadeInLeft" data-wow-delay="0.3s">
                 <div class="about-img position-relative text-center">
                     <video class="img-fluid w-100 rounded-top bg-white" autoplay muted loop playsinline controls>
@@ -44,11 +42,12 @@
 
             <div class="col-lg-6 col-xl-7 wow fadeInRight" data-wow-delay="0.3s">
                 <h4 class="text-primary">About Us</h4>
-                <h1 class="display-5 mb-4">Your Trusted Partner in People & Performance</h1>
+                <h1 class="display-5 mb-4">Your Partner in People & Performance</h1>
                 <p class="text ps-4 mb-4">
-                    Celcium360 Solutions is a people and performance consulting firm helping businesses and
-                    professionals achieve sustainable growth through practical strategy, training, and mindset
-                    transformation.
+                    Celcium360 Solutions is a people-centered consulting and training organization dedicated to
+                    improving how work happens. We partner with organizations and individuals to design practical
+                    interventions that enhance employee experience, leadership effectiveness, and measurable
+                    performance.
                 </p>
 
                 <div class="row g-4 justify-content-between mb-5">
@@ -56,12 +55,12 @@
                         <p class="text-dark"><i class="fas fa-check-circle text-primary me-1"></i> People-Centered
                             Approach</p>
                         <p class="text-dark mb-0"><i class="fas fa-check-circle text-primary me-1"></i> Expert-Led
-                            Training Programs</p>
+                            Training</p>
                     </div>
                     <div class="col-lg-6 col-xl-7">
-                        <p class="text-dark"><i class="fas fa-check-circle text-primary me-1"></i> Business
-                            Transformation Strategies</p>
-                        <p class="text-dark mb-0"><i class="fas fa-check-circle text-primary me-1"></i> Proven
+                        <p class="text-dark"><i class="fas fa-check-circle text-primary me-1"></i> Practical Business
+                            Strategies</p>
+                        <p class="text-dark mb-0"><i class="fas fa-check-circle text-primary me-1"></i> Measurable
                             Performance Results</p>
                     </div>
                 </div>
@@ -95,8 +94,7 @@
                     <div class="col-sm-4" *ngFor="let item of counterData">
                         <div class="{{item.bgColor}} rounded p-4">
                             <div class="d-flex align-items-center justify-content-center">
-                                <span #counterValue class="fs-1 fw-bold {{item.numColor}}"
-                                    style="color: white;">0</span>
+                                <span #counterValue class="fs-1 fw-bold text-white">0</span>
                                 <h4 class="{{item.numColor}} fs-1 mb-0 fw-bold">{{item.suffix}}</h4>
                             </div>
                             <div class="w-100 d-flex align-items-center justify-content-center">
@@ -128,9 +126,8 @@
                         <div class="service-content-inner">
                             <a href="#" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-users fa-2x me-2"></i>
                                 Workforce Readiness & Generational Synergy</a>
-                            <p class="mb-4">Bridge the generational divide and prepare new talents while equipping
-                                leaders to manage across age groups with empathy and skill.
-                            </p>
+                            <p class="mb-4">Prepare new talent and equip leaders to bridge generational gaps with
+                                empathy and skill, fostering collaboration across all age groups.</p>
                             <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
                         </div>
                     </div>
@@ -145,9 +142,8 @@
                         <div class="service-content-inner">
                             <a href="#" class="h4 mb-4 d-inline-flex text-start"><i
                                     class="fas fa-hands-helping fa-2x me-2"></i> HR Consulting</a>
-                            <p class="mb-4">Design and implement effective HR systems and people strategies that drive
-                                performance and employee engagement.
-                            </p>
+                            <p class="mb-4">Practical support for policies, people processes, and organizational design
+                                to drive engagement and performance.</p>
                             <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
                         </div>
                     </div>
@@ -162,9 +158,8 @@
                         <div class="service-content-inner">
                             <a href="#" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-star fa-2x me-2"></i>
                                 Customer Experience Consulting</a>
-                            <p class="mb-4">Transform customer experience and strengthen brand perception through
-                                empathy-driven strategies and service excellence.
-                            </p>
+                            <p class="mb-4">Design systems and processes that improve service delivery and align brand
+                                promise with customer experience.</p>
                             <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
                         </div>
                     </div>
@@ -179,9 +174,8 @@
                         <div class="service-content-inner">
                             <a href="#" class="h4 mb-4 d-inline-flex text-start"><i
                                     class="fas fa-chart-line fa-2x me-2"></i> Business Transformation</a>
-                            <p class="mb-4">Reimagine processes, improve performance, and drive culture change for
-                                sustainable organizational growth.
-                            </p>
+                            <p class="mb-4">Reimagine processes and drive culture change for sustainable organizational
+                                growth and performance improvement.</p>
                             <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
                         </div>
                     </div>
@@ -195,11 +189,12 @@
     </div>
 </div>
 <!-- Services End -->
+
 <br><br><br><br>
+
 <!-- Project Start -->
 <div id="solutionsCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="8000">
     <div class="carousel-inner">
-
         <!-- Slide 1 -->
         <div class="carousel-item active">
             <div class="row g-4 justify-content-center">
@@ -282,13 +277,12 @@
                 </div>
             </div>
         </div>
-
     </div>
-
 </div>
-
 <!-- Project End -->
+
 <br>
+
 <!-- Blog Start -->
 <div class="container-fluid blog pb-5">
     <div class="container pb-5">
@@ -497,14 +491,12 @@
             </div>
             <div class="col-xl-8">
                 <div class="testimonial-carousel owl-carousel wow fadeInUp position-relative" data-wow-delay="0.1s">
-
                     <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.3s">
                         <div class="d-flex">
                             <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"WorkSmart 360 changed how our team collaborates and performs. It's more
-                                than a training — it's a mindset shift that has transformed our workplace culture and
-                                driven measurable results."
-                            </p>
+                            <p class="mt-4">"WorkSmart 360 transformed how our team collaborates and performs. It's more
+                                than training — it's a mindset shift that has improved our culture and delivered
+                                measurable results."</p>
                         </div>
                         <div class="d-flex justify-content-end">
                             <div class="my-auto text-end">
@@ -521,10 +513,9 @@
                     <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.5s">
                         <div class="d-flex">
                             <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"The generational synergy consulting helped us bridge the gap between
-                                experienced leaders and new talents. Our team now works with greater empathy and
-                                understanding across all age groups."
-                            </p>
+                            <p class="mt-4">"The generational synergy consulting helped us bridge gaps between
+                                experienced leaders and new talent. Our team now works with greater empathy and
+                                understanding."</p>
                         </div>
                         <div class="d-flex justify-content-end">
                             <div class="my-auto text-end">
@@ -537,7 +528,6 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -631,7 +621,7 @@
             <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.3s">
                 <div class="faq-img RotateMoveRight rounded">
                     <img src="../../../assets/img/faq-img.jpg" class="img-fluid rounded w-100" alt="Image">
-                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5" href="#">Read More Q & A <i
+                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5 w-50" href="#">Read More Q & A <i
                             class="fas fa-arrow-right ms-2"></i></a>
                 </div>
             </div>

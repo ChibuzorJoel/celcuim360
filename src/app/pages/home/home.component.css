@@ -1,3 +1,25 @@
+ /* In your home.component.css or a global stylesheet */
+.header-carousel-item-img-1 {
+    /* Sets a decent default height for mobile screens */
+    min-height: 400px; 
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* Ensures the video covers the space without distortion */
+    overflow: hidden; 
+}
+
+/* Ensure the video scales within this height */
+.header-carousel-item-img-1 video {
+    height: 100%;
+    object-fit: cover; /* Important to make the video scale correctly */
+}
+
+/* You might need to adjust the height for larger screens */
+@media (min-width: 992px) {
+    .header-carousel-item-img-1 {
+        min-height: 500px; /* Taller height for desktop */
+    }
+}
  .project-item {
   height: 100%;
 }
@@ -182,7 +204,144 @@
 .row.g-4.justify-content-center {
     align-items: stretch; /* Makes all team items in row equal height */
 }
-.carousel-inner{
+.carousel-inner {
     max-width: 1200px;
-    margin-left: 35px;
+    margin: 0 auto; /* centers the carousel horizontally */
+    padding-left: 15px;  /* optional, adds breathing room */
+    padding-right: 15px;
+}
+
+
+/* Carousel captions mobile */
+@media (max-width: 767px) {
+    .carousel-caption-inner {
+        padding: 1rem;
+    }
+    .carousel-caption-inner h1 {
+        font-size: 1.8rem !important;
+    }
+    .carousel-caption-inner p {
+        font-size: 0.9rem !important;
+    }
+    .carousel-caption-inner .btn {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.85rem;
+    }
+       .carousel-inner .row {
+        margin-left: 20px !important;
+        justify-content: center; /* center columns */
+    }
+
+    .carousel-inner .col-md-6 {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        flex: 0 0 100% !important; /* stack columns vertically */
+        max-width: 100% !important;
+    }
+}
+
+/* About Section */
+@media (max-width: 991px) {
+    .about .row.g-5 {
+        flex-direction: column-reverse;
+    }
+    .about-img {
+        margin-bottom: 2rem;
+    }
+    .about .col-lg-6, .about .col-xl-7 {
+        max-width: 100%;
+    }
+    .about-customer img {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    .about-customer .position-absolute {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+    }
+}
+
+/* Services */
+@media (max-width: 991px) {
+    .service-item .service-img img {
+        height: 180px;
+    }
+    .service-item .service-content-inner a.h4 {
+        font-size: 1rem;
+    }
+    .service-item .service-content-inner p {
+        font-size: 0.85rem;
+    }
+}
+@media (max-width: 575px) {
+    .service-item .service-img img {
+        height: 150px;
+    }
+}
+
+/* Projects */
+@media (max-width: 767px) {
+    .project-item {
+        margin-bottom: 2rem;
+        max-width: 90%;
+    }
+    .project-content {
+        height: auto !important;
+        padding: 1rem !important;
+    }
+    .project-content h4, .project-content p {
+        font-size: 0.9rem;
+    }
+    .project-content .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Team */
+@media (max-width: 991px) {
+    .team-item .team-img img {
+        height: 250px;
+    }
+}
+@media (max-width: 575px) {
+    .team-item .team-img img {
+        height: 200px;
+    }
+}
+
+/* Testimonial */
+@media (max-width: 767px) {
+    .testimonial-item {
+        padding: 2rem !important;
+        min-height: auto;
+    }
+    .testimonial-carousel .owl-nav button {
+        width: 35px;
+        height: 35px;
+    }
+    .testimonial-carousel .owl-nav .owl-prev {
+        left: -10px;
+    }
+    .testimonial-carousel .owl-nav .owl-next {
+        right: -10px;
+    }
+}
+
+/* FAQ */
+@media (max-width: 991px) {
+    .faq .row.g-5 {
+        flex-direction: column;
+    }
+    .faq-img {
+        margin-top: 2rem;
+    }
+    .faq-btn {
+        width: 100%;
+        text-align: center;
+    }
 }

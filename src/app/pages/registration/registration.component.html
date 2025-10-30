@@ -1,0 +1,94 @@
+<div class="form-wrapper">
+
+  <div class="form-container" *ngIf="!formSubmitted">
+    <h3>Celcium360 Program Registration</h3>
+    <hr>
+
+   <form (ngSubmit)="onSubmit(registrationForm)" #registrationForm="ngForm">
+
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" name="fullName" [(ngModel)]="formData.fullName" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" [(ngModel)]="formData.email" required>
+      </div>
+      <div class="form-group">
+        <label for="mobile">Mobile Number</label>
+        <input type="tel" id="mobile" name="mobile" [(ngModel)]="formData.mobile" required>
+      </div>
+
+      <div class="form-group">
+        <label>Are you currently employed?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="employed" value="Yes" [(ngModel)]="formData.isEmployed" required> Yes</label>
+          <label><input type="radio" name="employed" value="No" [(ngModel)]="formData.isEmployed"> No</label>
+        </div>
+      </div>
+      
+      <ng-container *ngIf="formData.isEmployed === 'Yes' || formData.isEmployed === 'No'">
+
+        <div class="form-group" *ngIf="formData.isEmployed === 'Yes'">
+          <label for="companyName">Company Name (mandatory)</label>
+          <input type="text" id="companyName" name="companyName" [(ngModel)]="formData.companyName" required>
+        </div>
+
+        <div class="form-group">
+          <label for="role">Role / Designation</label>
+          <input type="text" id="role" name="role" [(ngModel)]="formData.role">
+        </div>
+
+        <div class="form-group">
+          <label for="registrationType">What are you registering for?</label>
+          <select id="registrationType" name="registrationType" [(ngModel)]="formData.registrationType" required>
+            <option value="" disabled selected>Select an option</option>
+            <option value="Webinar/Event">Webinar / Event</option>
+            <option value="Work Readiness Program">Work Readiness Program</option>
+            <option value="Corporate Training">Corporate Training</option>
+            <option value="Individual Training Course">Individual Training Course</option>
+            <option value="Customized Session">Customized Session</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="gains">What do you hope to gain from this session or program?</label>
+          <textarea id="gains" name="gains" rows="3" [(ngModel)]="formData.gains"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="referral">How did you hear about Celcium360?</label>
+          <select id="referral" name="referral" [(ngModel)]="formData.referral" required>
+            <option value="" disabled selected>Select an option</option>
+            <option value="SocialMedia">Social Media</option>
+            <option value="WordOfMouth">Word of Mouth</option>
+            <option value="SearchEngine">Search Engine</option>
+            <option value="ExistingClient">Existing Client</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="consent" name="consent" [(ngModel)]="formData.consent" required>
+          <label for="consent">I agree to receive updates and communications related to this program.</label>
+        </div>
+      </ng-container>
+      <button type="submit" [disabled]="!registrationForm.valid" class="submit-button">Register Now</button>
+    </form>
+  </div>
+
+
+  <div class="thank-you-message" *ngIf="formSubmitted">
+    <h2 class="text-primary-brand">Thank you for reaching out to Celcium360 Solutions Limited.</h2>
+    <p class="p-large">Your form has been successfully submitted. Our team will get back to you within **one business working day**.</p>
+    <p>In the meantime, follow us on our social media pages for helpful insights and updates.</p>
+    <div class="social-links">
+        <a href="#" class="social-icon">F</a>
+        <a href="#" class="social-icon">I</a>
+        <a href="#" class="social-icon">L</a>
+    </div>
+  </div>
+
+
+</div>
+ 

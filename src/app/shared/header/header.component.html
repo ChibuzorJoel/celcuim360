@@ -62,43 +62,22 @@
           <a routerLink="/about" class="nav-item nav-link" (click)="closeMobileMenu()">About</a>
           <a routerLink="/services" class="nav-item nav-link" (click)="closeMobileMenu()">Services</a>
           <!-- <a routerLink="/project" class="nav-item nav-link" (click)="closeMobileMenu()">Solutions</a> -->
-
-        </div>
-        <div class="dropdown">
-          <a class="dropdown-toggle" style="color: black;margin-bottom: 10px; margin-top: 10px; margin-right: 10px;"
-            type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-            Solutions
-          </a>
-
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <a routerLink="/blog" class="dropdown-item" (click)="closeMobileMenu()">Our Blog</a>
-            <a routerLink="/team" class="dropdown-item" (click)="closeMobileMenu()">Our Team</a>
-            <a routerLink="/testimonial" class="dropdown-item" (click)="closeMobileMenu()">Testimonial</a>
-            <a routerLink="/faqs" class="dropdown-item" (click)="closeMobileMenu()">FAQs</a>
-            <a routerLink="/404" class="dropdown-item" (click)="closeMobileMenu()">404 Page</a>
-          </ul>
-        </div>
-
-        <div class="dropdown">
-          <a class="dropdown-toggle" style="color: black;margin-bottom: 10px; margin-top: 10px; margin-right: 10px;"
-            type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+          <a routerLink="/Training" class="nav-item nav-link" (click)="closeMobileMenu()">
             Training & Courses
           </a>
-
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <a routerLink="/blog" class="dropdown-item" (click)="closeMobileMenu()">Our Blog</a>
-            <a routerLink="/team" class="dropdown-item" (click)="closeMobileMenu()">Our Team</a>
-            <a routerLink="/testimonial" class="dropdown-item" (click)="closeMobileMenu()">Testimonial</a>
-            <a routerLink="/faqs" class="dropdown-item" (click)="closeMobileMenu()">FAQs</a>
-            <a routerLink="/404" class="dropdown-item" (click)="closeMobileMenu()">404 Page</a>
-          </ul>
         </div>
 
         <a routerLink="/contact" style="color: black; margin-left: -20px;" class="nav-item nav-link"
           (click)="closeMobileMenu()">Contact Us</a>
+          <div class="d-flex align-items-center flex-nowrap pt-xl-0">
+          <!-- <button class="btn btn-primary btn-md-square mx-2" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i></button> -->
+          <a routerLink="/registration"
+            class="btn btn-primary rounded-pill text-white py-2 px-4 ms-2 flex-wrap flex-sm-shrink-0">
+            Registration</a>
+        </div>
         <div class="d-flex align-items-center flex-nowrap pt-xl-0">
           <!-- <button class="btn btn-primary btn-md-square mx-2" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fas fa-search"></i></button> -->
-          <a routerLink="/contact"
+          <a routerLink="/consultation"
             class="btn btn-primary rounded-pill text-white py-2 px-4 ms-2 flex-wrap flex-sm-shrink-0">Book a
             consultation</a>
         </div>

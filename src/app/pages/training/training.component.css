@@ -1,0 +1,214 @@
+:root {
+  /* ====== BRAND COLORS ====== */
+  --celcium-gold: #B88D2A;
+  --celcium-gold-light: #D4B15F;
+  --celcium-gold-dark: #8A6A1F;
+
+  /* ====== CORE NEUTRALS ====== */
+  --celcium-white: #ffffff;
+  --celcium-light: #f7f3ed;  /* Soft warm beige background */
+  --celcium-dark: #121212;   /* True dark for contrast */
+  --celcium-gray: #2d2d2d;   /* For dark text areas */
+  --celcium-muted: #7a7a7a;
+  --celcium-border: #e5decf;
+
+  /* ====== EFFECTS ====== */
+  --celcium-shadow: rgba(0, 0, 0, 0.1);
+  --celcium-gradient: linear-gradient(135deg, #B88D2A 0%, #D4B15F 50%, #8A6A1F 100%);
+}
+
+/* ============================
+   GLOBAL RESET & TYPOGRAPHY
+============================ */
+body {
+  background-color: var(--celcium-light);
+  color: var(--celcium-gray);
+  font-family: 'Inter', 'Poppins', sans-serif;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+p, li, .text-muted {
+  color: var(--celcium-gray);
+}
+
+/* Gradient titles */
+.gradient-text,
+.display-4, .display-5, .display-6 {
+  background: var(--celcium-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+/* ============================
+   BACKGROUNDS & SECTIONS
+============================ */
+.bg-celcium {
+  background: var(--celcium-gradient);
+  color: var(--celcium-white);
+}
+.bg-celcium-dark {
+  background-color: var(--celcium-dark);
+  color: var(--celcium-white);
+}
+.bg-celcium-light {
+  background-color: var(--celcium-light);
+  color: var(--celcium-gray);
+}
+.bg-breadcrumb {
+  background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+              url('/assets/img/training-bg.jpg') center/cover no-repeat;
+  color: var(--celcium-white);
+  padding: 100px 0;
+}
+
+/* Breadcrumb overlay text */
+.bg-breadcrumb h4,
+.bg-breadcrumb .breadcrumb a,
+.bg-breadcrumb .breadcrumb-item.active {
+  color: var(--celcium-white) !important;
+}
+
+/* ============================
+   BUTTONS
+============================ */
+.btn-celcium {
+  background: var(--celcium-gradient);
+  color: var(--celcium-white);
+  border: none;
+  padding: 14px 36px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(184, 141, 42, 0.3);
+}
+.btn-celcium:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 40px rgba(184, 141, 42, 0.45);
+}
+
+/* Outline variants */
+.btn-outline-celcium {
+  border: 2px solid var(--celcium-gold);
+  color: var(--celcium-gold);
+  background: transparent;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 14px 36px;
+  transition: all 0.3s ease;
+}
+.btn-outline-celcium:hover {
+  background: var(--celcium-gradient);
+  color: var(--celcium-white);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(184, 141, 42, 0.3);
+}
+
+/* Outline white */
+.btn-outline-white {
+  border: 2px solid var(--celcium-white);
+  color: var(--celcium-white);
+  background: transparent;
+  border-radius: 10px;
+  padding: 14px 36px;
+  transition: all 0.3s ease;
+}
+.btn-outline-white:hover {
+  background: var(--celcium-white);
+  color: var(--celcium-dark);
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+}
+
+/* ============================
+   CARDS & COMPONENTS
+============================ */
+.card {
+  border: none;
+  border-radius: 15px;
+  background: var(--celcium-white);
+  box-shadow: 0 6px 25px var(--celcium-shadow);
+  transition: all 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+.card-title {
+  color: var(--celcium-dark);
+  font-weight: 600;
+}
+
+/* ============================
+   PROGRAMS & EVENTS SECTIONS
+============================ */
+.program-outcomes .d-flex,
+.event-features .d-flex {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--celcium-border);
+  transition: all 0.3s ease;
+}
+
+.program-outcomes .d-flex:hover {
+  background-color: rgba(184, 141, 42, 0.05);
+}
+
+.event-features .d-flex {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.event-features .d-flex:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* ============================
+   IMAGES & DECOR
+============================ */
+.img-fluid {
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s ease;
+}
+.img-fluid:hover {
+  transform: scale(1.02);
+}
+
+/* Floating label overlays on images */
+.position-absolute.bg-celcium,
+.position-absolute.bg-celcium-dark {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* ============================
+   HOVER / SHADOW EFFECTS
+============================ */
+.shadow-celcium {
+  box-shadow: 0 8px 35px rgba(184, 141, 42, 0.15);
+}
+.shadow-celcium-lg {
+  box-shadow: 0 18px 60px rgba(184, 141, 42, 0.25);
+}
+.hover-lift {
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================
+   RESPONSIVENESS
+============================ */
+@media (max-width: 767px) {
+  .display-4, .display-5, .display-6 {
+    font-size: 1.75rem;
+  }
+  .btn-celcium, .btn-outline-celcium, .btn-outline-white {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+}

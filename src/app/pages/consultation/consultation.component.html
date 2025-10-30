@@ -1,0 +1,113 @@
+<section class="consultation-container">
+  <div class="container">
+    <!-- Intro Section -->
+    <div class="intro-section">
+      <h1>Consultation Services</h1>
+      <p class="intro-text">
+        Celcium360 offers consultation services that help organisations align people, process, and purpose. 
+        Our consulting engagements are designed to be practical, data-informed, and outcome-focused.
+      </p>
+    </div>
+
+    <!-- Services Slider -->
+    <div class="services-slider-container">
+      <div id="servicesCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <!-- First slide with 3 cards -->
+          <div class="carousel-item active">
+            <div class="row g-4">
+              <div class="col-md-4" *ngFor="let service of services.slice(0, 3)">
+                <div class="service-card">
+                  <div class="service-icon"></div>
+                  <h3>{{ service.title }}</h3>
+                  <p>{{ service.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Second slide with 2 cards -->
+          <div class="carousel-item">
+            <div class="row g-4 justify-content-center">
+              <div class="col-md-6" *ngFor="let service of services.slice(3, 5)">
+                <div class="service-card">
+                  <div class="service-icon"></div>
+                  <h3>{{ service.title }}</h3>
+                  <p>{{ service.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Carousel Controls -->
+        <button class="carousel-control-prev" type="button" data-bs-target="#servicesCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#servicesCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Booking Section -->
+    <div class="booking-section">
+      <div class="booking-content">
+        <h2>Ready to Transform Your Organization?</h2>
+        <p>Book a consultation with our experts to discuss how we can help align your people, processes, and purpose.</p>
+        
+        <!-- Date Selection -->
+        <div class="date-selection" *ngIf="showCalendar || selectedDate">
+          <h3>Select Available Date</h3>
+          
+          <!-- Selected Date Display -->
+          <div class="selected-date" *ngIf="selectedDate">
+            <p>Selected: <strong>{{ getDayName(selectedDate) }}, {{ getFormattedDate(selectedDate) }}</strong></p>
+          </div>
+
+          <!-- Calendar Grid -->
+          <div class="calendar-grid">
+            <div class="calendar-row">
+              <div 
+                *ngFor="let date of availableDates.slice(0, 3)"
+                class="date-card"
+                [class.selected]="selectedDate?.toDateString() === date.toDateString()"
+                (click)="selectDate(date)"
+              >
+                <span class="day-name">{{ getDayName(date) }}</span>
+                <span class="full-date">{{ getFormattedDate(date) }}</span>
+              </div>
+            </div>
+            <div class="calendar-row">
+              <div 
+                *ngFor="let date of availableDates.slice(3, 6)"
+                class="date-card"
+                [class.selected]="selectedDate?.toDateString() === date.toDateString()"
+                (click)="selectDate(date)"
+              >
+                <span class="day-name">{{ getDayName(date) }}</span>
+                <span class="full-date">{{ getFormattedDate(date) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="note">* Additional dates available upon request</p>
+        </div>
+
+        <!-- Call to Action -->
+        <button 
+          class="cta-button"
+          (click)="bookConsultation()"
+        >
+          {{ selectedDate ? 'Confirm Booking' : 'Book a Consultation' }}
+        </button>
+
+        <div class="booking-note" *ngIf="!selectedDate && !showCalendar">
+          <p>Click above to see available consultation times</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

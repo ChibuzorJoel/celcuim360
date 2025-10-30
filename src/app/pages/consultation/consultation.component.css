@@ -1,0 +1,336 @@
+/* CSS Variables for Brand Colors */
+:root {
+  --primary: #B88D2A;
+  --white: #ffffff;
+  --black: #000000;
+  --light-gray: #f5f5f5;
+  --dark-gray: #333333;
+  --medium-gray: #666666;
+  --dark-bg: #1a1a1a;
+  --card-bg: #2d2d2d;
+}
+
+/* Reset and Base Styles */
+.consultation-container {
+  padding: 60px 0;
+  background: var(--dark-bg);
+  min-height: 100vh;
+  color: var(--white);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Intro Section */
+.intro-section {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.intro-section h1 {
+  font-size: 2.5rem;
+  color: var(--white);
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.intro-text {
+  font-size: 1.2rem;
+  color: var(--medium-gray);
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+/* Services Slider */
+.services-slider-container {
+  margin-bottom: 80px;
+  position: relative;
+}
+
+.service-card {
+  background: var(--card-bg);
+  padding: 40px 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  border-left: 4px solid var(--primary);
+  height: 100%;
+  margin: 0 10px;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(184, 141, 42, 0.2);
+  border-left: 4px solid var(--white);
+}
+
+.service-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(184, 141, 42, 0.2);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  position: relative;
+}
+
+.service-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  background: var(--primary);
+  border-radius: 6px;
+}
+
+.service-card h3 {
+  color: var(--white);
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.service-card p {
+  color: var(--medium-gray);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Custom Carousel Controls */
+.carousel-control-prev,
+.carousel-control-next {
+  width: 50px;
+  height: 50px;
+  background: var(--primary);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 1;
+}
+
+.carousel-control-prev {
+  left: -25px;
+}
+
+.carousel-control-next {
+  right: -25px;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  filter: invert(1);
+}
+
+/* Booking Section */
+.booking-section {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 50px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  border: 1px solid var(--primary);
+}
+
+.booking-content {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.booking-content h2 {
+  color: var(--white);
+  font-size: 2rem;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.booking-content > p {
+  color: var(--medium-gray);
+  font-size: 1.1rem;
+  margin-bottom: 40px;
+}
+
+/* Date Selection */
+.date-selection {
+  margin: 30px 0;
+  text-align: left;
+}
+
+.date-selection h3 {
+  color: var(--white);
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
+
+.selected-date {
+  background: rgba(184, 141, 42, 0.2);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+}
+
+.selected-date p {
+  color: var(--white);
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Calendar Grid */
+.calendar-grid {
+  margin-bottom: 25px;
+}
+
+.calendar-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.date-card {
+  background: var(--card-bg);
+  border: 2px solid var(--medium-gray);
+  border-radius: 12px;
+  padding: 20px 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.date-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 141, 42, 0.3);
+}
+
+.date-card.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--white);
+}
+
+.day-name {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.full-date {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--white);
+  font-weight: 500;
+}
+
+.date-card.selected .day-name,
+.date-card.selected .full-date {
+  color: var(--white);
+}
+
+.note {
+  color: var(--medium-gray);
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: 0;
+  text-align: center;
+}
+
+/* Call to Action Button */
+.cta-button {
+  background: var(--primary) !important;
+  color: var(--white) !important;
+  border: none;
+  padding: 18px 45px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 30px;
+  display: inline-block;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(184, 141, 42, 0.3);
+}
+
+.cta-button:hover {
+  background: #9c7523 !important;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(184, 141, 42, 0.4);
+  color: var(--white) !important;
+}
+
+.booking-note {
+  margin-top: 15px;
+}
+
+.booking-note p {
+  color: var(--medium-gray);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .consultation-container {
+    padding: 40px 0;
+  }
+
+  .intro-section h1 {
+    font-size: 2rem;
+  }
+
+  .intro-text {
+    font-size: 1.1rem;
+  }
+
+  .service-card {
+    padding: 30px 20px;
+  }
+
+  .booking-section {
+    padding: 30px 20px;
+  }
+
+  .booking-content h2 {
+    font-size: 1.6rem;
+  }
+
+  .calendar-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .date-card {
+    padding: 15px 10px;
+  }
+
+  .carousel-control-prev {
+    left: 10px;
+  }
+
+  .carousel-control-next {
+    right: 10px;
+  }
+}
+
+/* Carousel Item Adjustments */
+.carousel-item {
+  transition: transform 0.6s ease-in-out;
+}
+
+.carousel-item.active .service-card {
+  border-left: 4px solid var(--white);
+}

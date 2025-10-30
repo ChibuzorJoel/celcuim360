@@ -1,0 +1,189 @@
+/* Core Colors */
+:root {
+  --color-primary: #B88D2A; /* Gold/Primary */
+  --color-dark: #000000;    /* Black/Dark */
+  --color-white: #ffffff;
+}
+
+.form-container {
+  /* Use the dark color as the container background */
+  background-color: var(--color-dark);
+  padding: 40px;
+  border-radius: 8px;
+  max-width: 500px;
+  margin: 40px auto;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.form-group, .checkbox-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  /* Labels are the primary text, use a light color for readability on dark background */
+  color: var(--color-white);
+  font-weight: bold;
+}
+
+/* Radio Button Group Styling */
+.radio-group label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 15px;
+  font-weight: normal;
+  color: var(--color-white);
+}
+
+/* Submit Button Styling */
+.submit-button {
+  width: 100%;
+  padding: 15px;
+  /* Background in primary color, text in dark color for contrast */
+  background-color: black;
+  color: var(--color-dark);
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #D4A94B; /* A slightly lighter gold on hover */
+}
+
+.submit-button:disabled {
+  background-color: #666666; /* Grey when disabled */
+  cursor: not-allowed;
+  color: #aaaaaa;
+}
+
+/* Checkbox Styling */
+.checkbox-group label {
+  display: inline;
+  font-weight: normal;
+  color: var(--color-white);
+}
+
+.checkbox-group input[type="checkbox"] {
+  /* Simple styling for the checkbox itself */
+  margin-right: 8px;
+  accent-color: var(--color-primary); /* Uses brand color for the checkmark */
+  width: auto; /* Reset width for checkbox */
+}
+/* Add to your existing registration.component.css */
+
+.form-wrapper {
+  /* Container to center both the form and the thank you message */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.form-container h3 {
+  color: var(--color-primary); /* Gold heading */
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+.form-container hr {
+  border-top: 2px solid var(--color-primary);
+  margin-bottom: 25px;
+}
+
+/* Updated Thank You Styling */
+.thank-you-message {
+  padding: 60px;
+  background-color: var(--color-dark);
+  color: var(--color-white);
+  border-radius: 8px;
+  max-width: 550px; /* Slightly wider for the message */
+  margin: 40px auto;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(184, 141, 42, 0.2); /* Subtle gold glow */
+}
+
+.thank-you-message h2 {
+  color: var(--color-white);
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.text-primary-brand {
+  color: var(--color-primary);
+  font-weight: bold;
+}
+
+.p-large {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+}
+
+.social-links {
+    margin-top: 25px;
+}
+
+.social-icon {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    margin: 0 8px;
+    background-color: var(--color-primary);
+    color: var(--color-dark);
+    text-decoration: none;
+    border-radius: 50%;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.social-icon:hover {
+    background-color: #D4A94B;
+}
+/* Core Colors */
+:root {
+  --color-primary: #B88D2A; /* Gold/Primary */
+  --color-dark: #000000;    /* Black/Dark */
+  --color-white: #ffffff;
+}
+
+/* ... existing styles for .form-container, label, etc. ... */
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  /* Retain the Primary Gold Border */
+  border: 1px solid black; 
+  border-radius: 4px;
+  
+  /* 🌟 CORRECTION: Set background to WHITE */
+  background-color: var(--color-white); 
+  
+  /* 🌟 CORRECTION: Set text color to BLACK (Dark) for contrast */
+  color: var(--color-dark); 
+  
+  box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-primary);
+  /* Highlight focus with a glowing effect in the primary color */
+  box-shadow: 0 0 0 3px rgba(184, 141, 42, 0.5);
+  outline: none;
+}
+
+/* Ensure placeholder text is visible on the white background */
+input::placeholder, textarea::placeholder {
+    color: #666666; /* A clear gray for placeholder text */
+}
+
+/* ... the rest of your form CSS remains the same ... */

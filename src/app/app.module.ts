@@ -13,13 +13,11 @@ import { AboutComponent } from './pages/about/about.component';
 import { ServicesComponent } from './pages/services/services.component';
 import { ProjectComponent } from './pages/project/project.component';
 import { ContactComponent } from './pages/contact/contact.component';
-import { BlogComponent } from './pages/pages_section/blog/blog.component';
-import { TeamComponent } from './pages/pages_section/team/team.component';
-import { TestimonialComponent } from './pages/pages_section/testimonial/testimonial.component';
-import { FaqsComponent } from './pages/pages_section/faqs/faqs.component';
-import { Page404Component } from './pages/pages_section/page404/page404.component';
 import { AdminDashboardComponent } from './core/admin-dashboard/admin-dashboard.component';
 import { LoginComponent } from './core/login/login.component';
+import { TrainingComponent } from './pages/training/training.component';
+import { RegistrationComponent } from './pages/registration/registration.component';
+import { ConsultationComponent } from './pages/consultation/consultation.component';
 
 @NgModule({
   declarations: [
@@ -31,13 +29,11 @@ import { LoginComponent } from './core/login/login.component';
     ServicesComponent,
     ProjectComponent,
     ContactComponent,
-    BlogComponent,
-    TeamComponent,
-    TestimonialComponent,
-    FaqsComponent,
-    Page404Component,
     AdminDashboardComponent,
-    LoginComponent
+    LoginComponent,
+    TrainingComponent,
+    RegistrationComponent,
+    ConsultationComponent
   ],
   imports: [
     BrowserModule,

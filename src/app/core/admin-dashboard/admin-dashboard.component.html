@@ -1,7 +1,29 @@
 <div class="admin-dashboard">
   <div class="dashboard-header">
-    <h2>Contact Form Records</h2>
-    <p>Manage all submitted contact forms</p>
+    <h2>Form Records Dashboard</h2>
+    <p>Manage all submitted forms and requests</p>
+  </div>
+
+  <!-- Form Type Filter Buttons -->
+  <div class="form-type-filters">
+    <button 
+      class="filter-btn" 
+      [class.active]="activeFilter === 'contact'"
+      (click)="setActiveFilter('contact')">
+      📧 Contact Form Requests
+    </button>
+    <button 
+      class="filter-btn" 
+      [class.active]="activeFilter === 'registration'"
+      (click)="setActiveFilter('registration')">
+      📝 Registration Requests
+    </button>
+    <button 
+      class="filter-btn" 
+      [class.active]="activeFilter === 'consultation'"
+      (click)="setActiveFilter('consultation')">
+      💼 Consultation Requests
+    </button>
   </div>
 
   <!-- Controls Section -->
@@ -11,14 +33,14 @@
         type="text" 
         [(ngModel)]="searchTerm" 
         (input)="onSearchChange()"
-        placeholder="Search records..." 
+        placeholder="Search {{getActiveFilterLabel()}} records..." 
         class="search-input"
       >
     </div>
     
     <div class="action-buttons">
       <button class="btn btn-download" (click)="downloadPDF()">
-        📄 Download All Records
+        📄 Download {{getActiveFilterLabel()}} Records
       </button>
       <button class="btn btn-delete-page" (click)="openDeletePageModal()">
         🗑️ Delete Current Page
@@ -26,40 +48,99 @@
     </div>
   </div>
 
-  <!-- Records Table -->
+  <!-- Dynamic Table Based on Filter -->
   <div class="table-container">
     <table class="records-table">
       <thead>
         <tr>
+          <!-- Common Fields -->
           <th>Name</th>
           <th>Email</th>
           <th>Phone Number</th>
-          <th class="message-column">Message</th>
+          
+          <!-- Dynamic Fields Based on Form Type -->
+          <th *ngIf="activeFilter === 'contact'" class="message-column">Message</th>
+          <th *ngIf="activeFilter === 'registration'">Company</th>
+          <th *ngIf="activeFilter === 'registration'">Position</th>
+          <th *ngIf="activeFilter === 'consultation'">Service Type</th>
+          <th *ngIf="activeFilter === 'consultation'">Budget</th>
+          <th *ngIf="activeFilter === 'consultation'" class="message-column">Project Details</th>
+          
+          <th>Date Submitted</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let record of paginatedRecords">
-          <td class="name-cell">{{ record.name }}</td>
-          <td class="email-cell">{{ record.email }}</td>
-          <td class="phone-cell">{{ record.phone }}</td>
-          <td class="message-cell">
-            <div class="message-content">{{ record.message }}</div>
-          </td>
-          <td class="actions-cell">
-            <button 
-              class="btn-delete" 
-              (click)="openDeleteSingleModal(record.id, record.name)"
-              title="Delete Record"
-            >
-              🗑️
-            </button>
-          </td>
-        </tr>
+        <!-- Contact Form Records -->
+        <ng-container *ngIf="activeFilter === 'contact'">
+          <tr *ngFor="let record of paginatedRecords">
+            <td class="name-cell">{{ record.name }}</td>
+            <td class="email-cell">{{ record.email }}</td>
+            <td class="phone-cell">{{ record.phone }}</td>
+            <td class="message-cell">
+              <div class="message-content">{{ record.message }}</div>
+            </td>
+            <td class="date-cell">{{ record.date | date:'medium' }}</td>
+            <td class="actions-cell">
+              <button 
+                class="btn-delete" 
+                (click)="openDeleteSingleModal(record.id, record.name)"
+                title="Delete Record"
+              >
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </ng-container>
+
+        <!-- Registration Form Records -->
+        <ng-container *ngIf="activeFilter === 'registration'">
+          <tr *ngFor="let record of paginatedRecords">
+            <td class="name-cell">{{ record.name }}</td>
+            <td class="email-cell">{{ record.email }}</td>
+            <td class="phone-cell">{{ record.phone }}</td>
+            <td class="company-cell">{{ record.company || 'N/A' }}</td>
+            <td class="position-cell">{{ record.position || 'N/A' }}</td>
+            <td class="date-cell">{{ record.date | date:'medium' }}</td>
+            <td class="actions-cell">
+              <button 
+                class="btn-delete" 
+                (click)="openDeleteSingleModal(record.id, record.name)"
+                title="Delete Record"
+              >
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </ng-container>
+
+        <!-- Consultation Form Records -->
+        <ng-container *ngIf="activeFilter === 'consultation'">
+          <tr *ngFor="let record of paginatedRecords">
+            <td class="name-cell">{{ record.name }}</td>
+            <td class="email-cell">{{ record.email }}</td>
+            <td class="phone-cell">{{ record.phone }}</td>
+            <td class="service-cell">{{ record.serviceType || 'N/A' }}</td>
+            <td class="budget-cell">{{ record.budget || 'N/A' }}</td>
+            <td class="message-cell">
+              <div class="message-content">{{ record.projectDetails || 'N/A' }}</div>
+            </td>
+            <td class="date-cell">{{ record.date | date:'medium' }}</td>
+            <td class="actions-cell">
+              <button 
+                class="btn-delete" 
+                (click)="openDeleteSingleModal(record.id, record.name)"
+                title="Delete Record"
+              >
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </ng-container>
         
         <tr *ngIf="paginatedRecords.length === 0">
-          <td colspan="5" class="no-records">
-            No records found
+          <td [attr.colspan]="getColumnCount()" class="no-records">
+            No {{getActiveFilterLabel()}} records found
           </td>
         </tr>
       </tbody>

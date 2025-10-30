@@ -598,3 +598,90 @@
     width: 100%;
   }
 }
+/* Form Type Filter Buttons */
+.form-type-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 0 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 1rem 1.5rem;
+  border: 2px solid rgba(184, 141, 42, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: #b0b0b0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.filter-btn:hover {
+  border-color: #B88D2A;
+  color: #B88D2A;
+  background: rgba(184, 141, 42, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(184, 141, 42, 0.2);
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #B88D2A, #d4af37);
+  color: #000;
+  border-color: #B88D2A;
+  box-shadow: 0 4px 20px rgba(184, 141, 42, 0.4);
+}
+
+/* Additional Table Cell Styles */
+.company-cell, .position-cell, .service-cell, .budget-cell, .date-cell {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.service-cell {
+  color: #88b0d4;
+}
+
+.budget-cell {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+.date-cell {
+  color: #888;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Responsive Design for Filter Buttons */
+@media (max-width: 768px) {
+  .form-type-filters {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .filter-btn {
+    min-width: 100%;
+    padding: 0.9rem 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-type-filters {
+    gap: 0.5rem;
+  }
+  
+  .filter-btn {
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
+  }
+}
