@@ -23,7 +23,7 @@ label {
   display: block;
   margin-bottom: 8px;
   /* Labels are the primary text, use a light color for readability on dark background */
-  color: var(--color-white);
+  color: #B88D2A;
   font-weight: bold;
 }
 

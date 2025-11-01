@@ -4,8 +4,7 @@
     <div class="container text-center py-5" style="max-width: 900px;">
         <h4 class="text-white display-4 mb-4 wow fadeInDown" data-wow-delay="0.1s">Our Services</h4>
         <ol class="breadcrumb justify-content-center mb-0 wow fadeInDown" data-wow-delay="0.3s">
-            <li class="breadcrumb-item"><a href="/home">Home</a></li>
-            <li class="breadcrumb-item"><a href="#">Pages</a></li>
+            <li class="breadcrumb-item"><a routerLink="/home">Home</a></li>
             <li class="breadcrumb-item active text-primary">Services</li>
         </ol>    
     </div>
@@ -23,15 +22,15 @@
             <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.1s">
                 <div class="service-item bg-light rounded">
                     <div class="service-img">
-                        <img src="../../../assets/img/service-1.jpg" class="img-fluid w-100 rounded-top" alt="">
+                        <img src="../../../assets/img/img/7hs.png" class="img-fluid w-100 rounded-top" alt="">
                     </div>
                     <div class="service-content text-center p-4">
                         <div class="service-content-inner">
-                            <a href="#" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-users fa-2x me-2"></i>
+                            <a routerLink="/registration" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-users fa-2x me-2"></i>
                                 Workforce Readiness & Generational Synergy</a>
                             <p class="mb-4">Prepare new talent and equip leaders to bridge generational gaps with
                                 empathy and skill, fostering collaboration across all age groups.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
+                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/registration">Visit</a>
                         </div>
                     </div>
                 </div>
@@ -39,15 +38,15 @@
             <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.3s">
                 <div class="service-item bg-light rounded">
                     <div class="service-img">
-                        <img src="../../../assets/img/service-2.jpg" class="img-fluid w-100 rounded-top" alt="">
+                        <img src="../../../assets/img/img/5hs.png" class="img-fluid w-100 rounded-top" alt="">
                     </div>
                     <div class="service-content text-center p-4">
                         <div class="service-content-inner">
-                            <a href="#" class="h4 mb-4 d-inline-flex text-start"><i
+                            <a routerLink="/consultation" class="h4 mb-4 d-inline-flex text-start"><i
                                     class="fas fa-hands-helping fa-2x me-2"></i> HR Consulting</a>
                             <p class="mb-4">Practical support for policies, people processes, and organizational design
                                 to drive engagement and performance.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
+                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/consultation">Visit</a>
                         </div>
                     </div>
                 </div>
@@ -55,15 +54,15 @@
             <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.5s">
                 <div class="service-item bg-light rounded">
                     <div class="service-img">
-                        <img src="../../../assets/img/service-4.jpg" class="img-fluid w-100 rounded-top" alt="">
+                        <img src="../../../assets/img/img/6hs.png" class="img-fluid w-100 rounded-top" alt="">
                     </div>
                     <div class="service-content text-center p-4">
                         <div class="service-content-inner">
-                            <a href="#" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-star fa-2x me-2"></i>
+                            <a routerLink="/consultation" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-star fa-2x me-2"></i>
                                 Customer Experience Consulting</a>
                             <p class="mb-4">Design systems and processes that improve service delivery and align brand
                                 promise with customer experience.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
+                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/consultation">Visit</a>
                         </div>
                     </div>
                 </div>
@@ -71,28 +70,24 @@
             <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.7s">
                 <div class="service-item bg-light rounded">
                     <div class="service-img">
-                        <img src="../../../assets/img/service-3.jpg" class="img-fluid w-100 rounded-top" alt="">
+                        <img src="../../../assets/img/img/3hs.png" class="img-fluid w-100 rounded-top" alt="">
                     </div>
                     <div class="service-content text-center p-4">
                         <div class="service-content-inner">
-                            <a href="#" class="h4 mb-4 d-inline-flex text-start"><i
+                            <a routerLink="/contact" class="h4 mb-4 d-inline-flex text-start"><i
                                     class="fas fa-chart-line fa-2x me-2"></i> Business Transformation</a>
                             <p class="mb-4">Reimagine processes and drive culture change for sustainable organizational
                                 growth and performance improvement.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" href="#">Read More</a>
+                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/contact">Visit</a>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-12">
-                <a class="btn btn-primary rounded-pill py-3 px-5 wow fadeInUp" data-wow-delay="0.1s" href="#">View All
-                    Services</a>
             </div>
         </div>
     </div>
 </div>
 <!-- Services End -->
-<!-- Testimonial Start -->
+
 <div class="container-fluid testimonial bg-light py-5">
     <div class="container py-5">
         <div class="row g-4 align-items-center">
@@ -100,16 +95,18 @@
                 <div class="h-100 rounded">
                     <h4 class="text-primary">Client Feedback</h4>
                     <h1 class="display-4 mb-4">What Our Clients Say</h1>
-                    <p class="mb-4">Discover how organizations and professionals are transforming their workplaces and careers with Celcium360 Solutions.</p>
-                    <a class="btn btn-primary rounded-pill text-white py-3 px-5" href="#">Read All Reviews <i class="fas fa-arrow-right ms-2"></i></a>
+                    <p class="mb-4">Discover how organizations and professionals are transforming their workplaces and
+                        careers with Celcium360 Solutions.</p>
                 </div>
             </div>
             <div class="col-xl-8">
-                <div class="testimonial-carousel owl-carousel wow fadeInUp" data-wow-delay="0.1s">
+                <div class="testimonial-carousel owl-carousel wow fadeInUp position-relative" data-wow-delay="0.1s">
                     <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.3s">
                         <div class="d-flex">
                             <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"WorkSmart 360 transformed how our team collaborates and performs. It's more than training — it's a mindset shift that has improved our culture and delivered measurable results."</p>
+                            <p class="mt-4">"WorkSmart 360 transformed how our team collaborates and performs. It's more
+                                than training — it's a mindset shift that has improved our culture and delivered
+                                measurable results."</p>
                         </div>
                         <div class="d-flex justify-content-end">
                             <div class="my-auto text-end">
@@ -117,14 +114,18 @@
                                 <p class="mb-0">Lagos Tech Firm</p>
                             </div>
                             <div class="bg-white rounded-circle ms-3">
-                                <img src="../../../assets/img/testimonial-1.jpg" class="rounded-circle p-2" style="width: 80px; height: 80px; border: 1px solid; border-color: var(--bs-primary);" alt="">
+                                <img src="../../../assets/img/testimonial-1.jpg" class="rounded-circle"
+                                    style="width: 80px; height: 80px;" alt="">
                             </div>
                         </div>
                     </div>
+
                     <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.5s">
                         <div class="d-flex">
                             <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"The generational synergy consulting helped us bridge gaps between experienced leaders and new talent. Our team now works with greater empathy and understanding across all age groups."</p>
+                            <p class="mt-4">"The generational synergy consulting helped us bridge gaps between
+                                experienced leaders and new talent. Our team now works with greater empathy and
+                                understanding."</p>
                         </div>
                         <div class="d-flex justify-content-end">
                             <div class="my-auto text-end">
@@ -132,22 +133,8 @@
                                 <p class="mb-0">Financial Services</p>
                             </div>
                             <div class="bg-white rounded-circle ms-3">
-                                <img src="../../../assets/img/testimonial-2.jpg" class="rounded-circle p-2" style="width: 80px; height: 80px; border: 1px solid; border-color: var(--bs-primary);" alt="">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.7s">
-                        <div class="d-flex">
-                            <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"The Work Readiness Program equipped our graduates with the practical skills they needed to transition smoothly into professional life. The impact was immediate and remarkable."</p>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <div class="my-auto text-end">
-                                <h5>Training Director</h5>
-                                <p class="mb-0">Manufacturing Company</p>
-                            </div>
-                            <div class="bg-white rounded-circle ms-3">
-                                <img src="../../../assets/img/testimonial-3.jpg" class="rounded-circle p-2" style="width: 80px; height: 80px; border: 1px solid; border-color: var(--bs-primary);" alt="">
+                                <img src="../../../assets/img/testimonial-2.jpg" class="rounded-circle"
+                                    style="width: 80px; height: 80px;" alt="">
                             </div>
                         </div>
                     </div>
@@ -156,7 +143,6 @@
         </div>
     </div>
 </div>
-<!-- Testimonial End -->
 
 <!-- FAQ Start -->
 <div class="container-fluid faq py-5">
@@ -221,7 +207,7 @@
             <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.3s">
                 <div class="faq-img RotateMoveRight rounded">
                     <img src="../../../assets/img/faq-img.jpg" class="img-fluid rounded w-100" alt="Image">
-                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5" href="/contact">Book a Consultation <i class="fas fa-arrow-right ms-2"></i></a>
+                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5" routerLink="/consultation">Book a Consultation <i class="fas fa-arrow-right ms-2"></i></a>
                 </div>
             </div>
         </div>
