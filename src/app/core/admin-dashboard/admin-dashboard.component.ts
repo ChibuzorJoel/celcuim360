@@ -98,16 +98,20 @@ export class AdminDashboardComponent implements OnInit {
           }))
         );
 
-        combinedRecords.push(
-          ...consultations.map(r => ({
-            ...r,
-            formType: 'consultation' as const,
-            name: r.name || 'N/A',
-            email: r.email || 'N/A',
-            phone: '',
-            serviceType: r.service,
-          }))
-        );
+     combinedRecords.push(
+  ...consultations.map(r => ({
+    ...r,
+    formType: 'consultation' as const,
+    name: r.fullName || 'N/A',
+    email: r.email,
+    serviceType: r.registrationType || 'Consultation',
+    bookingDate: r.bookingDate,
+    bookingTime: r.bookingTime,
+    referral: r.referral,
+phone: '', // Consultations don’t include phone numbers
+  }))
+);
+
 
         this.records = combinedRecords.sort(
           (a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime()

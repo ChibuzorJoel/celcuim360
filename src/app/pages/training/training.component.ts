@@ -1,23 +1,52 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-
+import { Component, HostListener } from '@angular/core';
 @Component({
   selector: 'app-training',
   templateUrl: './training.component.html',
   styleUrls: ['./training.component.css']
 })
 export class TrainingComponent {
+  title = 'celcuim-training';
+  isMobileMenuOpen = false;
 
-  constructor(private router: Router) { }
+  ngOnInit() {
+    this.setupScrollAnimations();
+  }
 
-  navigateToRegistration(programType: string): void {
-    // Navigate to registration page with program type
-    this.router.navigate(['/register'], { 
-      queryParams: { program: programType } 
+  @HostListener('window:scroll', [])
+  onWindowScroll() {
+    this.handleHeaderScroll();
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    const nav = document.querySelector('nav ul') as HTMLElement;
+    if (nav) {
+      nav.style.display = this.isMobileMenuOpen ? 'flex' : 'none';
+    }
+  }
+
+  private setupScrollAnimations() {
+    const fadeElements = document.querySelectorAll('.fade-in');
+    
+    const fadeInObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+    
+    fadeElements.forEach(element => {
+      fadeInObserver.observe(element);
     });
   }
 
-  navigateToContact(): void {
-    this.router.navigate(['/contact']);
+  private handleHeaderScroll() {
+    const header = document.querySelector('header');
+    if (header && window.scrollY > 100) {
+      header.classList.add('scrolled');
+    } else if (header) {
+      header.classList.remove('scrolled');
+    }
   }
 }

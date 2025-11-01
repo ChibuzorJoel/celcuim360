@@ -10,7 +10,7 @@
   background-color: var(--color-dark);
   padding: 40px;
   border-radius: 8px;
-  max-width: 500px;
+  width: 800px;
   margin: 40px auto;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
@@ -42,7 +42,7 @@ label {
   padding: 15px;
   /* Background in primary color, text in dark color for contrast */
   background-color: black;
-  color: var(--color-dark);
+  color: #B88D2A ;
   border: none;
   border-radius: 4px;
   font-size: 1.1rem;
@@ -52,7 +52,8 @@ label {
 }
 
 .submit-button:hover {
-  background-color: #D4A94B; /* A slightly lighter gold on hover */
+  background-color: #D4A94B;
+  color: #000000; /* A slightly lighter gold on hover */
 }
 
 .submit-button:disabled {

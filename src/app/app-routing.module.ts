@@ -23,7 +23,7 @@ const routes: Routes = [
   { path: 'services', component: ServicesComponent },
   { path: 'project', component: ProjectComponent },
   { path: 'contact', component: ContactComponent },
-{path: 'Training', component: TrainingComponent},
+{path: 'training', component: TrainingComponent},
 {path: 'registration', component: RegistrationComponent},
 {path: 'consultation', component: ConsultationComponent},
   // 🔒 Admin route (protected)
@@ -31,7 +31,10 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, {
+    scrollPositionRestoration: 'top', // 👈 this does the magic
+    anchorScrolling: 'enabled'        // optional, enables #anchor links
+  })],
   exports: [RouterModule]
 })
 export class AppRoutingModule {}

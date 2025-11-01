@@ -1,113 +1,135 @@
-<section class="consultation-container">
-  <div class="container">
-    <!-- Intro Section -->
-    <div class="intro-section">
-      <h1>Consultation Services</h1>
-      <p class="intro-text">
-        Celcium360 offers consultation services that help organisations align people, process, and purpose. 
-        Our consulting engagements are designed to be practical, data-informed, and outcome-focused.
-      </p>
-    </div>
-
-    <!-- Services Slider -->
-    <div class="services-slider-container">
-      <div id="servicesCarousel" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner">
-          <!-- First slide with 3 cards -->
-          <div class="carousel-item active">
-            <div class="row g-4">
-              <div class="col-md-4" *ngFor="let service of services.slice(0, 3)">
-                <div class="service-card">
-                  <div class="service-icon"></div>
-                  <h3>{{ service.title }}</h3>
-                  <p>{{ service.description }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Second slide with 2 cards -->
-          <div class="carousel-item">
-            <div class="row g-4 justify-content-center">
-              <div class="col-md-6" *ngFor="let service of services.slice(3, 5)">
-                <div class="service-card">
-                  <div class="service-icon"></div>
-                  <h3>{{ service.title }}</h3>
-                  <p>{{ service.description }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+<div class="container">
+  <!-- Left Panel - Celcium360 Content -->
+  <div class="left-panel">
+    <div class="content-section">
+      <div class="celcium-content">
+        <h3>Celcium360 Consultation Services</h3>
+        <p>Celcium360 offers consultation services that help organisations align people, process, and purpose. Our consulting engagements are designed to be practical, data-informed, and outcome-focused.</p>
         
-        <!-- Carousel Controls -->
-        <button class="carousel-control-prev" type="button" data-bs-target="#servicesCarousel" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#servicesCarousel" data-bs-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Booking Section -->
-    <div class="booking-section">
-      <div class="booking-content">
-        <h2>Ready to Transform Your Organization?</h2>
-        <p>Book a consultation with our experts to discuss how we can help align your people, processes, and purpose.</p>
-        
-        <!-- Date Selection -->
-        <div class="date-selection" *ngIf="showCalendar || selectedDate">
-          <h3>Select Available Date</h3>
-          
-          <!-- Selected Date Display -->
-          <div class="selected-date" *ngIf="selectedDate">
-            <p>Selected: <strong>{{ getDayName(selectedDate) }}, {{ getFormattedDate(selectedDate) }}</strong></p>
+        <div class="services-list">
+          <div class="service-item">
+            <strong>HR Consulting:</strong> Practical support for policies, people processes, and organisational design.
           </div>
-
-          <!-- Calendar Grid -->
-          <div class="calendar-grid">
-            <div class="calendar-row">
-              <div 
-                *ngFor="let date of availableDates.slice(0, 3)"
-                class="date-card"
-                [class.selected]="selectedDate?.toDateString() === date.toDateString()"
-                (click)="selectDate(date)"
-              >
-                <span class="day-name">{{ getDayName(date) }}</span>
-                <span class="full-date">{{ getFormattedDate(date) }}</span>
-              </div>
-            </div>
-            <div class="calendar-row">
-              <div 
-                *ngFor="let date of availableDates.slice(3, 6)"
-                class="date-card"
-                [class.selected]="selectedDate?.toDateString() === date.toDateString()"
-                (click)="selectDate(date)"
-              >
-                <span class="day-name">{{ getDayName(date) }}</span>
-                <span class="full-date">{{ getFormattedDate(date) }}</span>
-              </div>
-            </div>
+          <div class="service-item">
+            <strong>Brand and Management Consulting:</strong> Aligning leadership, brand promise, and customer experience.
           </div>
-
-          <p class="note">* Additional dates available upon request</p>
-        </div>
-
-        <!-- Call to Action -->
-        <button 
-          class="cta-button"
-          (click)="bookConsultation()"
-        >
-          {{ selectedDate ? 'Confirm Booking' : 'Book a Consultation' }}
-        </button>
-
-        <div class="booking-note" *ngIf="!selectedDate && !showCalendar">
-          <p>Click above to see available consultation times</p>
+          <div class="service-item">
+            <strong>Customer Experience Strategy:</strong> Designing systems and processes that improve service delivery.
+          </div>
+          <div class="service-item">
+            <strong>Culture and Engagement Advisory:</strong> Building programs that increase employee satisfaction and productivity.
+          </div>
+          <div class="service-item">
+            <strong>Bespoke Advisory Services:</strong> Tailored solutions for unique organisational challenges.
+          </div>
         </div>
       </div>
     </div>
   </div>
-</section>
+
+  <!-- Right Panel - Calendar -->
+  <div class="right-panel">
+    <div class="calendar-section">
+      <div class="calendar-header">
+        <div class="booking-info">
+          <div class="avatar">C</div>
+          <div class="booking-details">
+            <h3>Celcium360</h3>
+            <div class="meta-info">
+              <span class="status">Active</span>
+              <span class="date">{{ currentMonth }} {{ currentYear }}</span>
+              <span class="type">Consultation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-container">
+        <div class="calendar-title">
+          <h4>Choose a Date & Time</h4>
+          <div class="month-nav">
+            <button class="nav-btn" (click)="previousMonth()">‹</button>
+            <button class="nav-btn" (click)="nextMonth()">›</button>
+          </div>
+        </div>
+
+        <table class="calendar">
+          <thead>
+            <tr>
+              <th>S</th>
+              <th>M</th>
+              <th>T</th>
+              <th>W</th>
+              <th>T</th>
+              <th>F</th>
+              <th>S</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let week of calendar">
+              <td *ngFor="let day of week" 
+                  [class]="getDayClass(day)"
+                  (click)="selectDate(day)">
+                {{ day?.date }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+
+        <div class="timezone">Times are shown in your local timezone</div>
+
+        <div *ngIf="selectedDate" class="time-slots">
+          <div *ngFor="let time of timeSlots" 
+               class="time-slot" 
+               [class.selected]="time === selectedTime"
+               (click)="selectTime(time)">
+            {{ time }}
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="selectedDate && selectedTime" class="email-section">
+        <h4>Enter your email to confirm</h4>
+        <input type="email" 
+               [(ngModel)]="userEmail" 
+               placeholder="Enter your email address"
+               class="email-input">
+                 <div class="message-section">
+    <h4>Additional Information</h4>
+    <textarea 
+      [(ngModel)]="userMessage"
+      placeholder="Help us prepare for you by sharing what you hope to achieve and any key details we should know. We look forward to making your consultation purposeful and rewarding."
+      class="message-input"
+      rows="7"
+      style="width: 100%;"
+    ></textarea>
+  </div>
+        <button class="confirm-btn" (click)="confirmBooking()" [disabled]="!isValidEmail()">
+          Confirm Booking
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Thank You Message -->
+<div *ngIf="showThankYou" class="thank-you-overlay">
+  <div class="thank-you-section">
+    <div class="thank-you-content">
+      <div class="success-icon">✓</div>
+      <h2>Thank You for Your Booking!</h2>
+      <p>Your consultation has been scheduled successfully.</p>
+      <div class="booking-details">
+        <p><strong>Date:</strong> {{ selectedDate | date:'fullDate' }}</p>
+        <p><strong>Time:</strong> {{ selectedTime }}</p>
+        <p><strong>Email:</strong> {{ userEmail }}</p>
+      </div>
+      <p class="confirmation-note">You will receive a confirmation email shortly with meeting details.</p>
+      <button class="back-btn" (click)="resetBooking()">Schedule Another Meeting</button>
+    </div>
+  </div>
+</div>

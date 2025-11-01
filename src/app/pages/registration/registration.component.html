@@ -1,7 +1,7 @@
 <div class="form-wrapper">
 
   <div class="form-container" *ngIf="!formSubmitted">
-    <h3>Celcium360 Program Registration</h3>
+    <h3>Celcium360 Registration</h3>
     <hr>
 
    <form (ngSubmit)="onSubmit(registrationForm)" #registrationForm="ngForm">
@@ -80,13 +80,7 @@
 
   <div class="thank-you-message" *ngIf="formSubmitted">
     <h2 class="text-primary-brand">Thank you for reaching out to Celcium360 Solutions Limited.</h2>
-    <p class="p-large">Your form has been successfully submitted. Our team will get back to you within **one business working day**.</p>
-    <p>In the meantime, follow us on our social media pages for helpful insights and updates.</p>
-    <div class="social-links">
-        <a href="#" class="social-icon">F</a>
-        <a href="#" class="social-icon">I</a>
-        <a href="#" class="social-icon">L</a>
-    </div>
+    <p class="p-large">Your form has been successfully submitted. Our team will get back to you within one business working day.</p>
   </div>
 
 
