@@ -11,6 +11,7 @@ import { LoginComponent } from './core/login/login.component';
 import { TrainingComponent } from './pages/training/training.component';
 import { RegistrationComponent } from './pages/registration/registration.component';
 import { ConsultationComponent } from './pages/consultation/consultation.component';
+import { BlogComponent } from './pages/blog/blog.component';
 
 const routes: Routes = [
   // 🔐 Auth routes
@@ -26,6 +27,7 @@ const routes: Routes = [
 {path: 'training', component: TrainingComponent},
 {path: 'registration', component: RegistrationComponent},
 {path: 'consultation', component: ConsultationComponent},
+{path: 'blog', component: BlogComponent},
   // 🔒 Admin route (protected)
   { path: 'dashboard', component: AdminDashboardComponent, canActivate: [AuthGuard] },
 ];

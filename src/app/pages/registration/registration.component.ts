@@ -28,26 +28,30 @@ export class RegistrationComponent {
 
   constructor(private dataService: ContactService) { }
 
-  onSubmit(form: NgForm) {
-    if (this.formSubmitted) return; 
+onSubmit(form: NgForm) {
+  if (this.formSubmitted) return;
 
-    this.dataService.saveRegistration(this.formData).subscribe({
-      next: (response) => {
-        console.log('Registration submitted successfully. Firebase key:', response.name);
-        
-        this.formSubmitted = true;
-        
-        // Set timeout to reset the form after 6 seconds
-        setTimeout(() => {
-          this.resetForm(form);
-        }, 6000);
-      },
-      error: (err: any) => {
-        console.error('Registration submission failed:', err);
-        alert('Submission failed. Please try again later.'); 
-      }
-    });
-  }
+  this.dataService.saveRegistration(this.formData).subscribe({
+    next: (response) => {
+      console.log('Registration submitted successfully. Firebase key:', response.name);
+
+      this.formSubmitted = true;
+
+      // ✅ Smoothly scroll to the top so success message is visible
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Reset form after 6 seconds
+      setTimeout(() => {
+        this.resetForm(form);
+      }, 6000);
+    },
+    error: (err: any) => {
+      console.error('Registration submission failed:', err);
+      alert('Submission failed. Please try again later.');
+    }
+  });
+}
+
 
   // Method to reset the form and show the form again
   resetForm(form: NgForm) {

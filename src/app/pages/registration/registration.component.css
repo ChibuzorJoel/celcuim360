@@ -99,17 +99,18 @@ label {
 /* Updated Thank You Styling */
 .thank-you-message {
   padding: 60px;
-  background-color: var(--color-dark);
-  color: var(--color-white);
+  background-color: #d4edda; /* Light green background */
+  color: #155724; /* Dark green text */
   border-radius: 8px;
-  max-width: 550px; /* Slightly wider for the message */
+  max-width: 550px;
   margin: 40px auto;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(184, 141, 42, 0.2); /* Subtle gold glow */
+  box-shadow: 0 4px 20px rgba(40, 167, 69, 0.2); /* Green glow */
+  border: 1px solid #c3e6cb; /* Green border */
 }
 
 .thank-you-message h2 {
-  color: var(--color-white);
+  color: #155724; /* Dark green */
   margin-bottom: 20px;
   font-size: 1.8rem;
 }

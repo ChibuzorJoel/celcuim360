@@ -1,1 +1,124 @@
-<p>blog works!</p>
+
+<!-- Article Hero Section -->
+<section class="article-hero">
+  <div class="container">
+    <div class="article-meta">
+      <span><i class="far fa-calendar"></i> {{ currentArticle.date }}</span>
+      <span><i class="far fa-user"></i> {{ currentArticle.author }}</span>
+      <span><i class="far fa-clock"></i> {{ currentArticle.readTime }}</span>
+      <span><i class="far fa-folder"></i> {{ currentArticle.category }}</span>
+    </div>
+ 
+    <p class="article-intro">
+      {{ currentArticle.excerpt }}
+    </p>
+    
+    <div class="header-actions">
+      <a routerLink="/registration" class="btn btn-primary">
+        <i class="fas fa-rocket"></i> Register for Program
+      </a>
+      <a routerLink="/consultation" class="btn btn-outline">
+        <i class="fas fa-calendar-check"></i> Book a Consultation
+      </a>
+    </div>
+    
+    <img [src]="currentArticle.imageUrl" 
+         [alt]="currentArticle.title" 
+         class="article-image"
+         loading="lazy">
+  </div>
+</section>
+
+<!-- Article Content -->
+<section class="article-content">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="article-body">
+          <p *ngFor="let paragraph of currentArticle.content">{{ paragraph }}</p>
+          
+          <h2>Why Emotional Intelligence Matters Now More Than Ever</h2>
+          
+          <p>The modern workplace presents unique challenges that demand emotionally intelligent leadership. With hybrid work models, diverse teams, and constant change, leaders must navigate complex interpersonal dynamics while maintaining team cohesion and productivity.</p>
+          
+          <div class="highlight-box">
+            <h3>The Business Case for EI</h3>
+            <p>Research consistently shows that organizations with emotionally intelligent leaders experience higher employee engagement (up to 78% higher), better team collaboration, and 20% higher productivity. Furthermore, companies that prioritize EI see 50% lower turnover rates and significantly improved customer satisfaction scores.</p>
+          </div>
+          
+          <h2>The Five Components of Emotional Intelligence</h2>
+          
+          <h3>1. Self-Awareness</h3>
+          <p>Understanding your own emotions, strengths, weaknesses, values, and drivers—and how these impact your thoughts and behavior. Self-aware leaders recognize how their feelings affect them, their job performance, and their team members.</p>
+          
+          <h3>2. Self-Regulation</h3>
+          <p>The ability to control or redirect disruptive impulses and moods and the propensity to suspend judgment—to think before acting. Leaders who self-regulate typically don't allow themselves to become too angry or jealous, and they don't make impulsive, careless decisions.</p>
+          
+          <h3>3. Motivation</h3>
+          <p>A passion to work for reasons beyond money or status and a propensity to pursue goals with energy and persistence. Motivated leaders are driven to achieve beyond expectations and remain optimistic even when facing setbacks.</p>
+          
+          <h3>4. Empathy</h3>
+          <p>The ability to understand the emotional makeup of other people and skill in treating people according to their emotional reactions. Empathetic leaders excel at building and retaining talent, cross-cultural sensitivity, and service to clients and customers.</p>
+          
+          <h3>5. Social Skills</h3>
+          <p>Proficiency in managing relationships and building networks and an ability to find common ground and build rapport. Leaders with strong social skills are effective in leading change, building teams, and persuasiveness.</p>
+          
+          <blockquote>
+            "The most effective leaders are all alike in one crucial way: they all have a high degree of what has come to be known as emotional intelligence. It's not that IQ and technical skills are irrelevant. They do matter, but they are the entry-level requirements for executive positions."
+          </blockquote>
+          
+          <h2>Practical Strategies for Developing EI in Your Leadership</h2>
+          
+          <p>Developing emotional intelligence is an ongoing journey, not a destination. Here are practical approaches to strengthen your EI capabilities:</p>
+          
+          <ul>
+            <li><strong>Practice mindful reflection:</strong> Set aside 10 minutes daily to reflect on your emotional responses and interactions.</li>
+            <li><strong>Seek honest feedback:</strong> Regularly ask for constructive feedback from colleagues, mentors, and team members.</li>
+            <li><strong>Develop active listening skills:</strong> Focus completely on the speaker, understand their message, and respond thoughtfully.</li>
+            <li><strong>Cultivate empathy through perspective-taking:</strong> Make a conscious effort to understand situations from others' viewpoints.</li>
+            <li><strong>Manage stress effectively:</strong> Develop healthy coping mechanisms to maintain clarity and composure under pressure.</li>
+          </ul>
+          
+          <div class="highlight-box">
+            <h3>Ready to Develop Your Emotional Intelligence?</h3>
+            <p>Our Leadership Development Program at Celcium360 incorporates evidence-based approaches to emotional intelligence that transform good managers into exceptional leaders. <a routerLink="/contact">Contact us today</a> to learn how we can help you and your organization develop these critical capabilities.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-4">
+        <div class="article-sidebar">
+          <div class="sidebar-widget">
+            <h3>About the Author</h3>
+            <p><strong>{{ currentArticle.author }}</strong> are seasoned professionals with decades of combined experience in organizational development, leadership training, and workplace culture transformation. Our team brings evidence-based approaches to developing practical solutions for modern workplace challenges.</p>
+          </div>
+          
+          <div class="sidebar-widget cta-widget">
+            <h3>Develop Your Leadership Skills</h3>
+            <p>Our Leadership Development Program helps managers and executives enhance their emotional intelligence and leadership capabilities.</p>
+            <a routerLink="/training" class="btn btn-light rounded-pill py-2 px-4 mt-3" style="width: 100%;">Explore Our Programs</a>
+          </div>
+          
+          <div class="sidebar-widget">
+            <h3>Share This Article</h3>
+            <div class="social-share">
+              <a (click)="shareArticle('linkedin')" class="social-link">
+                <i class="fab fa-linkedin-in"></i>
+              </a>
+              <a (click)="shareArticle('twitter')" class="social-link">
+                <i class="fab fa-twitter"></i>
+              </a>
+              <a (click)="shareArticle('facebook')" class="social-link">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a (click)="shareArticle('copy')" class="social-link">
+                <i class="fas fa-link"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+ 
