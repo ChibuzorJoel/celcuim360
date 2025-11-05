@@ -1,7 +1,7 @@
  /* In your home.component.css or a global stylesheet */
 .header-carousel-item-img-1 {
     /* Sets a decent default height for mobile screens */
-    min-height: 400px; 
+    min-height: 550px; 
     background-repeat: no-repeat;
     background-size: cover;
     /* Ensures the video covers the space without distortion */
@@ -10,14 +10,14 @@
 
 /* Ensure the video scales within this height */
 .header-carousel-item-img-1 video {
-    height: 100%;
+    min-height: 550px;
     object-fit: cover; /* Important to make the video scale correctly */
 }
 
 /* You might need to adjust the height for larger screens */
 @media (min-width: 992px) {
     .header-carousel-item-img-1 {
-        min-height: 500px; /* Taller height for desktop */
+        min-height: 550px; /* Taller height for desktop */
     }
 }
  .project-item {
