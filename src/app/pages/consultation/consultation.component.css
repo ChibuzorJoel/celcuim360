@@ -225,12 +225,12 @@
 }
 
 .calendar td.weekday {
-  background: #2d3748;
+  background: #B88D2A;
   color: white;
 }
 
 .calendar td.weekday:hover {
-  background: #4a5568;
+  background: #B88D2A;
 }
 
 .calendar td.weekday.active {

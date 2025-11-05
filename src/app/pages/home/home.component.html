@@ -2,7 +2,7 @@
 <div class="header-carousel owl-carousel">
     <div class="header-carousel-item">
         <div class="header-carousel-item-img-1 position-relative">
-            <video #videoPlayer class="w-100" style="min-height: 420px;" autoplay loop muted playsinline>
+            <video #videoPlayer class="w-100" autoplay loop muted playsinline>
                 <source src="assets/lib/celcium slider.mp4" type="video/mp4">
             </video>
         </div>
@@ -14,11 +14,12 @@
                     Work Smarter. Lead Better. Grow Sustainably.
                 </h1>
                 <p class="mb-5 fs-5 animate__animated animate__fadeInUp" style="animation-delay: 1.5s;">
-                    Celcium360 Solutions builds workplaces where people and performance thrive — through practical
-                    systems, human-centered solutions, and purposeful growth.
+                    Celcium360solutions empowers organizations and professionals to bridge the gap between purpose and
+                    performance — through people-centered growth, mindset transformation, and strategic business
+                    solutions.
                 </p>
                 <a class="btn btn-primary rounded-pill py-3 px-5 mb-4 me-4 animate__animated animate__fadeInUp"
-                    style="animation-delay: 1.7s;" routerLink="/about">Explore WorkSmart 360</a>
+                    style="animation-delay: 1.7s;" routerLink="/worksmart">Explore WorkSmart 360</a>
                 <a class="btn btn-dark rounded-pill py-3 px-5 mb-4 animate__animated animate__fadeInUp"
                     style="animation-delay: 1.7s;" routerLink="/contact">Start Learning</a>
             </div>
@@ -31,6 +32,7 @@
 <div class="container-fluid about bg-light py-5">
     <div class="container py-5">
         <div class="row g-5 align-items-center">
+
             <div class="col-lg-6 col-xl-5 wow fadeInLeft" data-wow-delay="0.3s">
                 <div class="about-img position-relative text-center">
                     <video class="img-fluid w-100 rounded-top bg-white" autoplay muted loop playsinline controls>
@@ -42,12 +44,11 @@
 
             <div class="col-lg-6 col-xl-7 wow fadeInRight" data-wow-delay="0.3s">
                 <h4 class="text-primary">About Us</h4>
-                <h1 class="display-5 mb-4">Your Partner in People & Performance</h1>
+                <h1 class="display-5 mb-4">Your Trusted Partner in People & Performance</h1>
                 <p class="text ps-4 mb-4">
-                    Celcium360 Solutions is a people-centered consulting and training organization dedicated to
-                    improving how work happens. We partner with organizations and individuals to design practical
-                    interventions that enhance employee experience, leadership effectiveness, and measurable
-                    performance.
+                    Celcium360solutions is a people and performance consulting firm helping businesses and
+                    professionals achieve sustainable growth through practical strategy, training, and mindset
+                    transformation.
                 </p>
 
                 <div class="row g-4 justify-content-between mb-5">
@@ -55,52 +56,19 @@
                         <p class="text-dark"><i class="fas fa-check-circle text-primary me-1"></i> People-Centered
                             Approach</p>
                         <p class="text-dark mb-0"><i class="fas fa-check-circle text-primary me-1"></i> Expert-Led
-                            Training</p>
+                            Training Programs</p>
                     </div>
                     <div class="col-lg-6 col-xl-7">
-                        <p class="text-dark"><i class="fas fa-check-circle text-primary me-1"></i> Practical Business
-                            Strategies</p>
-                        <p class="text-dark mb-0"><i class="fas fa-check-circle text-primary me-1"></i> Measurable
+                        <p class="text-dark"><i class="fas fa-check-circle text-primary me-1"></i> Business
+                            Transformation Strategies</p>
+                        <p class="text-dark mb-0"><i class="fas fa-check-circle text-primary me-1"></i> Proven
                             Performance Results</p>
                     </div>
                 </div>
 
                 <div class="row g-4 justify-content-between mb-5">
                     <div class="col-xl-5">
-                        <a routerLink="/about" class="btn btn-primary rounded-pill py-3 px-5">Discover More</a>
-                    </div>
-                    <div class="col-xl-7 mb-5">
-                        <div class="about-customer d-flex position-relative">
-                            <img src="../../../assets/img/customer-img-1.jpg"
-                                class="img-fluid btn-xl-square position-absolute" style="left: 0; top: 0;" alt="Image">
-                            <img src="../../../assets/img/customer-img-2.jpg"
-                                class="img-fluid btn-xl-square position-absolute" style="left: 45px; top: 0;"
-                                alt="Image">
-                            <img src="../../../assets/img/customer-img-3.jpg"
-                                class="img-fluid btn-xl-square position-absolute" style="left: 90px; top: 0;"
-                                alt="Image">
-                            <img src="../../../assets/img/customer-img-1.jpg"
-                                class="img-fluid btn-xl-square position-absolute" style="left: 135px; top: 0;"
-                                alt="Image">
-                            <div class="position-absolute text-dark" style="left: 220px; top: 10px;">
-                                <p class="mb-0">500+ Trusted</p>
-                                <p class="mb-0">Global Clients</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-4 text-center align-items-center justify-content-center">
-                    <div class="col-sm-4" *ngFor="let item of counterData">
-                        <div class="rounded" style="background-color:#B88D2A;">
-                            <div class="d-flex align-items-center justify-content-center">
-                                <span #counterValue class="fs-1 fw-bold text-white">0</span>
-                                <h4 class="{{item.numColor}} fs-1 mb-0 fw-bold">{{item.suffix}}</h4>
-                            </div>
-                            <div class="w-100 d-flex align-items-center justify-content-center">
-                                <p class="{{item.textColor}} mb-0">{{item.label}}</p>
-                            </div>
-                        </div>
+                        <a href="#" class="btn btn-primary rounded-pill py-3 px-5">Discover More</a>
                     </div>
                 </div>
             </div>
@@ -108,6 +76,27 @@
     </div>
 </div>
 <!-- About End -->
+  <div class="d-flex justify-content-center flex-wrap gap-3 my-4">
+    <div *ngFor="let item of counterData" class="text-center rounded p-3"
+        style="min-width: 220px; flex: 1 1 220px; background-color: #B88D2A; color: white;">
+        <!-- Numeric or Text counter -->
+        <h3 #counterValue [ngClass]="item.textColor" class="fw-bold display-6 mb-0">
+            <ng-container *ngIf="isNumber(item.target); else textOnly" style="background-color: #B88D2A;">
+                {{ item.target }}{{ item.suffix ? item.suffix : '' }}
+            </ng-container>
+
+            <ng-template #textOnly>
+                {{ item.label }}
+            </ng-template>
+        </h3>
+
+        <!-- Label (only for numeric counters) -->
+        <p *ngIf="isNumber(item.target)" [ngClass]="item.textColor" class="mt-2 mb-0 small"
+            style="background-color: #B88D2A;">
+            {{ item.label }}
+        </p>
+    </div>
+</div>
 
 <!-- Services Start -->
 <div class="container-fluid service py-5">
@@ -124,7 +113,8 @@
                     </div>
                     <div class="service-content text-center p-4">
                         <div class="service-content-inner">
-                            <a routerLink="/services" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-users fa-2x me-2"></i>
+                            <a routerLink="/services" class="h4 mb-4 d-inline-flex text-start"><i
+                                    class="fas fa-users fa-2x me-2"></i>
                                 Workforce Readiness & Generational Synergy</a>
                             <p class="mb-4">Prepare new talent and equip leaders to bridge generational gaps with
                                 empathy and skill, fostering collaboration across all age groups.</p>
@@ -156,7 +146,8 @@
                     </div>
                     <div class="service-content text-center p-4">
                         <div class="service-content-inner">
-                            <a routerLink="/services" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-star fa-2x me-2"></i>
+                            <a routerLink="/services" class="h4 mb-4 d-inline-flex text-start"><i
+                                    class="fas fa-star fa-2x me-2"></i>
                                 Customer Experience Consulting</a>
                             <p class="mb-4">Design systems and processes that improve service delivery and align brand
                                 promise with customer experience.</p>
@@ -182,7 +173,8 @@
                 </div>
             </div>
             <div class="col-12">
-                <a class="btn btn-primary rounded-pill py-3 px-5 wow fadeInUp" data-wow-delay="0.1s" routerLink="/services">View All
+                <a class="btn btn-primary rounded-pill py-3 px-5 wow fadeInUp" data-wow-delay="0.1s"
+                    routerLink="/services">View All
                     Services</a>
             </div>
         </div>
@@ -201,14 +193,16 @@
                 <div class="col-md-6">
                     <div class="project-item position-relative">
                         <div class="project-img">
-                            <img src="../../../assets/img/img/1hs.png" style="height: 300px; width: 100px;" class="img-fluid w-100 rounded" alt="Image">
+                            <img src="../../../assets/img/img/1hs.png" style="height: 300px; width: 100px;"
+                                class="img-fluid w-100 rounded" alt="Image">
                         </div>
                         <div class="project-content bg-light rounded p-4 text-center">
                             <div class="project-icon mb-3">
                                 <i class="fas fa-brain fa-4x text-primary"></i>
                             </div>
                             <p class="text-dark fs-5 mb-3">Mindset Reengineering</p>
-                            <a routerLink="/training" class="h4 d-block">Reshaping Thinking for Growth and Adaptability</a>
+                            <a routerLink="/training" class="h4 d-block">Reshaping Thinking for Growth and
+                                Adaptability</a>
                             <div class="pt-4">
                                 <a class="btn btn-primary rounded-pill py-3 px-5" routerLink="/training">Read More</a>
                             </div>
@@ -219,14 +213,16 @@
                 <div class="col-md-6">
                     <div class="project-item position-relative">
                         <div class="project-img">
-                            <img src="../../../assets/img/img/2hs.png" style="height: 300px; width: 100px;" class="img-fluid w-100 rounded" alt="Image">
+                            <img src="../../../assets/img/img/2hs.png" style="height: 300px; width: 100px;"
+                                class="img-fluid w-100 rounded" alt="Image">
                         </div>
                         <div class="project-content bg-light rounded p-4 text-center">
                             <div class="project-icon mb-3">
                                 <i class="fas fa-cogs fa-4x text-primary"></i>
                             </div>
                             <p class="text-dark fs-5 mb-3">People & Process Alignment</p>
-                            <a routerLink="/training" class="h4 d-block">Improving Collaboration and Organizational Efficiency</a>
+                            <a routerLink="/training" class="h4 d-block">Improving Collaboration and Organizational
+                                Efficiency</a>
                             <div class="pt-4">
                                 <a class="btn btn-primary rounded-pill py-3 px-5" routerLink="/training">Read More</a>
                             </div>
@@ -242,14 +238,16 @@
                 <div class="col-md-6">
                     <div class="project-item position-relative">
                         <div class="project-img">
-                            <img src="../../../assets/img/img/8hs.png" style="height: 300px; width: 100px;" class="img-fluid w-100 rounded" alt="Image">
+                            <img src="../../../assets/img/img/8hs.png" style="height: 300px; width: 100px;"
+                                class="img-fluid w-100 rounded" alt="Image">
                         </div>
                         <div class="project-content bg-light rounded p-4 text-center">
                             <div class="project-icon mb-3">
                                 <i class="fas fa-chart-line fa-4x text-primary"></i>
                             </div>
                             <p class="text-dark fs-5 mb-3">Performance Transformation</p>
-                            <a routerLink="/training" class="h4 d-block">Driving Measurable Results and Sustainable Growth</a>
+                            <a routerLink="/training" class="h4 d-block">Driving Measurable Results and Sustainable
+                                Growth</a>
                             <div class="pt-4">
                                 <a class="btn btn-primary rounded-pill py-3 px-5" routerLink="/training">Read More</a>
                             </div>
@@ -260,14 +258,16 @@
                 <div class="col-md-6">
                     <div class="project-item position-relative">
                         <div class="project-img">
-                            <img src="../../../assets/img/img/9hs.png" style="height: 300px; width: 100px;" class="img-fluid w-100 rounded" alt="Image">
+                            <img src="../../../assets/img/img/9hs.png" style="height: 300px; width: 100px;"
+                                class="img-fluid w-100 rounded" alt="Image">
                         </div>
                         <div class="project-content bg-light rounded p-4 text-center">
                             <div class="project-icon mb-3">
                                 <i class="fas fa-graduation-cap fa-4x text-primary"></i>
                             </div>
                             <p class="text-dark fs-5 mb-3">Leadership Development</p>
-                            <a routerLink="/training" class="h4 d-block">Equipping Leaders with Purpose, Empathy and Strategic
+                            <a routerLink="/training" class="h4 d-block">Equipping Leaders with Purpose, Empathy and
+                                Strategic
                                 Direction</a>
                             <div class="pt-4">
                                 <a class="btn btn-primary rounded-pill py-3 px-5" routerLink="/training">Read More</a>
@@ -297,7 +297,7 @@
                         <h4 class="text-primary mb-2">Leadership & Culture</h4>
                         <div class="d-flex justify-content-between">
                             <p class="mb-0"><span class="text-dark fw-bold">On</span> Mar 14, 2024</p>
-                            <p class="mb-0"><span class="text-dark fw-bold">By</span> Celcium360 Experts</p>
+                            <p class="mb-0"><span class="text-dark fw-bold">By</span> celcium360solutions Experts</p>
                         </div>
                     </div>
                     <div class="project-img">
@@ -319,7 +319,7 @@
                         <h4 class="text-primary mb-2">Customer Experience</h4>
                         <div class="d-flex justify-content-between">
                             <p class="mb-0"><span class="text-dark fw-bold">On</span> Mar 14, 2024</p>
-                            <p class="mb-0"><span class="text-dark fw-bold">By</span> Celcium360 Experts</p>
+                            <p class="mb-0"><span class="text-dark fw-bold">By</span> celcium360solutions Experts</p>
                         </div>
                     </div>
                     <div class="project-img">
@@ -341,7 +341,7 @@
                         <h4 class="text-primary mb-2">Personal Growth</h4>
                         <div class="d-flex justify-content-between">
                             <p class="mb-0"><span class="text-dark fw-bold">On</span> Mar 14, 2024</p>
-                            <p class="mb-0"><span class="text-dark fw-bold">By</span> Celcium360 Experts</p>
+                            <p class="mb-0"><span class="text-dark fw-bold">By</span> celcium360solutions Experts</p>
                         </div>
                     </div>
                     <div class="project-img">
@@ -371,9 +371,9 @@
                     <h4 class="text-primary">Client Feedback</h4>
                     <h1 class="display-4 mb-4">What Our Clients Say</h1>
                     <p class="mb-4">Discover how organizations and professionals are transforming their workplaces and
-                        careers with Celcium360 Solutions.</p>
-                    <a class="btn btn-primary rounded-pill text-white py-3 px-5" routerLink="/services">Read All Reviews <i
-                            class="fas fa-arrow-right ms-2"></i></a>
+                        careers with celcium360solutions.</p>
+                    <a class="btn btn-primary rounded-pill text-white py-3 px-5" routerLink="/services">Read All Reviews
+                        <i class="fas fa-arrow-right ms-2"></i></a>
                 </div>
             </div>
             <div class="col-xl-8">
@@ -508,8 +508,8 @@
             <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.3s">
                 <div class="faq-img RotateMoveRight rounded">
                     <img src="../../../assets/img/faq-img.jpg" class="img-fluid rounded w-100" alt="Image">
-                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5 w-50" routerLink="/services">Read More Q & A <i
-                            class="fas fa-arrow-right ms-2"></i></a>
+                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5 w-50"
+                        routerLink="/services">Read More Q & A <i class="fas fa-arrow-right ms-2"></i></a>
                 </div>
             </div>
         </div>

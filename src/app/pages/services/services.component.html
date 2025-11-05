@@ -1,84 +1,168 @@
-<!-- Header Start -->
-<div class="container-fluid bg-breadcrumb">
-    <div class="bg-breadcrumb-single"></div>
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4 wow fadeInDown" data-wow-delay="0.1s">Our Services</h4>
-        <ol class="breadcrumb justify-content-center mb-0 wow fadeInDown" data-wow-delay="0.3s">
-            <li class="breadcrumb-item"><a routerLink="/home">Home</a></li>
-            <li class="breadcrumb-item active text-white">Services</li>
-        </ol>    
-    </div>
-</div>
-<!-- Header End -->
-
 <!-- Services Start -->
 <div class="container-fluid service py-5">
     <div class="container py-5">
         <div class="text-center mx-auto pb-5 wow fadeInUp" data-wow-delay="0.1s" style="max-width: 800px;">
             <h4 class="text-primary">Our Services</h4>
             <h1 class="display-4">Strategic Consulting & People-Centered Solutions</h1>
+            <p class="lead">At celcium360solutions Solutions Limited, we provide strategic consulting and people-centered business solutions that help organizations work smarter, grow sustainably, and build exceptional workplace experiences.</p>
         </div>
-        <div class="row g-4 justify-content-center text-center">
-            <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.1s">
-                <div class="service-item bg-light rounded">
-                    <div class="service-img">
-                        <img src="../../../assets/img/img/7hs.png" class="img-fluid w-100 rounded-top" alt="">
+
+        <!-- Service Categories Tabs -->
+        <div class="row justify-content-center mb-5">
+            <div class="col-12">
+                <ul class="nav nav-pills justify-content-center mb-4" id="serviceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="people-tab" data-bs-toggle="pill" data-bs-target="#people" type="button" role="tab">People & Culture</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="business-tab" data-bs-toggle="pill" data-bs-target="#business" type="button" role="tab">Business Strategy</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="specialized-tab" data-bs-toggle="pill" data-bs-target="#specialized" type="button" role="tab">Specialized Services</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="serviceTabsContent">
+            <!-- People & Culture Services -->
+            <div class="tab-pane fade show active" id="people" role="tabpanel" aria-labelledby="people-tab">
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.1s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="../../../assets/img/img/7hs.png" class="img-fluid w-100 rounded-top" alt="Workforce Readiness">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/workforce-readiness" class="h4 mb-3 d-block text-start"><i class="fas fa-users fa-2x me-2"></i>Workforce Readiness & Generational Synergy</a>
+                                    <p class="mb-4">Bridge the generational divide by preparing new talent for the corporate world and equipping leaders to manage across age groups with empathy and emotional intelligence.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="service-content text-center p-4">
-                        <div class="service-content-inner">
-                            <a routerLink="/registration" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-users fa-2x me-2"></i>
-                                Workforce Readiness & Generational Synergy</a>
-                            <p class="mb-4">Prepare new talent and equip leaders to bridge generational gaps with
-                                empathy and skill, fostering collaboration across all age groups.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/registration">Visit</a>
+                    
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.2s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="../../../assets/img/img/5hs.png" class="img-fluid w-100 rounded-top" alt="HR Consulting">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/hr-consulting" class="h4 mb-3 d-block text-start"><i class="fas fa-hands-helping fa-2x me-2"></i> HR Consulting</a>
+                                    <p class="mb-4">Design and implement effective HR systems and people strategies that drive performance and employee engagement.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.3s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="../../../assets/img/img/6hs.png" class="img-fluid w-100 rounded-top" alt="Customer Experience">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/customer-experience" class="h4 mb-3 d-block text-start"><i class="fas fa-star fa-2x me-2"></i>Customer Experience Consulting</a>
+                                    <p class="mb-4">Transform customer experience and strengthen brand perception through empathy-driven strategies and journey optimization.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.3s">
-                <div class="service-item bg-light rounded">
-                    <div class="service-img">
-                        <img src="../../../assets/img/img/5hs.png" class="img-fluid w-100 rounded-top" alt="">
+            
+            <!-- Business Strategy Services -->
+            <div class="tab-pane fade" id="business" role="tabpanel" aria-labelledby="business-tab">
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.1s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="assets/img/img/13hs.png" class="img-fluid w-100 rounded-top" alt="Corporate Consulting">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/corporate-consulting" class="h4 mb-3 d-block text-start"><i class="fas fa-building fa-2x me-2"></i> Corporate Consulting</a>
+                                    <p class="mb-4">Strengthen organizational structure, strategy, and sustainability with holistic advisory services.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="service-content text-center p-4">
-                        <div class="service-content-inner">
-                            <a routerLink="/consultation" class="h4 mb-4 d-inline-flex text-start"><i
-                                    class="fas fa-hands-helping fa-2x me-2"></i> HR Consulting</a>
-                            <p class="mb-4">Practical support for policies, people processes, and organizational design
-                                to drive engagement and performance.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/consultation">Visit</a>
+                    
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.2s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="assets/img/img/14hs.png"class="img-fluid w-100 rounded-top" alt="Startup Consulting">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/startup-consulting" class="h4 mb-3 d-block text-start"><i class="fas fa-rocket fa-2x me-2"></i> Startup Consulting</a>
+                                    <p class="mb-4">Tailored guidance for startups and emerging businesses to set up, structure, and scale effectively.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.3s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="assets/img/img/15hs.png" class="img-fluid w-100 rounded-top" alt="Brand Management">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/brand-management" class="h4 mb-3 d-block text-start"><i class="fas fa-trademark fa-2x me-2"></i> Brand Management Consulting</a>
+                                    <p class="mb-4">Create, manage, and evolve strong, meaningful brands that connect with people and inspire trust.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.5s">
-                <div class="service-item bg-light rounded">
-                    <div class="service-img">
-                        <img src="../../../assets/img/img/6hs.png" class="img-fluid w-100 rounded-top" alt="">
-                    </div>
-                    <div class="service-content text-center p-4">
-                        <div class="service-content-inner">
-                            <a routerLink="/consultation" class="h4 mb-4 d-inline-flex text-start"><i class="fas fa-star fa-2x me-2"></i>
-                                Customer Experience Consulting</a>
-                            <p class="mb-4">Design systems and processes that improve service delivery and align brand
-                                promise with customer experience.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/consultation">Visit</a>
+            
+            <!-- Specialized Services -->
+            <div class="tab-pane fade" id="specialized" role="tabpanel" aria-labelledby="specialized-tab">
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.1s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="assets/img/img/16hs.png" class="img-fluid w-100 rounded-top" alt="Accounting Consulting">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/accounting-consulting" class="h4 mb-3 d-block text-start"><i class="fas fa-calculator fa-2x me-2"></i> Accounting Consulting</a>
+                                    <p class="mb-4">Build clarity, compliance, and confidence in financial systems with structured bookkeeping, reporting, and analysis support.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-4 col-xl-3 wow fadeInUp" data-wow-delay="0.7s">
-                <div class="service-item bg-light rounded">
-                    <div class="service-img">
-                        <img src="../../../assets/img/img/3hs.png" class="img-fluid w-100 rounded-top" alt="">
+                    
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.2s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="assets/img/img/17hs.png" class="img-fluid w-100 rounded-top" alt="Corporate Services">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/corporate-services" class="h4 mb-3 d-block text-start"><i class="fas fa-cogs fa-2x me-2"></i> Corporate Services Consulting</a>
+                                    <p class="mb-4">Comprehensive corporate support solutions to help businesses operate smoothly and professionally.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="service-content text-center p-4">
-                        <div class="service-content-inner">
-                            <a routerLink="/contact" class="h4 mb-4 d-inline-flex text-start"><i
-                                    class="fas fa-chart-line fa-2x me-2"></i> Business Transformation</a>
-                            <p class="mb-4">Reimagine processes and drive culture change for sustainable organizational
-                                growth and performance improvement.</p>
-                            <a class="btn btn-light rounded-pill py-2 px-4" routerLink="/contact">Visit</a>
+                    
+                    <div class="col-md-6 col-lg-4 wow fadeInUp" data-wow-delay="0.3s">
+                        <div class="service-item bg-light rounded h-100">
+                            <div class="service-img">
+                                <img src="assets/img/img/18hs.png" class="img-fluid w-100 rounded-top" alt="Customized Solutions">
+                            </div>
+                            <div class="service-content text-center p-4 d-flex flex-column">
+                                <div class="service-content-inner flex-grow-1">
+                                    <a routerLink="/customized-solutions" class="h4 mb-3 d-block text-start"><i class="fas fa-puzzle-piece fa-2x me-2"></i> Customized Business Solutions</a>
+                                    <p class="mb-4">Tailored solutions addressing unique organizational needs and challenges for optimal performance.</p>
+                                </div>
+                                
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -87,130 +171,3 @@
     </div>
 </div>
 <!-- Services End -->
-
-<div class="container-fluid testimonial bg-light py-5">
-    <div class="container py-5">
-        <div class="row g-4 align-items-center">
-            <div class="col-xl-4 wow fadeInLeft" data-wow-delay="0.1s">
-                <div class="h-100 rounded">
-                    <h4 class="text-primary">Client Feedback</h4>
-                    <h1 class="display-4 mb-4">What Our Clients Say</h1>
-                    <p class="mb-4">Discover how organizations and professionals are transforming their workplaces and
-                        careers with Celcium360 Solutions.</p>
-                </div>
-            </div>
-            <div class="col-xl-8">
-                <div class="testimonial-carousel owl-carousel wow fadeInUp position-relative" data-wow-delay="0.1s">
-                    <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.3s">
-                        <div class="d-flex">
-                            <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"WorkSmart 360 transformed how our team collaborates and performs. It's more
-                                than training — it's a mindset shift that has improved our culture and delivered
-                                measurable results."</p>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <div class="my-auto text-end">
-                                <h5>HR Manager</h5>
-                                <p class="mb-0">Lagos Tech Firm</p>
-                            </div>
-                            <div class="bg-white rounded-circle ms-3">
-                                <img src="../../../assets/img/testimonial-1.jpg" class="rounded-circle"
-                                    style="width: 80px; height: 80px;" alt="">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="testimonial-item bg-white rounded p-4 wow fadeInUp" data-wow-delay="0.5s">
-                        <div class="d-flex">
-                            <div><i class="fas fa-quote-left fa-3x text-dark me-3"></i></div>
-                            <p class="mt-4">"The generational synergy consulting helped us bridge gaps between
-                                experienced leaders and new talent. Our team now works with greater empathy and
-                                understanding."</p>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <div class="my-auto text-end">
-                                <h5>Business Executive</h5>
-                                <p class="mb-0">Financial Services</p>
-                            </div>
-                            <div class="bg-white rounded-circle ms-3">
-                                <img src="../../../assets/img/testimonial-2.jpg" class="rounded-circle"
-                                    style="width: 80px; height: 80px;" alt="">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- FAQ Start -->
-<div class="container-fluid faq py-5">
-    <div class="container py-5">
-        <div class="row g-5 align-items-center">
-            <div class="col-lg-6 wow fadeInLeft" data-wow-delay="0.1s">
-                <div class="pb-5">
-                    <h4 class="text-primary">FAQs</h4>
-                    <h1 class="display-4">Get the Answers to Common Questions</h1>
-                </div>
-                <div class="accordion bg-light rounded p-4" id="accordionExample">
-                    <div class="accordion-item border-0 mb-4">
-                        <h2 class="accordion-header" id="headingOne">
-                            <button class="accordion-button text-dark fs-5 fw-bold rounded-top" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseTOne">
-                                What types of organizations do you work with?
-                            </button>
-                        </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                            <div class="accordion-body my-2">
-                                <p>We work with organizations of all sizes - from startups and SMEs to large corporations across various industries. Our solutions are tailored to meet the unique needs of each client, whether they're looking to transform their culture, develop their leaders, or enhance customer experience.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="accordion-item border-0 mb-4">
-                        <h2 class="accordion-header" id="headingTwo">
-                            <button class="accordion-button collapsed text-dark fs-5 fw-bold rounded-top" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                How do you customize training programs?
-                            </button>
-                        </h2>
-                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                            <div class="accordion-body my-2">
-                                <p>We begin with a comprehensive needs assessment to understand your organization's specific challenges and goals. Our programs are then customized to address your unique culture, industry requirements, and performance objectives, ensuring maximum relevance and impact.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="accordion-item border-0 mb-4">
-                        <h2 class="accordion-header" id="headingThree">
-                            <button class="accordion-button collapsed text-dark fs-5 fw-bold rounded-top" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                                Can individuals enroll in your courses?
-                            </button>
-                        </h2>
-                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-                            <div class="accordion-body my-2">
-                                <p>Yes! We offer both corporate programs and individual courses. Professionals can join our scheduled cohorts for personal development, leadership skills, emotional intelligence, and career growth programs designed for various experience levels.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="accordion-item border-0 mb-0">
-                        <h2 class="accordion-header" id="headingFour">
-                            <button class="accordion-button collapsed text-dark fs-5 fw-bold rounded-top" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                                What makes WorkSmart 360 different?
-                            </button>
-                        </h2>
-                        <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
-                            <div class="accordion-body my-2">
-                                <p>WorkSmart 360 is our signature framework that integrates mindset reengineering, people-process alignment, and performance transformation. It's a holistic approach that goes beyond traditional training to create lasting behavioral change and sustainable business results.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.3s">
-                <div class="faq-img RotateMoveRight rounded">
-                    <img src="../../../assets/img/faq-img.jpg" class="img-fluid rounded w-100" alt="Image">
-                    <a class="faq-btn btn btn-primary rounded-pill text-white py-3 px-5" routerLink="/consultation">Book a Consultation <i class="fas fa-arrow-right ms-2"></i></a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- FAQ End -->

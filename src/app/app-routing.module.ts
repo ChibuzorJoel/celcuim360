@@ -12,6 +12,7 @@ import { TrainingComponent } from './pages/training/training.component';
 import { RegistrationComponent } from './pages/registration/registration.component';
 import { ConsultationComponent } from './pages/consultation/consultation.component';
 import { BlogComponent } from './pages/blog/blog.component';
+import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
 
 const routes: Routes = [
   // 🔐 Auth routes
@@ -28,6 +29,7 @@ const routes: Routes = [
 {path: 'registration', component: RegistrationComponent},
 {path: 'consultation', component: ConsultationComponent},
 {path: 'blog', component: BlogComponent},
+{path: 'worksmart', component: WorkSmartComponent},
   // 🔒 Admin route (protected)
   { path: 'dashboard', component: AdminDashboardComponent, canActivate: [AuthGuard] },
 ];

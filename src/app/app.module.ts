@@ -19,6 +19,7 @@ import { TrainingComponent } from './pages/training/training.component';
 import { RegistrationComponent } from './pages/registration/registration.component';
 import { ConsultationComponent } from './pages/consultation/consultation.component';
 import { BlogComponent } from './pages/blog/blog.component';
+import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
 
 @NgModule({
   declarations: [
@@ -35,7 +36,8 @@ import { BlogComponent } from './pages/blog/blog.component';
     TrainingComponent,
     RegistrationComponent,
     ConsultationComponent,
-    BlogComponent
+    BlogComponent,
+    WorkSmartComponent,
   ],
   imports: [
     BrowserModule,
