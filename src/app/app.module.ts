@@ -22,6 +22,8 @@ import { BlogComponent } from './pages/blog/blog.component';
 import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
 import { ProgramComponent } from './pages/program/program.component';
 import { AdminRegistrationComponent } from './core/admin-registration/admin-registration.component';
+import { StudentDashboardComponent } from './pages/student-dashboard/student-dashboard.component';
+import { StudentLoginComponent } from './pages/student-login/student-login.component';
 
 @NgModule({
   declarations: [
@@ -42,6 +44,8 @@ import { AdminRegistrationComponent } from './core/admin-registration/admin-regi
     WorkSmartComponent,
     ProgramComponent,
     AdminRegistrationComponent,
+    StudentDashboardComponent,
+    StudentLoginComponent,
   ],
   imports: [
     BrowserModule,

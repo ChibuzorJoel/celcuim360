@@ -52,7 +52,8 @@ export class RegistrationComponent implements OnInit, OnDestroy {
   formSubmitted = false;
   isLoading = false;
   errorMessage = '';
-  assessmentError: string = '';
+  assessmentError = '';
+
   formData: RegistrationFormData = {
     fullName: '',
     email: '',
@@ -73,48 +74,47 @@ export class RegistrationComponent implements OnInit, OnDestroy {
   assessmentResult: AssessmentResult | null = null;
 
   statementFile: File | null = null;
-  callUpFile: File | null = null;
+  callUpFile:    File | null = null;
   docError = '';
 
   paymentProofFile: File | null = null;
   paymentProofPreview = '';
   paymentError = '';
 
-  // Terms
-  termsAccepted = false;
-  showTermsModal = false;
+  // Consent checkbox (replaces old T&C)
+  consentAccepted = false;
 
   readonly paymentDetails = {
-    accountName:      'Celcium360 Solutions',
-    bankName:         '[Bank Name]',
-    accountNumber:    '[Account Number]',
+    accountName:      'Celcium360 Solutions Limited',
+    bankName:         'Zenith Bank',
+    accountNumber:    '1310892857',
     discountedAmount: '₦50,000',
     standardAmount:   '₦200,000'
   };
 
   private readonly assessmentSectionA: AssessmentQuestion[] = [
-    { id:'nysc_1', question:"You're assigned a task late Friday with minimal guidance and a Monday deadline.", options:[{key:'a',label:'Wait till Monday to ask questions',isCorrect:false},{key:'b',label:'Attempt it based on assumptions and submit',isCorrect:false},{key:'c',label:'Send a quick clarification message, proceed with best judgment, and flag uncertainties',isCorrect:true},{key:'d',label:"Leave it since it's weekend",isCorrect:false}]},
-    { id:'nysc_2', question:'During your first week, you notice colleagues cut corners to meet deadlines.', options:[{key:'a',label:'Ask your manager what standards are expected',isCorrect:true},{key:'b',label:'Follow them to fit in',isCorrect:false},{key:'c',label:'Report them immediately',isCorrect:false},{key:'d',label:'Ignore and do your work your way',isCorrect:false}]},
-    { id:'nysc_3', question:"You're asked to present something you barely understand.", options:[{key:'a',label:'Ask someone else to do it',isCorrect:false},{key:'b',label:'Research deeply, simplify key points, and clarify grey areas',isCorrect:true},{key:'c',label:'Decline the task',isCorrect:false},{key:'d',label:'Read briefly and wing it',isCorrect:false}]},
-    { id:'nysc_4', question:'A colleague corrects you publicly in a meeting.', options:[{key:'a',label:'Avoid the colleague',isCorrect:false},{key:'b',label:'Acknowledge and follow up privately if needed',isCorrect:true},{key:'c',label:'Defend yourself immediately',isCorrect:false},{key:'d',label:'Stay silent and withdraw',isCorrect:false}]},
-    { id:'nysc_5', question:"You're juggling multiple tasks and a new urgent one comes in.", options:[{key:'a',label:'Focus only on the urgent task',isCorrect:false},{key:'b',label:'Say yes and struggle silently',isCorrect:false},{key:'c',label:'Drop another task without informing anyone',isCorrect:false},{key:'d',label:'Clarify priorities and renegotiate timelines',isCorrect:true}]},
-    { id:'nysc_6', question:'Your work is rarely acknowledged.', options:[{key:'a',label:'Confront your manager emotionally',isCorrect:false},{key:'b',label:'Find structured ways to communicate your progress and results',isCorrect:true},{key:'c',label:'Reduce effort',isCorrect:false},{key:'d',label:"Assume they don't value you",isCorrect:false}]},
-    { id:'nysc_7', question:"You're told your communication is unclear.", options:[{key:'a',label:'Feel offended',isCorrect:false},{key:'b',label:'Ask for examples and improve',isCorrect:true},{key:'c',label:'Ignore it',isCorrect:false},{key:'d',label:'Assume they misunderstood',isCorrect:false}]},
-    { id:'nysc_8', question:"You're asked to use a tool you've never used before.", options:[{key:'a',label:'Wait for formal training',isCorrect:false},{key:'b',label:'Avoid the task',isCorrect:false},{key:'c',label:'Learn quickly and apply while asking questions',isCorrect:true},{key:'d',label:"Say you don't know it",isCorrect:false}]},
-    { id:'nysc_9', question:'A teammate takes credit for your work.', options:[{key:'a',label:'Withdraw from teamwork',isCorrect:false},{key:'b',label:'Address it professionally and ensure visibility going forward',isCorrect:true},{key:'c',label:'Ignore completely',isCorrect:false},{key:'d',label:'Escalate aggressively',isCorrect:false}]},
+    { id:'nysc_1',  question:"You're assigned a task late Friday with minimal guidance and a Monday deadline.", options:[{key:'a',label:'Wait till Monday to ask questions',isCorrect:false},{key:'b',label:'Attempt it based on assumptions and submit',isCorrect:false},{key:'c',label:'Send a quick clarification message, proceed with best judgment, and flag uncertainties',isCorrect:true},{key:'d',label:"Leave it since it's weekend",isCorrect:false}]},
+    { id:'nysc_2',  question:'During your first week, you notice colleagues cut corners to meet deadlines.', options:[{key:'a',label:'Ask your manager what standards are expected',isCorrect:true},{key:'b',label:'Follow them to fit in',isCorrect:false},{key:'c',label:'Report them immediately',isCorrect:false},{key:'d',label:'Ignore and do your work your way',isCorrect:false}]},
+    { id:'nysc_3',  question:"You're asked to present something you barely understand.", options:[{key:'a',label:'Ask someone else to do it',isCorrect:false},{key:'b',label:'Research deeply, simplify key points, and clarify grey areas',isCorrect:true},{key:'c',label:'Decline the task',isCorrect:false},{key:'d',label:'Read briefly and wing it',isCorrect:false}]},
+    { id:'nysc_4',  question:'A colleague corrects you publicly in a meeting.', options:[{key:'a',label:'Avoid the colleague',isCorrect:false},{key:'b',label:'Acknowledge and follow up privately if needed',isCorrect:true},{key:'c',label:'Defend yourself immediately',isCorrect:false},{key:'d',label:'Stay silent and withdraw',isCorrect:false}]},
+    { id:'nysc_5',  question:"You're juggling multiple tasks and a new urgent one comes in.", options:[{key:'a',label:'Focus only on the urgent task',isCorrect:false},{key:'b',label:'Say yes and struggle silently',isCorrect:false},{key:'c',label:'Drop another task without informing anyone',isCorrect:false},{key:'d',label:'Clarify priorities and renegotiate timelines',isCorrect:true}]},
+    { id:'nysc_6',  question:'Your work is rarely acknowledged.', options:[{key:'a',label:'Confront your manager emotionally',isCorrect:false},{key:'b',label:'Find structured ways to communicate your progress and results',isCorrect:true},{key:'c',label:'Reduce effort',isCorrect:false},{key:'d',label:"Assume they don't value you",isCorrect:false}]},
+    { id:'nysc_7',  question:"You're told your communication is unclear.", options:[{key:'a',label:'Feel offended',isCorrect:false},{key:'b',label:'Ask for examples and improve',isCorrect:true},{key:'c',label:'Ignore it',isCorrect:false},{key:'d',label:'Assume they misunderstood',isCorrect:false}]},
+    { id:'nysc_8',  question:"You're asked to use a tool you've never used before.", options:[{key:'a',label:'Wait for formal training',isCorrect:false},{key:'b',label:'Avoid the task',isCorrect:false},{key:'c',label:'Learn quickly and apply while asking questions',isCorrect:true},{key:'d',label:"Say you don't know it",isCorrect:false}]},
+    { id:'nysc_9',  question:'A teammate takes credit for your work.', options:[{key:'a',label:'Withdraw from teamwork',isCorrect:false},{key:'b',label:'Address it professionally and ensure visibility going forward',isCorrect:true},{key:'c',label:'Ignore completely',isCorrect:false},{key:'d',label:'Escalate aggressively',isCorrect:false}]},
     { id:'nysc_10', question:'What defines someone who grows quickly?', options:[{key:'a',label:'Confidence alone',isCorrect:false},{key:'b',label:'Being liked',isCorrect:false},{key:'c',label:'Hard work only',isCorrect:false},{key:'d',label:'Ability to learn, adapt, communicate, and take ownership',isCorrect:true}]}
   ];
 
   private readonly assessmentSectionB: AssessmentQuestion[] = [
-    { id:'prof_1', question:"You deliver consistently but aren't given bigger opportunities.", options:[{key:'a',label:'Continue working quietly',isCorrect:false},{key:'b',label:'Seek feedback and express interest in more responsibility',isCorrect:true},{key:'c',label:'Disengage',isCorrect:false},{key:'d',label:'Blame the system',isCorrect:false}]},
-    { id:'prof_2', question:'You\'re described as "reliable but not strategic."', options:[{key:'a',label:'Your manager is biased',isCorrect:false},{key:'b',label:"You're not visible",isCorrect:false},{key:'c',label:"You execute tasks but don't think beyond them",isCorrect:true},{key:'d',label:"You're underperforming",isCorrect:false}]},
-    { id:'prof_3', question:'Someone less experienced is getting more recognition.', options:[{key:'a',label:'Withdraw effort',isCorrect:false},{key:'b',label:'Complain',isCorrect:false},{key:'c',label:'Confront your manager',isCorrect:false},{key:'d',label:'Study their approach and adapt',isCorrect:true}]},
-    { id:'prof_4', question:"You're overwhelmed by multiple stakeholders.", options:[{key:'a',label:'Work overtime silently',isCorrect:false},{key:'b',label:'Ignore some requests',isCorrect:false},{key:'c',label:'Align expectations and prioritize clearly',isCorrect:true},{key:'d',label:'Try to satisfy everyone equally',isCorrect:false}]},
-    { id:'prof_5', question:'You suspect bias is affecting your growth.', options:[{key:'a',label:'Quit immediately',isCorrect:false},{key:'b',label:'Strengthen visibility, build allies, and document impact',isCorrect:true},{key:'c',label:'Accept it silently',isCorrect:false},{key:'d',label:'Escalate emotionally',isCorrect:false}]},
-    { id:'prof_6', question:"You complete tasks well but aren't progressing.", options:[{key:'a',label:'Promotions are random',isCorrect:false},{key:'b',label:"You're unlucky",isCorrect:false},{key:'c',label:'Your company is bad',isCorrect:false},{key:'d',label:"You're not positioning yourself as a problem-solver",isCorrect:true}]},
-    { id:'prof_7', question:'Your manager gives vague instructions repeatedly.', options:[{key:'a',label:'Keep guessing',isCorrect:false},{key:'b',label:'Delay execution',isCorrect:false},{key:'c',label:'Complain',isCorrect:false},{key:'d',label:'Structure the task and confirm alignment',isCorrect:true}]},
-    { id:'prof_8', question:'You want to grow into leadership.', options:[{key:'a',label:'Ask for a title',isCorrect:false},{key:'b',label:'Wait for promotion',isCorrect:false},{key:'c',label:'Take initiative and operate beyond your role',isCorrect:true},{key:'d',label:'Focus only on assigned tasks',isCorrect:false}]},
-    { id:'prof_9', question:"You're working hard but feel invisible.", options:[{key:'a',label:'Bad luck',isCorrect:false},{key:'b',label:'Timing',isCorrect:false},{key:'c',label:'Lack of visibility and stakeholder management',isCorrect:true},{key:'d',label:'Bias',isCorrect:false}]},
+    { id:'prof_1',  question:"You deliver consistently but aren't given bigger opportunities.", options:[{key:'a',label:'Continue working quietly',isCorrect:false},{key:'b',label:'Seek feedback and express interest in more responsibility',isCorrect:true},{key:'c',label:'Disengage',isCorrect:false},{key:'d',label:'Blame the system',isCorrect:false}]},
+    { id:'prof_2',  question:'You\'re described as "reliable but not strategic."', options:[{key:'a',label:'Your manager is biased',isCorrect:false},{key:'b',label:"You're not visible",isCorrect:false},{key:'c',label:"You execute tasks but don't think beyond them",isCorrect:true},{key:'d',label:"You're underperforming",isCorrect:false}]},
+    { id:'prof_3',  question:'Someone less experienced is getting more recognition.', options:[{key:'a',label:'Withdraw effort',isCorrect:false},{key:'b',label:'Complain',isCorrect:false},{key:'c',label:'Confront your manager',isCorrect:false},{key:'d',label:'Study their approach and adapt',isCorrect:true}]},
+    { id:'prof_4',  question:"You're overwhelmed by multiple stakeholders.", options:[{key:'a',label:'Work overtime silently',isCorrect:false},{key:'b',label:'Ignore some requests',isCorrect:false},{key:'c',label:'Align expectations and prioritize clearly',isCorrect:true},{key:'d',label:'Try to satisfy everyone equally',isCorrect:false}]},
+    { id:'prof_5',  question:'You suspect bias is affecting your growth.', options:[{key:'a',label:'Quit immediately',isCorrect:false},{key:'b',label:'Strengthen visibility, build allies, and document impact',isCorrect:true},{key:'c',label:'Accept it silently',isCorrect:false},{key:'d',label:'Escalate emotionally',isCorrect:false}]},
+    { id:'prof_6',  question:"You complete tasks well but aren't progressing.", options:[{key:'a',label:'Promotions are random',isCorrect:false},{key:'b',label:"You're unlucky",isCorrect:false},{key:'c',label:'Your company is bad',isCorrect:false},{key:'d',label:"You're not positioning yourself as a problem-solver",isCorrect:true}]},
+    { id:'prof_7',  question:'Your manager gives vague instructions repeatedly.', options:[{key:'a',label:'Keep guessing',isCorrect:false},{key:'b',label:'Delay execution',isCorrect:false},{key:'c',label:'Complain',isCorrect:false},{key:'d',label:'Structure the task and confirm alignment',isCorrect:true}]},
+    { id:'prof_8',  question:'You want to grow into leadership.', options:[{key:'a',label:'Ask for a title',isCorrect:false},{key:'b',label:'Wait for promotion',isCorrect:false},{key:'c',label:'Take initiative and operate beyond your role',isCorrect:true},{key:'d',label:'Focus only on assigned tasks',isCorrect:false}]},
+    { id:'prof_9',  question:"You're working hard but feel invisible.", options:[{key:'a',label:'Bad luck',isCorrect:false},{key:'b',label:'Timing',isCorrect:false},{key:'c',label:'Lack of visibility and stakeholder management',isCorrect:true},{key:'d',label:'Bias',isCorrect:false}]},
     { id:'prof_10', question:'What separates fast-growing professionals?', options:[{key:'a',label:'Intelligence',isCorrect:false},{key:'b',label:'Years of experience',isCorrect:false},{key:'c',label:'Networking only',isCorrect:false},{key:'d',label:'Ownership, adaptability, visibility, and strategic thinking',isCorrect:true}]}
   ];
 
@@ -124,10 +124,10 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     private zone: NgZone
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit():    void {}
   ngOnDestroy(): void { this.stopCamera(); }
 
-  get isNysc(): boolean { return this.formData.category === 'nysc'; }
+  get isNysc():             boolean { return this.formData.category === 'nysc'; }
   get effectiveTotalSteps(): number { return 6; }
 
   get stepLabel(): string {
@@ -173,11 +173,16 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     }
 
     if (this.currentStep === 2) {
-      if (!this.capturedPhotoDataUrl) { this.errorMessage = 'A live photo is required. Please capture your headshot.'; return false; }
+      if (!this.capturedPhotoDataUrl) {
+        this.errorMessage = 'A live photo is required. Please capture your headshot.';
+        return false;
+      }
     }
 
     if (this.currentStep === 3) {
-      if (this.assessmentAnswers.size === 0) { this.errorMessage = 'Please answer all assessment questions.'; return false; }
+      if (this.assessmentAnswers.size === 0) {
+        this.errorMessage = 'Please answer all assessment questions.'; return false;
+      }
       if (this.assessmentAnswers.size !== this.assessmentQuestions.length) {
         this.errorMessage = `Please answer all ${this.assessmentQuestions.length} questions.`; return false;
       }
@@ -194,7 +199,10 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     }
 
     if (this.currentStep === 6) {
-      if (!this.termsAccepted) { this.errorMessage = 'Please accept the Terms & Conditions before submitting.'; return false; }
+      if (!this.consentAccepted) {
+        this.errorMessage = 'Please confirm the Consent & Acknowledgment before submitting.';
+        return false;
+      }
     }
 
     return true;
@@ -279,9 +287,9 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     } catch (err: any) {
       this.zone.run(() => {
         this.cameraState = 'idle';
-        if      (err.name === 'NotAllowedError')    this.cameraError = 'Camera access denied. Click the camera icon in the address bar and allow access, then try again.';
-        else if (err.name === 'NotFoundError')       this.cameraError = 'No camera found on this device.';
-        else if (err.name === 'NotReadableError')    this.cameraError = 'Camera is in use by another app. Close it and try again.';
+        if      (err.name === 'NotAllowedError')     this.cameraError = 'Camera access denied. Click the camera icon in the address bar and allow access, then try again.';
+        else if (err.name === 'NotFoundError')        this.cameraError = 'No camera found on this device.';
+        else if (err.name === 'NotReadableError')     this.cameraError = 'Camera is in use by another app. Close it and try again.';
         else if (err.name === 'OverconstrainedError') this.retryBasic();
         else this.cameraError = `Camera error: ${err.message}. Please refresh and try again.`;
         this.cdr.detectChanges();
@@ -313,7 +321,7 @@ export class RegistrationComponent implements OnInit, OnDestroy {
   }
 
   capturePhoto(): void {
-    const video = this.videoEl?.nativeElement;
+    const video  = this.videoEl?.nativeElement;
     const canvas = this.canvasEl?.nativeElement;
     if (!video || !canvas) { this.cameraError = 'Camera not ready.'; return; }
     const w = video.videoWidth || 640;
@@ -380,16 +388,7 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     return ['application/pdf','image/jpeg','image/png'].includes(file.type) && file.size <= 5 * 1024 * 1024;
   }
 
-  // ── Terms ───────────────────────────────────────────────────────────────────
-
-  openTermsModal():  void { this.showTermsModal = true;  document.body.style.overflow = 'hidden'; }
-  closeTermsModal(): void { this.showTermsModal = false; document.body.style.overflow = ''; }
-  acceptTermsFromModal(): void { this.termsAccepted = true; this.closeTermsModal(); }
-
-  // ── Submit ──────────────────────────────────────────────────────────────────
-  // KEY FIX: Use subscribe() instead of deprecated .toPromise()
-  // Registration now succeeds for ALL assessment scores (including 0%)
-  // .toPromise() in RxJS 7 swallows error details. subscribe() preserves them.
+  // ── Submit (uses subscribe, not deprecated .toPromise()) ───────────────────
 
   submitRegistration(): void {
     if (!this.validateCurrentStep()) return;
@@ -410,24 +409,22 @@ export class RegistrationComponent implements OnInit, OnDestroy {
       payload.append('assessmentAnswers',    JSON.stringify(Array.from(this.assessmentAnswers.entries())));
     }
 
-    if (this.capturedPhotoDataUrl) {
+    if (this.capturedPhotoDataUrl)
       payload.append('photo', this.dataUrlToBlob(this.capturedPhotoDataUrl), 'headshot.jpg');
-    }
     if (this.statementFile)    payload.append('statement',    this.statementFile);
     if (this.callUpFile)       payload.append('callUpLetter', this.callUpFile);
     if (this.paymentProofFile) payload.append('paymentProof', this.paymentProofFile);
 
     this.registrationService.submitRegistration(payload).subscribe({
       next: (response) => {
-        console.log('[Registration] Submitted successfully:', response);
+        console.log('[Registration] Success:', response);
         this.isLoading = false;
         this.formSubmitted = true;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       error: (err: Error) => {
-        console.error('[Registration] Submit failed:', err);
+        console.error('[Registration] Failed:', err);
         this.isLoading = false;
-        // err.message is now the clean, user-friendly string set in handleError
         this.errorMessage = err.message ?? 'Submission failed. Please try again.';
         this.cdr.detectChanges();
       }

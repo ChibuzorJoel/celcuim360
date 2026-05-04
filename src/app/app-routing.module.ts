@@ -15,6 +15,8 @@ import { BlogComponent } from './pages/blog/blog.component';
 import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
 import { ProgramComponent } from './pages/program/program.component';
 import { AdminRegistrationComponent } from './core/admin-registration/admin-registration.component';
+import { StudentDashboardComponent } from './pages/student-dashboard/student-dashboard.component';
+import { StudentLoginComponent } from './pages/student-login/student-login.component';
 
 const routes: Routes = [
   // 🔐 Auth routes
@@ -33,6 +35,8 @@ const routes: Routes = [
 {path: 'blog', component: BlogComponent},
 {path: 'worksmart', component: WorkSmartComponent},
 {path: 'program', component: ProgramComponent},
+{path: 'portal', component: StudentDashboardComponent},
+{path: 'student-login', component: StudentLoginComponent},
   // 🔒 Admin route (protected)
   { path: 'dashboard', component: AdminDashboardComponent, canActivate: [AuthGuard] },
   { path: 'admin/registration', component: AdminRegistrationComponent, canActivate: [AuthGuard] },

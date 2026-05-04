@@ -1,0 +1,56 @@
+<div class="portal-container">
+    <!-- Sidebar Profile -->
+    <aside class="sidebar">
+      <div class="profile-card">
+        <img [src]="student.photo" alt="Profile" class="avatar">
+        <h3>{{ student.name }}</h3>
+        <p>{{ student.email }}</p>
+        <span class="badge">Student</span>
+      </div>
+      
+      <nav class="menu">
+        <a href="#" class="active">Dashboard</a>
+        <a href="#">Coursework</a>
+        <a href="#">Assignments</a>
+        <a href="#">Grades</a>
+      </nav>
+    </aside>
+  
+    <!-- Main Content -->
+    <main class="content">
+      <header class="content-header">
+        <h2>My Course Dashboard</h2>
+        <div class="progress-overview">
+          Overall Progress: <strong>{{ completionRate }}%</strong>
+        </div>
+      </header>
+  
+      <!-- 6-Week Course Structure -->
+      <div class="course-grid">
+        <div *ngFor="let week of courseWeeks" class="week-card" [ngClass]="week.status">
+          <div class="week-header">
+            <h4>Week {{ week.id }}: {{ week.title }}</h4>
+            <span class="status-dot"></span>
+          </div>
+          <p>{{ week.description }}</p>
+          
+          <div class="task-list">
+            <div class="task">Coursework: <span class="tag">{{ week.coursework }}</span></div>
+            <div class="task">Assessment: 
+              <span class="score" *ngIf="week.score !== null">Score: {{ week.score }}%</span>
+              <button *ngIf="week.score === null" class="btn-action">Take Test</button>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Final Assessment -->
+      <section class="final-assessment">
+        <h3>Final Assessment</h3>
+        <div class="assessment-banner">
+          <p>Comprehensive objective exam covering all 6 weeks.</p>
+          <button class="btn-gold" [disabled]="completionRate < 100">Unlock Final Exam</button>
+        </div>
+      </section>
+    </main>
+  </div>

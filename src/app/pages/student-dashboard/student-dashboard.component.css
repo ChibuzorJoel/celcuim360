@@ -1,0 +1,227 @@
+:root {
+    --primary-navy: #0f172a;
+    --accent-gold: #f59e0b;
+    --progress-green: #22c55e;
+    --progress-yellow: #facc15;
+    --progress-red: #ef4444;
+    --bg-light: #f8fafc;
+  }
+  
+  /* Layout */
+  .portal-container {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-light);
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: var(--primary-navy);
+    color: white;
+    padding: 2rem 1.5rem;
+  }
+  
+  .profile-card {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-gold);
+    margin-bottom: 1rem;
+  }
+  
+  .profile-card h3 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+  
+  .profile-card p {
+    font-size: 0.9rem;
+    opacity: 0.7;
+  }
+  
+  .badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 10px;
+    background: var(--accent-gold);
+    color: #000;
+    font-size: 0.75rem;
+    border-radius: 20px;
+  }
+  
+  /* Menu */
+  .menu {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .menu a {
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: 0.3s;
+  }
+  
+  .menu a:hover,
+  .menu a.active {
+    background: rgba(255,255,255,0.1);
+    opacity: 1;
+  }
+  
+  /* Content */
+  .content {
+    flex: 1;
+    padding: 2rem;
+  }
+  
+  /* Header */
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .subtitle {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  /* Progress Bar */
+  .progress-wrapper {
+    width: 200px;
+    text-align: right;
+  }
+  
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 5px;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: var(--accent-gold);
+    transition: width 0.4s ease;
+  }
+  
+  /* Grid */
+  .course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  /* Week Card */
+  .week-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    border-left: 6px solid #ccc;
+    transition: 0.3s;
+    cursor: pointer;
+  }
+  
+  .week-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  /* Status Colors */
+  .week-card.completed { border-left-color: var(--progress-green); }
+  .week-card.pending { border-left-color: var(--progress-yellow); }
+  .week-card.overdue { border-left-color: var(--progress-red); }
+  
+  .week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  
+  .week-title {
+    margin: 10px 0 5px;
+    font-size: 1.1rem;
+  }
+  
+  .week-desc {
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  /* Tasks */
+  .task-list {
+    margin-top: 1rem;
+  }
+  
+  .task {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .tag {
+    background: #eee;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  
+  .score {
+    color: var(--progress-green);
+    font-weight: bold;
+  }
+  
+  .btn-action {
+    background: var(--primary-navy);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  /* Final Assessment */
+  .final-assessment {
+    margin-top: 2rem;
+  }
+  
+  .assessment-banner {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Button */
+  .btn-gold {
+    background: var(--accent-gold);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .btn-gold:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
