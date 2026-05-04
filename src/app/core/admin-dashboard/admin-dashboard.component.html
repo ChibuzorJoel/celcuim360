@@ -1,5 +1,23 @@
-<div class="admin-dashboard">
+<div class="admin-dashboard dash-wrap">
   <div class="dashboard-header">
+    <!-- ── Topbar ─────────────────────────────────────────────────────────────── -->
+  <header class="dash-topbar">
+    <div class="topbar-brand">
+      <span class="brand-logo">celcium<span>360</span></span>
+      <span class="brand-sub">Admin Panel</span>
+    </div>
+    <div class="topbar-right">
+      <span class="poll-badge">
+        <span class="poll-dot"></span> Live
+      </span>
+      <button class="btn-logout" (click)="logout()">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Logout
+      </button>
+    </div>
+  </header>
     <h2>Form Records Dashboard</h2>
     <p>Manage all submitted forms and requests</p>
   </div>
@@ -13,10 +31,10 @@
       📧 Contact Form Requests
     </button>
     <button 
-      class="filter-btn" 
+      class="filter-btn"
       [class.active]="activeFilter === 'registration'"
-      (click)="setActiveFilter('registration')">
-      📝 Registration Requests
+      (click)="navigateToRegistration()">
+      📋 Registration
     </button>
     <button 
       class="filter-btn" 

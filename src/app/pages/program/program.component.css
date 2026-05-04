@@ -1,0 +1,800 @@
+/* ========================================
+   PROGRAM PAGE STYLES
+   ======================================== */
+
+   :root {
+    --primary-color: #B88D2A;
+    --primary-dark:  #9d7820;
+    --primary-light: #f5f1e8;
+    --text-dark:     #333;
+    --text-light:    #666;
+    --bg-light:      #f8f9fa;
+    --transition:    0.3s ease;
+  }
+  
+  .program-page {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-dark);
+    overflow-x: hidden;
+  }
+  
+  /* ── General ──────────────────────────────────────────────────────────────── */
+  .section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.2;
+  }
+  
+  .section-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    line-height: 1.6;
+  }
+  
+  .highlight { color: var(--primary-color); font-weight: 700; }
+  
+  /* ── 1. HERO ──────────────────────────────────────────────────────────────── */
+  .hero-section {
+    background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(0,0,0,.05);
+  }
+  
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%);
+    opacity: 0.05;
+    animation: float 20s infinite ease-in-out;
+  }
+  
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(20px); }
+  }
+  
+  .hero-content { position: relative; z-index: 1; }
+  
+  .hero-text { animation: fadeInUp .8s ease-out; }
+  
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  
+  .hero-headline {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #B88D2A;
+  }
+  
+  .hero-subheadline {
+    font-size: 1.3rem;
+    color: var(--text-light);
+    line-height: 1.8;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .cta-buttons { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
+  
+  .cta-btn {
+    background: var(--primary-color);
+    border: none;
+    padding: 12px 35px;
+    font-weight: 600;
+    border-radius: 30px;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(184,141,42,.2);
+    color: #fff;
+  }
+  
+  .cta-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(184,141,42,.4);
+    color: #fff;
+  }
+  
+  /* ── 2. REALITY ───────────────────────────────────────────────────────────── */
+  .reality-section { background: white; }
+  
+  .reality-questions {
+    background: var(--primary-light);
+    padding: 2rem;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary-color);
+    transition: var(--transition);
+  }
+  
+  .reality-questions:hover { transform: translateY(-5px); box-shadow: 0 0 45px rgba(0,0,0,.1); }
+  
+  .question-item { display: flex; align-items: flex-start; gap: 1rem; font-size: 1rem; line-height: 1.6; }
+  .question-item i { color: var(--primary-color); font-size: 1.2rem; margin-top: .2rem; }
+  
+  .reality-conclusion { font-size: 1.1rem; line-height: 1.8; }
+  .highlight-text { color: var(--primary-color); font-weight: 600; display: inline-flex; align-items: center; }
+  
+  /* ── 3. VALUE ─────────────────────────────────────────────────────────────── */
+  .value-section { background: linear-gradient(135deg, white 0%, var(--primary-light) 100%); }
+  
+  .value-list { display: flex; flex-direction: column; gap: 1.5rem; }
+  
+  .value-item { display: flex; gap: 1.5rem; align-items: flex-start; transition: var(--transition); }
+  .value-item:hover { transform: translateX(10px); }
+  
+  .value-icon {
+    min-width: 50px; width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 15px rgba(184,141,42,.2);
+    transition: var(--transition);
+  }
+  
+  .value-item:hover .value-icon { transform: scale(1.1); }
+  .value-text h5 { margin: 0; font-weight: 600; color: var(--text-dark); line-height: 1.5; }
+  
+  .image-placeholder-large {
+    background: linear-gradient(135deg, var(--primary-light), #faf7f1);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 45px rgba(0,0,0,.08);
+    border: 1px solid rgba(184,141,42,.1);
+    transition: var(--transition);
+  }
+  
+  .image-placeholder-large:hover { transform: translateY(-5px); box-shadow: 0 0 45px rgba(0,0,0,.12); }
+  
+  /* ── 4. BENEFITS — Real Images ────────────────────────────────────────────── */
+  .benefits-section { background: white; }
+  
+  .benefit-card {
+    background: white;
+    border: 2px solid rgba(184,141,42,.1);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+  }
+  
+  .benefit-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 12px 35px rgba(184,141,42,.18);
+    transform: translateY(-6px);
+  }
+  
+  .benefit-img-wrap {
+    position: relative;
+    overflow: hidden;
+    height: 200px;
+  }
+  
+  .benefit-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .5s ease;
+  }
+  
+  .benefit-card:hover .benefit-img { transform: scale(1.07); }
+  
+  .benefit-icon-overlay {
+    position: absolute;
+    bottom: 12px; right: 12px;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    transition: var(--transition);
+  }
+  
+  .benefit-card:hover .benefit-icon-overlay { transform: scale(1.15); }
+  
+  .benefit-content { padding: 1.3rem 1.5rem; flex: 1; }
+  
+  .benefit-title {
+    font-weight: 700;
+    color: var(--text-dark);
+    font-size: 1rem;
+    margin-bottom: .5rem;
+    line-height: 1.5;
+  }
+  
+  .benefit-desc {
+    color: var(--text-light);
+    font-size: .88rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+  
+  /* ── 5. COVERAGE ──────────────────────────────────────────────────────────── */
+  .coverage-section { background: linear-gradient(135deg, var(--bg-light), white 50%); }
+  
+  .coverage-list { display: flex; flex-direction: column; gap: 1rem; }
+  
+  .coverage-item {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    background: white;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    transition: var(--transition);
+  }
+  
+  .coverage-item:hover { box-shadow: 0 0 30px rgba(0,0,0,.1); transform: translateX(5px); }
+  
+  .coverage-number {
+    min-width: 40px; width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: var(--transition);
+  }
+  
+  .coverage-item:hover .coverage-number { transform: scale(1.15); }
+  
+  .coverage-icon-wrap {
+    width: 36px; height: 36px;
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+    flex-shrink: 0;
+  }
+  
+  .coverage-text h5 { margin: 0; font-weight: 600; color: var(--text-dark); line-height: 1.5; }
+  
+  .alert-info {
+    background: linear-gradient(135deg, rgba(184,141,42,.1), rgba(184,141,42,.05));
+    border: 1px solid rgba(184,141,42,.2);
+    border-left: 4px solid var(--primary-color);
+    color: var(--primary-dark);
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+  
+  /* ── 6. AUDIENCE ──────────────────────────────────────────────────────────── */
+  .audience-section { background: white; }
+  
+  .audience-card {
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: 2px solid rgba(184,141,42,.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    transition: var(--transition);
+  }
+  
+  .audience-card:hover { box-shadow: 0 0 45px rgba(0,0,0,.1); transform: translateY(-5px); }
+  
+  .audience-for {
+    background: linear-gradient(135deg, rgba(184,141,42,.05), rgba(184,141,42,.02));
+    border-color: rgba(184,141,42,.2);
+  }
+  
+  .audience-not-for {
+    background: linear-gradient(135deg, rgba(220,53,69,.05), rgba(220,53,69,.02));
+    border-color: rgba(220,53,69,.2);
+  }
+  
+  .audience-header {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1.5rem; padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(184,141,42,.1);
+  }
+  
+  .audience-header i { font-size: 1.8rem; }
+  .audience-for .audience-header i { color: #28a745; }
+  .audience-not-for .audience-header i { color: #dc3545; }
+  .audience-header h4 { margin: 0; font-weight: 700; }
+  
+  .audience-list { list-style: none; padding: 0; margin: 0; }
+  .audience-list li {
+    padding: .75rem 0;
+    color: var(--text-light);
+    font-size: 1rem;
+    line-height: 1.6;
+    transition: var(--transition);
+  }
+  .audience-list li:hover { transform: translateX(5px); color: var(--primary-color); }
+  .audience-for .audience-list i { color: #28a745; }
+  .audience-not-for .audience-list i { color: #dc3545; }
+  
+  /* ── 7. SCHEDULE — Timezone-aware ─────────────────────────────────────────── */
+  .schedule-section { background: linear-gradient(135deg, var(--bg-light), white 50%); }
+  
+  /* Timezone detection banner */
+  .tz-banner {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(184,141,42,.12), rgba(184,141,42,.06));
+    border: 1px solid rgba(184,141,42,.3);
+    color: var(--primary-dark);
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: .88rem;
+    font-weight: 600;
+    margin-top: .75rem;
+  }
+  
+  .tz-code { color: var(--primary-color); margin-left: 4px; font-weight: 700; }
+  
+  /* Schedule card redesign */
+  .schedule-card {
+    background: white;
+    border: 2px solid rgba(184,141,42,.12);
+    border-radius: 16px;
+    padding: 2rem 1.8rem;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .schedule-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+  }
+  
+  .schedule-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 12px 35px rgba(184,141,42,.18);
+    transform: translateY(-6px);
+  }
+  
+  /* Nigeria reference */
+  .schedule-nigeria-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f5f1e8;
+    color: var(--primary-dark);
+    font-size: .78rem;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(184,141,42,.25);
+  }
+  
+  .ng-flag { font-size: 1rem; }
+  
+  .schedule-divider {
+    width: 40px; height: 2px;
+    background: rgba(184,141,42,.2);
+    border-radius: 1px;
+    margin-bottom: 1rem;
+  }
+  
+  .schedule-icon {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(184,141,42,.3);
+    margin-bottom: 1rem;
+    transition: var(--transition);
+  }
+  
+  .schedule-card:hover .schedule-icon { transform: scale(1.12) rotate(8deg); }
+  
+  .schedule-local-label {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #aaa;
+    font-weight: 700;
+    margin-bottom: .3rem;
+  }
+  
+  .schedule-day {
+    font-weight: 800;
+    color: var(--text-dark);
+    font-size: 1.2rem;
+    margin-bottom: .4rem;
+  }
+  
+  .schedule-time {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: .6rem;
+  }
+  
+  .schedule-offset-badge {
+    display: inline-block;
+    background: rgba(184,141,42,.1);
+    color: var(--primary-dark);
+    font-size: .75rem;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(184,141,42,.25);
+    margin-bottom: .5rem;
+  }
+  
+  .schedule-note { color: var(--text-light); font-size: .88rem; margin: 0; }
+  
+  .schedule-calendar-hint {
+    margin-top: 1rem;
+    padding-top: .8rem;
+    border-top: 1px solid rgba(184,141,42,.1);
+    color: var(--primary-color);
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .schedule-calendar-hint:hover { color: var(--primary-dark); }
+  
+  /* Timezone information note */
+  .tz-note {
+    background: linear-gradient(135deg, rgba(184,141,42,.08), rgba(184,141,42,.04));
+    border: 1px solid rgba(184,141,42,.2);
+    border-left: 4px solid var(--primary-color);
+    padding: 1.2rem 1.5rem;
+    border-radius: 0 10px 10px 0;
+    color: var(--text-light);
+    font-size: .88rem;
+    line-height: 1.7;
+  }
+  
+  .tz-note strong { color: var(--primary-dark); }
+  
+  /* ── 8. PRICING ───────────────────────────────────────────────────────────── */
+  .pricing-section { background: white; }
+  
+  .pricing-card {
+    background: white;
+    border: 2px solid rgba(184,141,42,.12);
+    border-radius: 14px;
+    padding: 2.5rem;
+    position: relative;
+    transition: var(--transition);
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pricing-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 45px rgba(0,0,0,.1);
+    transform: translateY(-5px);
+  }
+  
+  .pricing-featured {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 45px rgba(0,0,0,.1);
+    transform: scale(1.02);
+  }
+  
+  .pricing-featured:hover { transform: scale(1.05) translateY(-5px); }
+  
+  .pricing-badge {
+    position: absolute;
+    top: -12px; right: 20px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: #fff;
+    padding: .5rem 1rem;
+    border-radius: 30px;
+    font-size: .82rem;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(184,141,42,.3);
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 4px 15px rgba(184,141,42,.3); }
+    50%      { box-shadow: 0 4px 25px rgba(184,141,42,.5); }
+  }
+  
+  .pricing-title { font-weight: 700; font-size: 1.5rem; margin: 1rem 0 1rem; color: var(--text-dark); }
+  .pricing-price { font-size: 2.5rem; font-weight: 800; color: var(--primary-color); margin-bottom: 1rem; }
+  .pricing-eligibility { color: var(--text-light); font-size: .95rem; line-height: 1.6; margin-bottom: 1.5rem; }
+  
+  .documents-section {
+    background: var(--primary-light);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-color);
+  }
+  
+  .documents-title { font-weight: 700; font-size: .95rem; margin-bottom: 1rem; color: var(--text-dark); }
+  .documents-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+  .documents-list li { padding: .5rem 0; color: var(--text-light); font-size: .9rem; transition: var(--transition); }
+  .documents-list li:hover { color: var(--primary-color); transform: translateX(5px); }
+  .documents-note { color: #666; font-size: .82rem; font-style: italic; margin: 0; }
+  
+  .pricing-btn {
+    background: var(--primary-color);
+    border: none;
+    padding: 12px 20px;
+    font-weight: 600;
+    border-radius: 30px;
+    transition: var(--transition);
+    margin-top: auto;
+    box-shadow: 0 4px 15px rgba(184,141,42,.2);
+    color: #fff;
+  }
+  
+  .pricing-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(184,141,42,.4);
+    color: #fff;
+  }
+  
+  /* ── 9. POST PAYMENT ──────────────────────────────────────────────────────── */
+  .post-payment-section { background: linear-gradient(135deg, var(--bg-light), white 50%); }
+  
+  .post-payment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .post-payment-item {
+    background: white;
+    border-radius: 12px;
+    padding: 1.8rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    border: 1px solid rgba(184,141,42,.1);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .8rem;
+  }
+  
+  .post-payment-item:hover { box-shadow: 0 0 35px rgba(0,0,0,.1); transform: translateY(-5px); }
+  
+  .post-payment-number {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.2rem;
+    transition: var(--transition);
+  }
+  
+  .post-payment-item:hover .post-payment-number { transform: scale(1.15); }
+  
+  .post-payment-content { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--text-dark); }
+  .post-payment-content i { color: #28a745; font-size: 1.2rem; transition: var(--transition); }
+  .post-payment-item:hover .post-payment-content i { transform: scale(1.2); }
+  
+  /* ── 10. FINAL CTA ────────────────────────────────────────────────────────── */
+  .final-cta-section {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .final-cta-section::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 70%);
+    animation: float 20s infinite ease-in-out;
+  }
+  
+  .final-cta-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #B88D2A;
+    line-height: 1.2;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .final-cta-title .highlight { color: #000; text-shadow: 0 2px 10px rgba(0,0,0,.15); }
+  
+  .final-cta-subtitle {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: black;
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .final-cta-btn {
+    background: white;
+    color: var(--primary-color);
+    border: none;
+    padding: 12px 40px;
+    font-weight: 700;
+    border-radius: 30px;
+    transition: var(--transition);
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 15px rgba(0,0,0,.2);
+  }
+  
+  .final-cta-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,.3);
+    color: var(--primary-dark);
+  }
+  
+  .final-cta-subtext {
+    color: rgba(255,255,255,.85);
+    font-size: .95rem;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* ── Responsive ───────────────────────────────────────────────────────────── */
+  @media (max-width: 991px) {
+    .hero-headline { font-size: 2.5rem; }
+    .section-title { font-size: 2rem; }
+    .cta-buttons { flex-direction: column; align-items: center; }
+    .pricing-featured { transform: scale(1); }
+    .final-cta-title { font-size: 2rem; }
+  }
+  
+  @media (max-width: 768px) {
+    .hero-headline { font-size: 2rem; }
+    .section-title { font-size: 1.75rem; }
+    .benefit-img-wrap { height: 170px; }
+    .schedule-time { font-size: 1.8rem; }
+    .post-payment-grid { grid-template-columns: 1fr; }
+  }
+  
+  @media (max-width: 576px) {
+    .hero-headline { font-size: 1.75rem; }
+    .section-title { font-size: 1.5rem; }
+    .benefit-img-wrap { height: 150px; }
+    .schedule-card { padding: 1.5rem 1.2rem; }
+    .tz-banner { font-size: .78rem; padding: 6px 14px; text-align: center; }
+    .final-cta-title { font-size: 1.75rem; }
+  }
+  
+  html { scroll-behavior: smooth; }
+  
+  /* =====================================================================
+     VISIBILITY FIXES — Overrides Bootstrap specificity conflicts
+     All icon circles, badge pills, numbered circles
+     ===================================================================== */
+  
+  /* ── Value icons (section 3) ─────────────────────────────────────── */
+  .program-page .value-icon {
+    background-color: #B88D2A !important;
+    background-image: none !important;
+    color: #000 !important;
+  }
+  
+  .program-page .value-icon i,
+  .program-page .value-icon .fas,
+  .program-page .value-icon .fa {
+    color: #000 !important;
+  }
+  
+  /* ── Benefit icon overlay (section 4) ───────────────────────────── */
+  .program-page .benefit-icon-overlay {
+    background-color: #B88D2A !important;
+    background-image: none !important;
+    color: #000 !important;
+  }
+  
+  .program-page .benefit-icon-overlay i,
+  .program-page .benefit-icon-overlay .fas,
+  .program-page .benefit-icon-overlay .fa {
+    color: #000 !important;
+  }
+  
+  /* ── Coverage number circles (section 5) ────────────────────────── */
+  .program-page .coverage-number {
+    background-color: #B88D2A !important;
+    background-image: none !important;
+    color: #000 !important;
+  }
+  
+  /* ── Schedule clock icon circle (section 7) ─────────────────────── */
+  .program-page .schedule-icon {
+    background-color: #B88D2A !important;
+    background-image: none !important;
+    color: #000 !important;
+    box-shadow: 0 4px 15px rgba(184, 141, 42, 0.4) !important;
+  }
+  
+  .program-page .schedule-icon i,
+  .program-page .schedule-icon .fas,
+  .program-page .schedule-icon .fa {
+    color: #000 !important;
+    font-size: 1.5rem !important;
+  }
+  
+  /* ── Pricing badge pills (section 8) ────────────────────────────── */
+  .program-page .pricing-badge {
+    background-color: #B88D2A !important;
+    background-image: none !important;
+    color: #000 !important;
+    font-weight: 800 !important;
+    border: 2px solid #9d7820 !important;
+  }
+  
+  /* ── Post-payment number circles (section 9) ────────────────────── */
+  .program-page .post-payment-number {
+    background-color: #B88D2A !important;
+    background-image: none !important;
+    color: #000 !important;
+  }
+  
+  /* ── Audience header icons ───────────────────────────────────────── */
+  .program-page .audience-for .audience-header i {
+    color: #28a745 !important;
+  }
+  
+  .program-page .audience-not-for .audience-header i {
+    color: #dc3545 !important;
+  }
+  
+  /* ── Schedule Nigeria time flag pill ─────────────────────────────── */
+  .program-page .schedule-nigeria-time {
+    background-color: #f5f1e8 !important;
+    color: #9d7820 !important;
+    border: 1px solid rgba(184, 141, 42, 0.3) !important;
+  }
+  
+  /* ── Timezone banner ─────────────────────────────────────────────── */
+  .program-page .tz-banner {
+    background-color: rgba(184, 141, 42, 0.12) !important;
+    background-image: none !important;
+    color: #9d7820 !important;
+    border: 1px solid rgba(184, 141, 42, 0.4) !important;
+  }
+  
+  /* ── Schedule offset badge ───────────────────────────────────────── */
+  .program-page .schedule-offset-badge {
+    background-color: rgba(184, 141, 42, 0.15) !important;
+    color: #9d7820 !important;
+    border: 1px solid rgba(184, 141, 42, 0.3) !important;
+  }
+  
+  /* ── Highlight-text check icon ───────────────────────────────────── */
+  .program-page .highlight-text i {
+    color: #B88D2A !important;
+  }
+  
+  /* ── Question circle icons ───────────────────────────────────────── */
+  .program-page .question-item i {
+    color: #B88D2A !important;
+  }

@@ -13,6 +13,8 @@ import { RegistrationComponent } from './pages/registration/registration.compone
 import { ConsultationComponent } from './pages/consultation/consultation.component';
 import { BlogComponent } from './pages/blog/blog.component';
 import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
+import { ProgramComponent } from './pages/program/program.component';
+import { AdminRegistrationComponent } from './core/admin-registration/admin-registration.component';
 
 const routes: Routes = [
   // 🔐 Auth routes
@@ -30,8 +32,10 @@ const routes: Routes = [
 {path: 'consultation', component: ConsultationComponent},
 {path: 'blog', component: BlogComponent},
 {path: 'worksmart', component: WorkSmartComponent},
+{path: 'program', component: ProgramComponent},
   // 🔒 Admin route (protected)
   { path: 'dashboard', component: AdminDashboardComponent, canActivate: [AuthGuard] },
+  { path: 'admin/registration', component: AdminRegistrationComponent, canActivate: [AuthGuard] },
 ];
 
 @NgModule({

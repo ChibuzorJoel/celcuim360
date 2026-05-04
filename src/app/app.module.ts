@@ -20,6 +20,8 @@ import { RegistrationComponent } from './pages/registration/registration.compone
 import { ConsultationComponent } from './pages/consultation/consultation.component';
 import { BlogComponent } from './pages/blog/blog.component';
 import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
+import { ProgramComponent } from './pages/program/program.component';
+import { AdminRegistrationComponent } from './core/admin-registration/admin-registration.component';
 
 @NgModule({
   declarations: [
@@ -38,6 +40,8 @@ import { WorkSmartComponent } from './pages/worksmart/worksmart.component';
     ConsultationComponent,
     BlogComponent,
     WorkSmartComponent,
+    ProgramComponent,
+    AdminRegistrationComponent,
   ],
   imports: [
     BrowserModule,

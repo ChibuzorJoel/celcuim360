@@ -1,0 +1,413 @@
+<!-- src/app/program/program.component.html -->
+
+<div class="program-page">
+
+  <!-- ================================================================
+       1. HERO SECTION
+  ================================================================ -->
+  <section id="hero" class="hero-section">
+    <div class="container-fluid hero-content">
+      <div class="row align-items-center min-vh-100">
+        <div class="col-lg-8 mx-auto text-center hero-text">
+          <h1 class="hero-headline">
+            Get the Job. <span class="highlight">Stand Out.</span> Grow Faster In Your Career.
+          </h1>
+          <p class="hero-subheadline mt-4 mb-5">
+            The Work Readiness Program equips you with practical workplace skills, professional
+            intelligence, and tools to secure opportunities, excel on the job, and accelerate
+            your career growth.
+          </p>
+          <div class="cta-buttons">
+            <button class="btn btn-primary btn-lg cta-btn" (click)="applyNow()">
+              <i class="fas fa-rocket me-2"></i> Apply Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       2. REALITY SECTION
+  ================================================================ -->
+  <section id="reality" class="reality-section py-5">
+    <div class="container py-5">
+      <div class="row align-items-center">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+          <div class="reality-image">
+            <img src="../../../assets/img/img/6hs.png"
+                 alt="Young professionals in modern workplace"
+                 class="img-fluid w-100 rounded-top">
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h2 class="section-title mb-4">
+            School Didn't Prepare You for <span class="highlight">This…</span>
+          </h2>
+          <p class="section-subtitle mb-4">
+            You graduated with the knowledge, but the workplace demands more.
+          </p>
+
+          <div class="reality-questions">
+            <div class="question-item mb-3">
+              <i class="fas fa-question-circle"></i>
+              <span>How do you communicate professionally?</span>
+            </div>
+            <div class="question-item mb-3">
+              <i class="fas fa-question-circle"></i>
+              <span>How do you manage multiple tasks effectively?</span>
+            </div>
+            <div class="question-item mb-3">
+              <i class="fas fa-question-circle"></i>
+              <span>How do you stand out when everyone is qualified?</span>
+            </div>
+            <div class="question-item mb-3">
+              <i class="fas fa-question-circle"></i>
+              <span>How do you navigate workplace dynamics professionally?</span>
+            </div>
+          </div>
+
+          <p class="mt-4 reality-conclusion">
+            <strong>Most young professionals struggle not because they lack intelligence,
+            but because they were never taught how to function effectively in a work
+            environment.</strong>
+          </p>
+          <p class="highlight-text mt-3">
+            <i class="fas fa-check-circle me-2"></i> This program bridges that gap.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       3. VALUE PROPOSITION SECTION
+  ================================================================ -->
+  <section id="value" class="value-section py-5 bg-light">
+    <div class="container py-5">
+      <div class="row">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+          <h2 class="section-title mb-4">
+            More Than Job Readiness —<br>
+            <span class="highlight">This Is Career Positioning</span>
+          </h2>
+          <p class="section-subtitle mb-4">
+            This program doesn't just help you get a job. It equips you to:
+          </p>
+
+          <div class="value-list">
+            <div class="value-item mb-3">
+              <div class="value-icon"><i class="fas fa-bolt"></i></div>
+              <div class="value-text"><h5>Deliver results with confidence from Day One</h5></div>
+            </div>
+            <div class="value-item mb-3">
+              <div class="value-icon"><i class="fas fa-comments"></i></div>
+              <div class="value-text"><h5>Communicate professionally and effectively</h5></div>
+            </div>
+            <div class="value-item mb-3">
+              <div class="value-icon"><i class="fas fa-handshake"></i></div>
+              <div class="value-text"><h5>Build strong relationships at work</h5></div>
+            </div>
+            <div class="value-item mb-3">
+              <div class="value-icon"><i class="fas fa-shield-alt"></i></div>
+              <div class="value-text"><h5>Handle pressure and expectations</h5></div>
+            </div>
+            <div class="value-item mb-3">
+              <div class="value-icon"><i class="fas fa-bullseye"></i></div>
+              <div class="value-text"><h5>Become top-of-mind for opportunities</h5></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="value-image">
+            <div class="image-placeholder-large">
+              <img src="../../../assets/img/img/7hs.png"
+                   class="img-fluid w-100 rounded-top" alt="Workforce Readiness">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       4. BENEFITS SECTION — Real Images
+  ================================================================ -->
+  <section id="benefits" class="benefits-section py-5">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h2 class="section-title">What You'll <span class="highlight">Gain</span></h2>
+        <p class="section-subtitle">Transform your career with these essential skills and tools</p>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+        <div class="col-md-6 col-lg-4" *ngFor="let benefit of benefits; let i = index">
+          <div class="benefit-card h-100">
+            <!-- Real Image -->
+            <div class="benefit-img-wrap">
+              <img [src]="benefit.img" [alt]="benefit.title" class="benefit-img" loading="lazy">
+              <div class="benefit-icon-overlay">
+                <i [class]="benefit.icon"></i>
+              </div>
+            </div>
+            <!-- Card Content -->
+            <div class="benefit-content">
+              <h5 class="benefit-title">{{ benefit.title }}</h5>
+              <p class="benefit-desc">{{ benefit.desc }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       5. PROGRAM COVERAGE SECTION
+  ================================================================ -->
+  <section id="coverage" class="coverage-section py-5 bg-light">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h2 class="section-title">What We'll <span class="highlight">Cover</span></h2>
+        <p class="section-subtitle">Comprehensive curriculum designed for real-world workplace success</p>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8 mx-auto">
+          <div class="coverage-list">
+            <div class="coverage-item" *ngFor="let item of coverage; let i = index">
+              <div class="coverage-number">{{ i + 1 }}</div>
+              <div class="coverage-icon-wrap">
+                <i [class]="item.icon"></i>
+              </div>
+              <div class="coverage-text">
+                <h5>{{ item.topic }}</h5>
+              </div>
+            </div>
+          </div>
+          <div class="alert alert-info mt-5">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Full curriculum will be provided after enrollment.</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       6. TARGET AUDIENCE SECTION
+  ================================================================ -->
+  <section id="audience" class="audience-section py-5">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h2 class="section-title">Who This Program Is <span class="highlight">For</span></h2>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-6 mb-4">
+          <div class="audience-card audience-for h-100">
+            <div class="audience-header">
+              <i class="fas fa-check-circle"></i>
+              <h4>Perfect For</h4>
+            </div>
+            <ul class="audience-list">
+              <li *ngFor="let item of targetAudience.for">
+                <i class="fas fa-arrow-right me-2"></i> {{ item }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+          <div class="audience-card audience-not-for h-100">
+            <div class="audience-header">
+              <i class="fas fa-times-circle"></i>
+              <h4>Not For</h4>
+            </div>
+            <ul class="audience-list">
+              <li *ngFor="let item of targetAudience.notFor">
+                <i class="fas fa-times me-2"></i> {{ item }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       7. SCHEDULE SECTION — Timezone-aware
+  ================================================================ -->
+  <section id="schedule" class="schedule-section py-5 bg-light">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h2 class="section-title">Program <span class="highlight">Schedule</span></h2>
+        <p class="section-subtitle">Live Virtual Classes · Times shown in your local timezone</p>
+
+        <!-- Timezone detection banner -->
+        <div class="tz-banner" *ngIf="timezoneDetected">
+          <i class="fas fa-map-marker-alt me-2"></i>
+          Showing times for <strong>{{ visitorCity }}</strong>
+          <span class="tz-code"> ({{ programSchedule[0]?.offsetLabel }})</span>
+        </div>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="row g-4">
+            <div class="col-md-6" *ngFor="let session of programSchedule">
+              <div class="schedule-card h-100">
+
+                <!-- Nigeria reference time -->
+                <div class="schedule-nigeria-time">
+                  <span class="ng-flag">🇳🇬</span>
+                  {{ session.day }} · {{ session.nigeriaHour === 14 ? '2:00 PM' : '4:00 PM' }} WAT
+                </div>
+
+                <div class="schedule-divider"></div>
+
+                <!-- Local time (big) -->
+                <div class="schedule-icon">
+                  <i class="fas fa-clock"></i>
+                </div>
+
+                <div class="schedule-local-label">Your Local Time</div>
+
+                <!-- Day might shift (e.g. Saturday 2PM WAT = Saturday/Sunday in UTC+X) -->
+                <h4 class="schedule-day">{{ session.localDayDisplay }}</h4>
+                <div class="schedule-time">{{ session.localTimeDisplay }}</div>
+
+                <div class="schedule-offset-badge">{{ session.offsetLabel }}</div>
+
+                <p class="schedule-note mt-2">Live Virtual Class · Online</p>
+
+                <!-- Add to calendar hint -->
+                <div class="schedule-calendar-hint">
+                  <i class="fas fa-calendar-plus me-1"></i>
+                  Add to your calendar
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Timezone note -->
+          <div class="tz-note mt-4">
+            <i class="fas fa-info-circle me-2"></i>
+            All class times are set in <strong>Nigeria time (WAT, UTC+1)</strong>. The times above
+            have been automatically converted to your device's timezone
+            (<strong>{{ visitorTimezone }}</strong>). If the day shifts, it is because your timezone
+            crosses midnight relative to Nigeria.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       8. PRICING SECTION
+  ================================================================ -->
+  <section id="pricing" class="pricing-section py-5">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h2 class="section-title">Pricing & <span class="highlight">Eligibility</span></h2>
+        <p class="section-subtitle">Choose the plan that's right for your situation</p>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+        <div class="col-lg-6" *ngFor="let option of pricingOptions; let i = index">
+          <div class="pricing-card h-100" [class.pricing-featured]="option.featured">
+            <div class="pricing-badge">{{ option.badge }}</div>
+            <h4 class="pricing-title">{{ option.title }}</h4>
+            <div class="pricing-price">{{ option.price }}</div>
+
+            <p class="pricing-eligibility">
+              <strong>For:</strong> {{ option.eligibility }}
+            </p>
+
+            <div *ngIf="option.documents" class="documents-section mb-4">
+              <h6 class="documents-title">Required Documents:</h6>
+              <ul class="documents-list">
+                <li *ngFor="let doc of option.documents">
+                  <i class="fas fa-file-alt me-2"></i> {{ doc }}
+                </li>
+              </ul>
+              <p class="documents-note" *ngIf="option.note">{{ option.note }}</p>
+            </div>
+
+            <button class="btn btn-primary w-100 pricing-btn" (click)="handleEnroll(option.title)">
+              <i class="fas fa-lock-open me-2"></i> Enroll Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       9. POST-PAYMENT SECTION
+  ================================================================ -->
+  <section id="post-payment" class="post-payment-section py-5 bg-light">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h2 class="section-title">
+          What Happens After <span class="highlight">Payment</span>
+        </h2>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8 mx-auto">
+          <div class="post-payment-grid">
+            <div class="post-payment-item"
+                 *ngFor="let item of postPaymentBenefits; let i = index">
+              <div class="post-payment-number">{{ i + 1 }}</div>
+              <div class="post-payment-content">
+                <i [class]="item.icon + ' me-2'"></i>
+                <span>{{ item.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       10. FINAL CTA SECTION
+  ================================================================ -->
+  <section id="final-cta" class="final-cta-section py-5">
+    <div class="container py-5">
+      <div class="row align-items-center">
+        <div class="col-lg-8 mx-auto text-center">
+          <h2 class="final-cta-title mb-4">
+            Your Career Doesn't Have to Be
+            <span class="highlight">Trial and Error</span>
+          </h2>
+          <p class="final-cta-subtitle mb-5">
+            Take control of your professional journey. Get the skills, strategies,
+            and confidence to succeed from day one.
+          </p>
+
+          <button class="btn btn-primary btn-lg final-cta-btn" (click)="applyNow()">
+            <i class="fas fa-star me-2"></i> Secure Your Spot Now
+          </button>
+
+          <p class="final-cta-subtext mt-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Limited slots available per cohort.</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
