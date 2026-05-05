@@ -84,30 +84,37 @@
         <div class="progress-fill" [style.width.%]="progressPercent"></div>
       </div>
       <div class="step-indicators">
-        <div class="step-dot" [class.active]="currentStep >= 1" [class.done]="currentStep > 1">
+        <div class="step-dot" [class.active]="displayStep >= 1" [class.done]="displayStep > 1">
           <span>1</span><label>Info</label>
         </div>
-        <div class="step-dot" [class.active]="currentStep >= 2" [class.done]="currentStep > 2">
+        <div class="step-dot" [class.active]="displayStep >= 2" [class.done]="displayStep > 2">
           <span>2</span><label>Photo</label>
         </div>
-        <div class="step-dot" [class.active]="currentStep >= 3" [class.done]="currentStep > 3">
+        <div class="step-dot" [class.active]="displayStep >= 3" [class.done]="displayStep > 3">
           <span>3</span><label>Assessment</label>
         </div>
-        <div class="step-dot" [class.active]="currentStep >= 4" [class.done]="currentStep > 4">
+        <!-- Doc step: NYSC only -->
+        <div class="step-dot" *ngIf="isNysc"
+             [class.active]="displayStep >= 4" [class.done]="displayStep > 4">
           <span>4</span><label>Docs</label>
         </div>
-        <div class="step-dot" [class.active]="currentStep >= 5" [class.done]="currentStep > 5">
-          <span>5</span><label>Payment</label>
+        <!-- Payment = step 4 for Graduate, step 5 for NYSC -->
+        <div class="step-dot"
+             [class.active]="displayStep >= (isNysc ? 5 : 4)"
+             [class.done]="displayStep > (isNysc ? 5 : 4)">
+          <span>{{ isNysc ? '5' : '4' }}</span><label>Payment</label>
         </div>
-        <div class="step-dot" [class.active]="currentStep >= 6">
-          <span>6</span><label>Submit</label>
+        <!-- Submit = step 5 for Graduate, step 6 for NYSC -->
+        <div class="step-dot"
+             [class.active]="displayStep >= (isNysc ? 6 : 5)">
+          <span>{{ isNysc ? '6' : '5' }}</span><label>Submit</label>
         </div>
       </div>
     </div>
 
     <!-- Step label bar -->
     <div class="step-label-bar">
-      <span class="step-tag">Step {{ currentStep }}</span>
+      <span class="step-tag">Step {{ displayStep }} of {{ effectiveTotalSteps }}</span>
       <span class="step-name">{{ stepLabel }}</span>
     </div>
 
@@ -148,6 +155,97 @@
                placeholder="e.g. 0801 234 5678"
                autocomplete="tel">
       </div>
+
+  <!-- Password divider -->
+  <div class="password-divider">
+    <span>Create your student portal password</span>
+  </div>
+
+  <div class="form-group">
+    <label for="password">Password <span class="req">*</span></label>
+    <div class="password-wrap">
+      <input [type]="showPassword ? 'text' : 'password'"
+             id="password" name="password"
+             [(ngModel)]="password"
+             placeholder="Minimum 8 characters"
+             autocomplete="new-password">
+      <button type="button" class="toggle-pw" (click)="showPassword = !showPassword">
+        <!-- Eye icon -->
+        <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+        <!-- Eye-off icon -->
+        <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="1" y1="1" x2="23" y2="23"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Strength meter -->
+    <div class="pw-strength-wrap" *ngIf="password.length > 0">
+      <div class="pw-strength-track">
+        <div class="pw-strength-fill"
+             [class]="'pw-' + passwordStrength"
+             [style.width.%]="passwordStrengthPercent">
+        </div>
+      </div>
+      <span class="pw-strength-label" [class]="'pw-label-' + passwordStrength">
+        {{ passwordStrengthLabel }}
+      </span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
+    <div class="password-wrap">
+      <input [type]="showConfirmPassword ? 'text' : 'password'"
+             id="confirmPassword" name="confirmPassword"
+             [(ngModel)]="confirmPassword"
+             placeholder="Re-enter your password"
+             autocomplete="new-password">
+      <button type="button" class="toggle-pw"
+              (click)="showConfirmPassword = !showConfirmPassword">
+        <svg *ngIf="!showConfirmPassword" viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+        <svg *ngIf="showConfirmPassword" viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="1" y1="1" x2="23" y2="23"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Match indicator -->
+    <div class="pw-match" *ngIf="confirmPassword.length > 0">
+      <span *ngIf="password === confirmPassword" class="pw-match-ok">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13">
+          <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"/>
+        </svg>
+        Passwords match
+      </span>
+      <span *ngIf="password !== confirmPassword" class="pw-match-fail">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13">
+          <path fill-rule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clip-rule="evenodd"/>
+        </svg>
+        Passwords do not match
+      </span>
+    </div>
+  </div>
 
       <div class="form-group">
         <label>Category <span class="req">*</span></label>
@@ -329,57 +427,86 @@
 
 
     <!-- ══ STEP 4 — Documents ════════════════════════════════════════════ -->
-    <div class="step-body" *ngIf="currentStep === 4">
-
+    <div class="step-body" *ngIf="currentStep === 4 && isNysc">
+ 
       <div class="step-intro">
-        <p>Upload the required documents for verification.
-           Accepted formats: PDF, JPG, PNG (max 5MB each).</p>
+        <p>Upload <strong>one</strong> supporting document for verification.
+           Choose which document you have available below.
+           Accepted formats: PDF, JPG, PNG (max 5MB).</p>
       </div>
-
+ 
       <div class="error-banner" *ngIf="docError" style="margin-bottom:1rem;">
         {{ docError }}
       </div>
-
+ 
+      <!-- Document type choice -->
       <div class="form-group">
-        <label>Statement of Result or Degree Certificate <span class="req">*</span></label>
-        <div class="file-drop" [class.has-file]="statementFile"
-             (click)="statInput.click()">
-          <input #statInput type="file" accept=".pdf,.jpg,.jpeg,.png"
-                 (change)="onStatementUpload($event)" style="display:none;">
-          <div class="file-icon">📄</div>
-          <div *ngIf="!statementFile">
-            <strong>Click to upload</strong>
-            <span>PDF, JPG or PNG — Max 5MB</span>
+        <label>Select Document Type <span class="req">*</span></label>
+        <div class="doc-type-selector">
+          <div class="doc-type-card"
+               [class.selected]="selectedDocType === 'statement'"
+               (click)="selectDocType('statement')">
+            <div class="dtc-icon">📄</div>
+            <div class="dtc-body">
+              <strong>Statement of Result</strong>
+              <span>or Degree / Diploma Certificate</span>
+            </div>
+            <div class="dtc-check" *ngIf="selectedDocType === 'statement'">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                <path fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"/>
+              </svg>
+            </div>
           </div>
-          <div *ngIf="statementFile" class="file-name">
-            <span>✓ {{ statementFile.name }}</span>
-            <small>{{ (statementFile.size / 1024 / 1024).toFixed(2) }} MB</small>
+ 
+          <div class="doc-type-card"
+               [class.selected]="selectedDocType === 'callUp'"
+               (click)="selectDocType('callUp')">
+            <div class="dtc-icon">📋</div>
+            <div class="dtc-body">
+              <strong>NYSC Call-Up Letter</strong>
+              <span>Official NYSC call-up or posting letter</span>
+            </div>
+            <div class="dtc-check" *ngIf="selectedDocType === 'callUp'">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                <path fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
-
-      <div class="form-group">
-        <label>NYSC Call-Up Letter <span class="req">*</span></label>
-        <div class="file-drop" [class.has-file]="callUpFile"
-             (click)="callInput.click()">
-          <input #callInput type="file" accept=".pdf,.jpg,.jpeg,.png"
-                 (change)="onCallUpUpload($event)" style="display:none;">
-          <div class="file-icon">📋</div>
-          <div *ngIf="!callUpFile">
+ 
+      <!-- File upload — only shown after type is selected -->
+      <div class="form-group" *ngIf="selectedDocType">
+        <label>
+          Upload
+          {{ selectedDocType === 'statement' ? 'Statement of Result / Certificate' : 'NYSC Call-Up Letter' }}
+          <span class="req">*</span>
+        </label>
+        <div class="file-drop" [class.has-file]="documentFile" (click)="docInput.click()">
+          <input #docInput type="file" accept=".pdf,.jpg,.jpeg,.png"
+                 (change)="onDocumentUpload($event)" style="display:none;">
+          <div class="file-icon">
+            {{ selectedDocType === 'statement' ? '📄' : '📋' }}
+          </div>
+          <div *ngIf="!documentFile">
             <strong>Click to upload</strong>
             <span>PDF, JPG or PNG — Max 5MB</span>
           </div>
-          <div *ngIf="callUpFile" class="file-name">
-            <span>✓ {{ callUpFile.name }}</span>
-            <small>{{ (callUpFile.size / 1024 / 1024).toFixed(2) }} MB</small>
+          <div *ngIf="documentFile" class="file-name">
+            <span>✓ {{ documentFile.name }}</span>
+            <small>{{ (documentFile.size / 1024 / 1024).toFixed(2) }} MB</small>
           </div>
         </div>
       </div>
-
+ 
       <div class="doc-note">
         All uploaded documents are kept confidential and used solely for enrollment verification.
       </div>
-
+ 
     </div>
 
 
@@ -512,11 +639,12 @@
             <span>Assessment</span>
             <strong>{{ assessmentResult.percentage }}% — {{ assessmentResult.levelLabel }}</strong>
           </div>
-          <div class="review-row" *ngIf="statementFile">
-            <span>Statement</span><strong>{{ statementFile.name }}</strong>
-          </div>
-          <div class="review-row" *ngIf="callUpFile">
-            <span>Call-Up</span><strong>{{ callUpFile.name }}</strong>
+          <div class="review-row" *ngIf="isNysc && documentFile">
+            <span>Document</span>
+            <strong>
+              {{ selectedDocType === 'statement' ? 'Statement / Certificate' : 'NYSC Call-Up' }}:
+              {{ documentFile.name }}
+            </strong>
           </div>
           <div class="review-row">
             <span>Fee</span><strong>{{ paymentAmount }}</strong>

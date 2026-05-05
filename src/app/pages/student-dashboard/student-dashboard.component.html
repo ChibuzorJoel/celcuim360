@@ -1,56 +1,646 @@
-<div class="portal-container">
-    <!-- Sidebar Profile -->
-    <aside class="sidebar">
-      <div class="profile-card">
-        <img [src]="student.photo" alt="Profile" class="avatar">
-        <h3>{{ student.name }}</h3>
-        <p>{{ student.email }}</p>
-        <span class="badge">Student</span>
+<!-- src/app/student/student-dashboard/student-dashboard.component.html -->
+
+<div class="portal-wrap" *ngIf="!loading">
+
+  <!-- ══ SIDEBAR ═══════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+
+    <div class="sidebar-brand">
+      <span class="brand-logo">celcium<span>360</span></span>
+    </div>
+
+    <!-- Profile -->
+    <div class="profile-section">
+      <div class="profile-avatar-wrap">
+        <img [src]="photoUrl" alt="Profile photo" class="profile-avatar"
+             onerror="this.src='assets/avatar-placeholder.png'">
+        <div class="avatar-ring"></div>
       </div>
-      
-      <nav class="menu">
-        <a href="#" class="active">Dashboard</a>
-        <a href="#">Coursework</a>
-        <a href="#">Assignments</a>
-        <a href="#">Grades</a>
-      </nav>
-    </aside>
-  
-    <!-- Main Content -->
-    <main class="content">
-      <header class="content-header">
-        <h2>My Course Dashboard</h2>
-        <div class="progress-overview">
-          Overall Progress: <strong>{{ completionRate }}%</strong>
+      <h3 class="profile-name">{{ student?.fullName }}</h3>
+      <span class="profile-badge">{{ categoryLabel(student?.category || '') }}</span>
+      <p class="profile-email">{{ student?.email }}</p>
+
+      <!-- Mini progress ring -->
+      <div class="mini-progress-wrap">
+        <div class="mini-progress-label">
+          <span>Program Progress</span>
+          <strong>{{ completionRate }}%</strong>
         </div>
-      </header>
-  
-      <!-- 6-Week Course Structure -->
-      <div class="course-grid">
-        <div *ngFor="let week of courseWeeks" class="week-card" [ngClass]="week.status">
-          <div class="week-header">
-            <h4>Week {{ week.id }}: {{ week.title }}</h4>
-            <span class="status-dot"></span>
+        <div class="mini-progress-track">
+          <div class="mini-progress-fill" [style.width.%]="completionRate"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <button class="nav-item" [class.active]="activeTab === 'dashboard'"
+              (click)="setTab('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" rx="1"/>
+        </svg>
+        Dashboard
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'coursework'"
+              (click)="setTab('coursework')">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Coursework
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'assignments'"
+              (click)="setTab('assignments')">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Assignments
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'grades'"
+              (click)="setTab('grades')">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Grades
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>Work Readiness Program</p>
+      <p>© 2025 Celcium360 Solutions</p>
+    </div>
+
+  </aside>
+
+
+  <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>
+          <span *ngIf="activeTab === 'dashboard'">Dashboard</span>
+          <span *ngIf="activeTab === 'coursework'">Coursework</span>
+          <span *ngIf="activeTab === 'assignments'">Assignments</span>
+          <span *ngIf="activeTab === 'grades'">Grades & Scores</span>
+        </h1>
+        <p class="topbar-sub">Work Readiness Program · {{ enrolledWeeksLabel }}</p>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-avatar" (click)="setTab('dashboard')">
+          <img [src]="photoUrl" alt="you"
+               onerror="this.src='assets/avatar-placeholder.png'">
+        </div>
+      </div>
+    </header>
+
+    <!-- Alerts -->
+    <div class="alerts-wrap" *ngIf="alerts.length">
+      <div class="alert" *ngFor="let a of alerts; let i = index"
+           [class]="'alert-' + a.type">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>{{ a.message }}</span>
+        <button class="alert-dismiss" (click)="dismissAlert(i)">×</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+
+      <!-- ════════════════════════════════════════════════════════════
+           DASHBOARD TAB
+      ════════════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="activeTab === 'dashboard'">
+
+        <!-- Stat cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon completed-icon">
+              <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="stat-body">
+              <span class="stat-num stat-green">{{ completedCount }}</span>
+              <span class="stat-label">Weeks Complete</span>
+            </div>
           </div>
-          <p>{{ week.description }}</p>
-          
-          <div class="task-list">
-            <div class="task">Coursework: <span class="tag">{{ week.coursework }}</span></div>
-            <div class="task">Assessment: 
-              <span class="score" *ngIf="week.score !== null">Score: {{ week.score }}%</span>
-              <button *ngIf="week.score === null" class="btn-action">Take Test</button>
+          <div class="stat-card">
+            <div class="stat-icon pending-icon">
+              <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="stat-body">
+              <span class="stat-num stat-amber">{{ pendingCount }}</span>
+              <span class="stat-label">In Progress</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon overdue-icon">
+              <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="stat-body">
+              <span class="stat-num stat-red">{{ overdueCount }}</span>
+              <span class="stat-label">Overdue</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon score-icon">
+              <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="stat-body">
+              <span class="stat-num stat-gold">{{ averageScore }}%</span>
+              <span class="stat-label">Avg Quiz Score</span>
             </div>
           </div>
         </div>
-      </div>
-  
-      <!-- Final Assessment -->
-      <section class="final-assessment">
-        <h3>Final Assessment</h3>
-        <div class="assessment-banner">
-          <p>Comprehensive objective exam covering all 6 weeks.</p>
-          <button class="btn-gold" [disabled]="completionRate < 100">Unlock Final Exam</button>
+
+        <!-- Course weeks overview -->
+        <div class="section-title-row">
+          <h2 class="section-title">Course Progress</h2>
+          <button class="btn-link" (click)="setTab('coursework')">View All →</button>
         </div>
-      </section>
-    </main>
+
+        <div class="week-grid">
+          <div class="week-card" *ngFor="let week of courseWeeks"
+               [class]="'week-' + week.status"
+               (click)="week.status !== 'locked' && setTab('coursework')">
+
+            <div class="wc-header">
+              <div class="wc-week-badge">Week {{ week.id }}</div>
+              <div class="wc-status-pill" [class]="'sp-' + week.status">
+                {{ statusLabel(week.status) }}
+              </div>
+            </div>
+
+            <h4 class="wc-title">{{ week.title }}</h4>
+            <p class="wc-desc">{{ week.description }}</p>
+
+            <div class="wc-footer">
+              <div class="wc-checks">
+                <span class="wc-check" [class.done]="week.courseworkSubmitted">
+                  <svg viewBox="0 0 12 12" fill="none" width="10" height="10">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Coursework
+                </span>
+                <span class="wc-check" [class.done]="week.quizCompleted">
+                  <svg viewBox="0 0 12 12" fill="none" width="10" height="10">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Quiz
+                </span>
+              </div>
+              <span class="wc-score" *ngIf="week.quizScore !== null">
+                {{ week.quizScore }}%
+              </span>
+              <span class="wc-locked" *ngIf="week.status === 'locked'">
+                🔒
+              </span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Final exam banner -->
+        <div class="final-banner" [class.final-unlocked]="canTakeFinalExam">
+          <div class="final-banner-left">
+            <div class="final-icon">🏆</div>
+            <div>
+              <h3>Final Assessment</h3>
+              <p>Comprehensive exam covering all 6 weeks. Unlocks when all weeks are complete.</p>
+            </div>
+          </div>
+          <button class="btn-gold" [disabled]="!canTakeFinalExam && !finalExamSubmitted"
+                  (click)="openFinalExam()">
+            <span *ngIf="!finalExamSubmitted">{{ canTakeFinalExam ? 'Take Final Exam' : '🔒 Complete All Weeks First' }}</span>
+            <span *ngIf="finalExamSubmitted">Score: {{ finalExamScore }}% ✓</span>
+          </button>
+        </div>
+
+      </ng-container>
+
+
+      <!-- ════════════════════════════════════════════════════════════
+           COURSEWORK TAB
+      ════════════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="activeTab === 'coursework'">
+
+        <div class="cw-list">
+          <div class="cw-item" *ngFor="let week of courseWeeks"
+               [class]="'cw-' + week.status">
+
+            <div class="cw-left">
+              <div class="cw-week-num">{{ week.id }}</div>
+              <div class="cw-info">
+                <div class="cw-header-row">
+                  <h3 class="cw-title">Week {{ week.id }}: {{ week.title }}</h3>
+                  <span class="cw-status-pill" [class]="'sp-' + week.status">
+                    {{ statusLabel(week.status) }}
+                  </span>
+                </div>
+                <p class="cw-desc">{{ week.description }}</p>
+                <div class="cw-topics">
+                  <span class="cw-topic" *ngFor="let t of week.topics">{{ t }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cw-right" *ngIf="week.status !== 'locked'">
+
+              <!-- Coursework submission -->
+              <div class="cw-action-block">
+                <div class="cw-action-label">
+                  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Coursework
+                </div>
+                <div *ngIf="week.courseworkSubmitted" class="cw-submitted-badge">
+                  ✓ Submitted
+                </div>
+                <label *ngIf="!week.courseworkSubmitted" class="btn-upload"
+                       [class.loading]="submittingWeek === week.id">
+                  <input type="file" accept=".pdf,.doc,.docx"
+                         (change)="onFileSelected($event, week)" style="display:none;">
+                  <span *ngIf="submittingWeek !== week.id">
+                    <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Upload
+                  </span>
+                  <span *ngIf="submittingWeek === week.id" class="spinner-xs"></span>
+                </label>
+              </div>
+
+              <!-- Quiz -->
+              <div class="cw-action-block">
+                <div class="cw-action-label">
+                  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Quiz
+                </div>
+                <span class="quiz-score-badge" *ngIf="week.quizScore !== null">
+                  {{ week.quizScore }}%
+                </span>
+                <button class="btn-quiz" *ngIf="week.quizScore === null"
+                        (click)="openQuiz(week)">
+                  Take Quiz
+                </button>
+              </div>
+
+            </div>
+
+            <div class="cw-locked-msg" *ngIf="week.status === 'locked'">
+              🔒 Complete previous weeks to unlock
+            </div>
+
+          </div>
+        </div>
+
+      </ng-container>
+
+
+      <!-- ════════════════════════════════════════════════════════════
+           ASSIGNMENTS TAB
+      ════════════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="activeTab === 'assignments'">
+
+        <div class="assign-table-wrap">
+          <table class="assign-table">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th>Assignment</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let week of courseWeeks"
+                  [class]="'atr-' + week.status">
+                <td class="td-week">Week {{ week.id }}</td>
+                <td>
+                  <div class="td-assign-title">{{ week.title }}</div>
+                  <div class="td-assign-desc">{{ week.description }}</div>
+                </td>
+                <td class="td-date">{{ formatDate(week.dueDate) }}</td>
+                <td>
+                  <span class="status-pill-sm" [class]="'sp-' + week.status">
+                    {{ statusLabel(week.status) }}
+                  </span>
+                </td>
+                <td class="td-action">
+                  <span *ngIf="week.status === 'locked'" class="td-locked">Locked</span>
+                  <span *ngIf="week.courseworkSubmitted && week.status !== 'locked'" class="td-done">✓ Done</span>
+                  <label *ngIf="!week.courseworkSubmitted && week.status !== 'locked'"
+                         class="btn-upload-sm">
+                    <input type="file" (change)="onFileSelected($event, week)" style="display:none;">
+                    <span *ngIf="submittingWeek !== week.id">Upload</span>
+                    <span *ngIf="submittingWeek === week.id" class="spinner-xs"></span>
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </ng-container>
+
+
+      <!-- ════════════════════════════════════════════════════════════
+           GRADES TAB
+      ════════════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="activeTab === 'grades'">
+
+        <!-- Summary bar -->
+        <div class="grades-summary">
+          <div class="gs-item">
+            <span class="gs-label">Average Score</span>
+            <span class="gs-val gold">{{ averageScore }}%</span>
+          </div>
+          <div class="gs-item">
+            <span class="gs-label">Weeks Graded</span>
+            <span class="gs-val">{{ completedCount }} / 6</span>
+          </div>
+          <div class="gs-item">
+            <span class="gs-label">Final Exam</span>
+            <span class="gs-val" [class.gold]="finalExamScore !== null">
+              {{ finalExamScore !== null ? finalExamScore + '%' : 'Not taken' }}
+            </span>
+          </div>
+          <div class="gs-item">
+            <span class="gs-label">Pre-Assessment</span>
+            <span class="gs-val">{{ student?.assessmentScore !== null ? student?.assessmentScore + '%' : '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Per-week grades table -->
+        <div class="grades-table-wrap">
+          <table class="grades-table">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th>Topic</th>
+                <th>Coursework</th>
+                <th>Quiz Score</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let week of courseWeeks">
+                <td class="gt-week">{{ week.id }}</td>
+                <td class="gt-topic">{{ week.title }}</td>
+                <td class="gt-cw">
+                  <span *ngIf="week.courseworkSubmitted" class="gt-done">✓ Submitted</span>
+                  <span *ngIf="!week.courseworkSubmitted && week.status !== 'locked'"
+                        class="gt-missing">Not submitted</span>
+                  <span *ngIf="week.status === 'locked'" class="gt-locked">Locked</span>
+                </td>
+                <td class="gt-score">
+                  <span *ngIf="week.quizScore !== null"
+                        class="score-badge"
+                        [class.score-pass]="week.quizScore >= 60"
+                        [class.score-fail]="week.quizScore < 60">
+                    {{ week.quizScore }}%
+                  </span>
+                  <span *ngIf="week.quizScore === null && week.status !== 'locked'"
+                        class="gt-missing">—</span>
+                  <span *ngIf="week.status === 'locked'" class="gt-locked">Locked</span>
+                </td>
+                <td class="gt-grade">
+                  <span *ngIf="week.quizScore === null" class="grade-na">N/A</span>
+                  <span *ngIf="week.quizScore !== null && week.quizScore >= 80" class="grade-a">A</span>
+                  <span *ngIf="week.quizScore !== null && week.quizScore >= 70 && week.quizScore < 80" class="grade-b">B</span>
+                  <span *ngIf="week.quizScore !== null && week.quizScore >= 60 && week.quizScore < 70" class="grade-c">C</span>
+                  <span *ngIf="week.quizScore !== null && week.quizScore < 60" class="grade-f">F</span>
+                </td>
+              </tr>
+              <!-- Final exam row -->
+              <tr class="gt-final-row">
+                <td class="gt-week">Final</td>
+                <td class="gt-topic">Final Assessment</td>
+                <td class="gt-cw">—</td>
+                <td class="gt-score">
+                  <span *ngIf="finalExamScore !== null"
+                        class="score-badge"
+                        [class.score-pass]="finalExamScore >= 60"
+                        [class.score-fail]="finalExamScore < 60">
+                    {{ finalExamScore }}%
+                  </span>
+                  <span *ngIf="finalExamScore === null" class="gt-missing">
+                    {{ canTakeFinalExam ? 'Not taken' : 'Locked' }}
+                  </span>
+                </td>
+                <td class="gt-grade">
+                  <span *ngIf="finalExamScore === null" class="grade-na">N/A</span>
+                  <span *ngIf="finalExamScore !== null && finalExamScore >= 80" class="grade-a">A</span>
+                  <span *ngIf="finalExamScore !== null && finalExamScore >= 70 && finalExamScore < 80" class="grade-b">B</span>
+                  <span *ngIf="finalExamScore !== null && finalExamScore >= 60 && finalExamScore < 70" class="grade-c">C</span>
+                  <span *ngIf="finalExamScore !== null && finalExamScore < 60" class="grade-f">F</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </ng-container>
+
+    </div><!-- /page-body -->
+  </main>
+</div>
+
+<!-- Loading skeleton -->
+<div class="portal-loading" *ngIf="loading">
+  <div class="loading-spinner"></div>
+  <p>Loading your portal…</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     QUIZ MODAL
+════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showQuizModal" (click)="closeQuiz()">
+  <div class="modal-box quiz-modal" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="modal-tag">Week {{ activeQuiz?.id }} Quiz</span>
+        <h3>{{ activeQuiz?.title }}</h3>
+      </div>
+      <button class="modal-close" (click)="closeQuiz()">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Result screen -->
+    <div class="quiz-result" *ngIf="quizSubmitted && quizResult">
+      <div class="qr-icon" [class.qr-pass]="quizResult.percentage >= 60"
+                           [class.qr-fail]="quizResult.percentage < 60">
+        <span>{{ quizResult.percentage >= 60 ? '🎉' : '📚' }}</span>
+      </div>
+      <div class="qr-score">{{ quizResult.percentage }}%</div>
+      <div class="qr-fraction">{{ quizResult.score }} / {{ quizResult.total }} correct</div>
+      <p class="qr-msg" *ngIf="quizResult.percentage >= 80">Excellent work! Outstanding performance.</p>
+      <p class="qr-msg" *ngIf="quizResult.percentage >= 60 && quizResult.percentage < 80">Good job! Keep building on this.</p>
+      <p class="qr-msg" *ngIf="quizResult.percentage < 60">Review the material and aim to improve next time.</p>
+      <button class="btn-gold" (click)="closeQuiz()">Close</button>
+    </div>
+
+    <!-- Questions -->
+    <div class="quiz-body" *ngIf="!quizSubmitted">
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill"
+             [style.width.%]="(quizAnsweredCount / (activeQuiz?.quizQuestions?.length || 1)) * 100">
+        </div>
+      </div>
+      <p class="quiz-progress-text">
+        {{ quizAnsweredCount }} of {{ activeQuiz?.quizQuestions?.length }} answered
+      </p>
+
+      <div class="quiz-questions">
+        <div class="quiz-q" *ngFor="let q of activeQuiz?.quizQuestions; let i = index">
+          <div class="qq-header">
+            <span class="qq-num">{{ i + 1 }}</span>
+            <p class="qq-text">{{ q.text }}</p>
+          </div>
+          <div class="qq-options">
+            <label class="qq-option" *ngFor="let o of q.options"
+                   [class.selected]="getQuizAnswer(q.id) === o.key">
+              <input type="radio" [name]="'quiz_' + q.id" [value]="o.key"
+                     (change)="selectQuizAnswer(q.id, o.key)">
+              <span class="qq-opt-key">{{ o.key.toUpperCase() }}</span>
+              <span class="qq-opt-label">{{ o.label }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="quiz-footer">
+        <span class="quiz-warn"
+              *ngIf="quizAnsweredCount < (activeQuiz?.quizQuestions?.length || 0)">
+          Please answer all questions to submit.
+        </span>
+        <button class="btn-gold"
+                [disabled]="quizAnsweredCount < (activeQuiz?.quizQuestions?.length || 0) || quizSubmitting"
+                (click)="submitQuiz()">
+          <span *ngIf="!quizSubmitting">Submit Quiz</span>
+          <span *ngIf="quizSubmitting" class="loading-btn">
+            <span class="spinner-sm-w"></span> Grading…
+          </span>
+        </button>
+      </div>
+    </div>
+
   </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     FINAL EXAM MODAL
+════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showFinalExam" (click)="closeFinalExam()">
+  <div class="modal-box final-modal" (click)="$event.stopPropagation()">
+
+    <div class="modal-header final-header">
+      <div class="modal-header-left">
+        <span class="modal-tag final-tag">🏆 Final Assessment</span>
+        <h3>Work Readiness — Final Exam</h3>
+      </div>
+      <button class="modal-close" (click)="closeFinalExam()">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Final result -->
+    <div class="quiz-result" *ngIf="finalExamSubmitted && finalExamScore !== null">
+      <div class="qr-icon" [class.qr-pass]="finalExamScore >= 60"
+                           [class.qr-fail]="finalExamScore < 60">
+        <span>{{ finalExamScore >= 60 ? '🏆' : '📚' }}</span>
+      </div>
+      <div class="qr-score">{{ finalExamScore }}%</div>
+      <div class="qr-fraction">{{ finalExamQuestions.length }} questions</div>
+      <p class="qr-msg" *ngIf="finalExamScore >= 80">Outstanding! You have demonstrated exceptional work readiness.</p>
+      <p class="qr-msg" *ngIf="finalExamScore >= 60 && finalExamScore < 80">Well done. You have completed the Work Readiness Program.</p>
+      <p class="qr-msg" *ngIf="finalExamScore < 60">You have completed the exam. Review key topics to strengthen your readiness.</p>
+      <button class="btn-gold" (click)="closeFinalExam()">Close</button>
+    </div>
+
+    <!-- Final exam questions -->
+    <div class="quiz-body" *ngIf="!finalExamSubmitted">
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill"
+             [style.width.%]="(finalAnsweredCount / finalExamQuestions.length) * 100">
+        </div>
+      </div>
+      <p class="quiz-progress-text">
+        {{ finalAnsweredCount }} of {{ finalExamQuestions.length }} answered
+      </p>
+
+      <div class="quiz-questions">
+        <div class="quiz-q" *ngFor="let q of finalExamQuestions; let i = index">
+          <div class="qq-header">
+            <span class="qq-num">{{ i + 1 }}</span>
+            <p class="qq-text">{{ q.text }}</p>
+          </div>
+          <div class="qq-options">
+            <label class="qq-option" *ngFor="let o of q.options"
+                   [class.selected]="getFinalAnswer(q.id) === o.key">
+              <input type="radio" [name]="'final_' + q.id" [value]="o.key"
+                     (change)="selectFinalAnswer(q.id, o.key)">
+              <span class="qq-opt-key">{{ o.key.toUpperCase() }}</span>
+              <span class="qq-opt-label">{{ o.label }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="quiz-footer">
+        <span class="quiz-warn" *ngIf="finalAnsweredCount < finalExamQuestions.length">
+          Answer all {{ finalExamQuestions.length }} questions to submit.
+        </span>
+        <button class="btn-gold"
+                [disabled]="finalAnsweredCount < finalExamQuestions.length || finalExamSubmitting"
+                (click)="submitFinalExam()">
+          <span *ngIf="!finalExamSubmitting">Submit Final Exam</span>
+          <span *ngIf="finalExamSubmitting" class="loading-btn">
+            <span class="spinner-sm-w"></span> Grading…
+          </span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

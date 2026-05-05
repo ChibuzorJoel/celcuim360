@@ -53,7 +53,17 @@ export class RegistrationComponent implements OnInit, OnDestroy {
   isLoading = false;
   errorMessage = '';
   assessmentError = '';
+  password        = '';
+  confirmPassword = '';
 
+  showPassword        = false;
+  showConfirmPassword = false;
+
+  // NYSC Step 4: single document choice
+  selectedDocType: 'statement' | 'callUp' | null = null;
+  documentFile: File | null = null;
+  documentFileName = '';
+  
   formData: RegistrationFormData = {
     fullName: '',
     email: '',
@@ -127,20 +137,40 @@ export class RegistrationComponent implements OnInit, OnDestroy {
   ngOnInit():    void {}
   ngOnDestroy(): void { this.stopCamera(); }
 
-  get isNysc():             boolean { return this.formData.category === 'nysc'; }
-  get effectiveTotalSteps(): number { return 6; }
-
+  get isNysc(): boolean { return this.formData.category === 'nysc'; }
+  get effectiveTotalSteps(): number { return this.isNysc ? 6 : 5; }
+ 
   get stepLabel(): string {
-    const map: Record<number, string> = {
-      1:'Basic Information', 2:'Live Photo', 3:'Self-Assessment',
-      4:'Documents', 5:'Payment', 6:'Review & Submit'
-    };
-    return map[this.currentStep] ?? '';
+    if (this.isNysc) {
+      const map: Record<number, string> = {
+        1:'Basic Information', 2:'Live Photo', 3:'Self-Assessment',
+        4:'Document Upload', 5:'Payment', 6:'Review & Submit'
+      };
+      return map[this.currentStep] ?? '';
+    } else {
+      // Graduate: step 4 is skipped, display step numbers shift
+      const map: Record<number, string> = {
+        1:'Basic Information', 2:'Live Photo', 3:'Self-Assessment',
+        5:'Payment', 6:'Review & Submit'
+      };
+      return map[this.currentStep] ?? '';
+    }
+  }
+ 
+
+  get displayStep(): number {
+    if (this.isNysc) return this.currentStep;
+    if (this.currentStep <= 3) return this.currentStep;
+    if (this.currentStep === 5) return 4;
+    if (this.currentStep === 6) return 5;
+    return this.currentStep;
+  }
+ 
+  get progressPercent(): number {
+    return Math.round(((this.displayStep - 1) / (this.effectiveTotalSteps - 1)) * 100);
   }
 
-  get progressPercent(): number {
-    return Math.round(((this.currentStep - 1) / (this.effectiveTotalSteps - 1)) * 100);
-  }
+ 
 
   get paymentAmount(): string {
     return this.isNysc ? this.paymentDetails.discountedAmount : this.paymentDetails.standardAmount;
@@ -152,61 +182,83 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     if (!this.validateCurrentStep()) return;
     this.errorMessage = '';
     this.stopCamera();
+    // Graduate: skip step 4 entirely
+    if (this.currentStep === 3 && !this.isNysc) {
+      this.currentStep = 5;
+      return;
+    }
     this.currentStep++;
   }
-
+ 
   prevStep(): void {
     this.errorMessage = '';
     this.stopCamera();
+    // Graduate: skip back over step 4
+    if (this.currentStep === 5 && !this.isNysc) {
+      this.currentStep = 3;
+      return;
+    }
     this.currentStep--;
   }
 
   private validateCurrentStep(): boolean {
     this.errorMessage = '';
-
+ 
     if (this.currentStep === 1) {
-      if (!this.formData.fullName.trim())          { this.errorMessage = 'Please enter your full name.'; return false; }
-      if (!this.isValidEmail(this.formData.email)) { this.errorMessage = 'Please enter a valid email address.'; return false; }
-      if (!this.formData.phone.trim())             { this.errorMessage = 'Please enter your phone number.'; return false; }
-      if (!this.formData.category)                 { this.errorMessage = 'Please select your category.'; return false; }
+      if (!this.formData.fullName.trim())
+        { this.errorMessage = 'Please enter your full name.'; return false; }
+      if (!this.isValidEmail(this.formData.email))
+        { this.errorMessage = 'Please enter a valid email address.'; return false; }
+      if (!this.formData.phone.trim())
+        { this.errorMessage = 'Please enter your phone number.'; return false; }
+      if (!this.formData.category)
+        { this.errorMessage = 'Please select your category.'; return false; }
+      // Password validation
+      if (!this.password.trim())
+        { this.errorMessage = 'Please create a password.'; return false; }
+      if (this.password.length < 8)
+        { this.errorMessage = 'Password must be at least 8 characters.'; return false; }
+      if (this.password !== this.confirmPassword)
+        { this.errorMessage = 'Passwords do not match.'; return false; }
       this.loadAssessmentQuestions();
     }
-
+ 
     if (this.currentStep === 2) {
-      if (!this.capturedPhotoDataUrl) {
-        this.errorMessage = 'A live photo is required. Please capture your headshot.';
-        return false;
-      }
+      if (!this.capturedPhotoDataUrl)
+        { this.errorMessage = 'A live photo is required. Please capture your headshot.'; return false; }
     }
-
+ 
     if (this.currentStep === 3) {
-      if (this.assessmentAnswers.size === 0) {
-        this.errorMessage = 'Please answer all assessment questions.'; return false;
-      }
-      if (this.assessmentAnswers.size !== this.assessmentQuestions.length) {
-        this.errorMessage = `Please answer all ${this.assessmentQuestions.length} questions.`; return false;
-      }
+      if (this.assessmentAnswers.size === 0)
+        { this.errorMessage = 'Please answer all assessment questions.'; return false; }
+      if (this.assessmentAnswers.size !== this.assessmentQuestions.length)
+        { this.errorMessage = `Please answer all ${this.assessmentQuestions.length} questions.`; return false; }
       this.calculateAssessmentScore();
     }
-
-    if (this.currentStep === 4) {
-      if (!this.statementFile) { this.errorMessage = 'Please upload your Statement of Result or Degree Certificate.'; return false; }
-      if (!this.callUpFile)    { this.errorMessage = 'Please upload your NYSC Call-Up Letter.'; return false; }
+ 
+    // Step 4 only shown for NYSC — one document required (choice of which)
+    if (this.currentStep === 4 && this.isNysc) {
+      if (!this.selectedDocType)
+        { this.errorMessage = 'Please select which document you are uploading.'; return false; }
+      if (!this.documentFile)
+        { this.errorMessage = 'Please upload your selected document.'; return false; }
     }
-
+ 
     if (this.currentStep === 5) {
-      if (!this.paymentProofFile) { this.errorMessage = 'Please upload your payment receipt.'; return false; }
+      if (!this.paymentProofFile)
+        { this.errorMessage = 'Please upload your payment receipt.'; return false; }
     }
-
+ 
     if (this.currentStep === 6) {
-      if (!this.consentAccepted) {
-        this.errorMessage = 'Please confirm the Consent & Acknowledgment before submitting.';
-        return false;
-      }
+      if (!this.consentAccepted)
+        { this.errorMessage = 'Please confirm the Consent & Acknowledgment before submitting.'; return false; }
     }
-
+ 
     return true;
   }
+ 
+ 
+
 
   // ── Assessment ─────────────────────────────────────────────────────────────
 
@@ -353,18 +405,30 @@ export class RegistrationComponent implements OnInit, OnDestroy {
 
   // ── File uploads ────────────────────────────────────────────────────────────
 
-  onStatementUpload(e: Event): void {
+  onDocumentUpload(e: Event): void {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
     if (!this.validDoc(file)) { this.docError = 'PDF, JPG or PNG only (max 5MB).'; return; }
-    this.docError = ''; this.statementFile = file;
+    this.docError = '';
+    this.documentFile = file;
+    this.documentFileName = file.name;
+    // Also set legacy fields so backend submission still works
+    if (this.selectedDocType === 'statement') {
+      this.statementFile = file;
+      this.callUpFile    = null;
+    } else {
+      this.callUpFile    = file;
+      this.statementFile = null;
+    }
   }
-
-  onCallUpUpload(e: Event): void {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (!this.validDoc(file)) { this.docError = 'PDF, JPG or PNG only (max 5MB).'; return; }
-    this.docError = ''; this.callUpFile = file;
+ 
+  selectDocType(type: 'statement' | 'callUp'): void {
+    this.selectedDocType  = type;
+    this.documentFile     = null;
+    this.documentFileName = '';
+    this.statementFile    = null;
+    this.callUpFile       = null;
+    this.docError         = '';
   }
 
   onPaymentProofUpload(e: Event): void {
@@ -400,6 +464,7 @@ export class RegistrationComponent implements OnInit, OnDestroy {
     payload.append('email',    this.formData.email);
     payload.append('phone',    this.formData.phone);
     payload.append('category', this.formData.category ?? '');
+    payload.append('password', this.password);
 
     if (this.assessmentResult) {
       payload.append('assessmentScore',      this.assessmentResult.score.toString());
@@ -442,5 +507,27 @@ export class RegistrationComponent implements OnInit, OnDestroy {
 
   private isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  get passwordStrength(): 'weak' | 'fair' | 'good' | 'strong' {
+    const p = this.password;
+    if (p.length < 6) return 'weak';
+    const hasUpper   = /[A-Z]/.test(p);
+    const hasLower   = /[a-z]/.test(p);
+    const hasNumber  = /[0-9]/.test(p);
+    const hasSpecial = /[^A-Za-z0-9]/.test(p);
+    const score = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+    if (p.length >= 12 && score >= 4) return 'strong';
+    if (p.length >= 10 && score >= 3) return 'good';
+    if (p.length >= 8  && score >= 2) return 'fair';
+    return 'weak';
+  }
+ 
+  get passwordStrengthPercent(): number {
+    return { weak: 25, fair: 50, good: 75, strong: 100 }[this.passwordStrength];
+  }
+ 
+  get passwordStrengthLabel(): string {
+    return { weak: 'Weak', fair: 'Fair', good: 'Good', strong: 'Strong' }[this.passwordStrength];
   }
 }

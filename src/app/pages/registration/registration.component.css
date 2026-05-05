@@ -813,7 +813,217 @@
   background: rgba(184,141,42,.03);
   border-top: 1px solid #2e2e2e;
 }
+/* ══════════════════════════════════════════════════════════════════════
+   APPEND TO BOTTOM of registration.component.css
+   Password fields + doc type selector
+════════════════════════════════════════════════════════════════════════ */
 
+/* ── Password divider ─────────────────────────────────────────────── */
+.reg-wrapper .password-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 20px;
+}
+
+.reg-wrapper .password-divider::before,
+.reg-wrapper .password-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #2e2e2e;
+}
+
+.reg-wrapper .password-divider span {
+  color: #555;
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  white-space: nowrap;
+}
+
+/* ── Password input wrapper ───────────────────────────────────────── */
+.reg-wrapper .password-wrap {
+  position: relative;
+}
+
+.reg-wrapper .password-wrap input {
+  display: block !important;
+  width: 100% !important;
+  padding: 12px 46px 12px 14px !important;
+  background: #242424 !important;
+  border: 1px solid #3a3a3a !important;
+  border-radius: 8px !important;
+  color: #f0f0f0 !important;
+  font-size: .95rem !important;
+  box-sizing: border-box !important;
+  transition: border-color .25s, box-shadow .25s !important;
+}
+
+.reg-wrapper .password-wrap input::placeholder { color: #555 !important; }
+
+.reg-wrapper .password-wrap input:focus {
+  outline: none !important;
+  border-color: #B88D2A !important;
+  box-shadow: 0 0 0 3px rgba(184,141,42,.25) !important;
+  background: #2a2a2a !important;
+}
+
+/* Toggle show/hide button */
+.reg-wrapper .toggle-pw {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .2s;
+  line-height: 0;
+}
+
+.reg-wrapper .toggle-pw:hover { color: #B88D2A; }
+
+/* ── Password strength meter ──────────────────────────────────────── */
+.reg-wrapper .pw-strength-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.reg-wrapper .pw-strength-track {
+  flex: 1;
+  height: 4px;
+  background: #2e2e2e;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.reg-wrapper .pw-strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .3s ease, background .3s ease;
+}
+
+.reg-wrapper .pw-weak   { background: #ef4444; }
+.reg-wrapper .pw-fair   { background: #f59e0b; }
+.reg-wrapper .pw-good   { background: #B88D2A; }
+.reg-wrapper .pw-strong { background: #10b981; }
+
+.reg-wrapper .pw-strength-label {
+  font-size: .72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reg-wrapper .pw-label-weak   { color: #ef4444; }
+.reg-wrapper .pw-label-fair   { color: #f59e0b; }
+.reg-wrapper .pw-label-good   { color: #B88D2A; }
+.reg-wrapper .pw-label-strong { color: #10b981; }
+
+/* ── Password match indicator ─────────────────────────────────────── */
+.reg-wrapper .pw-match {
+  margin-top: 7px;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.reg-wrapper .pw-match-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #10b981;
+}
+
+.reg-wrapper .pw-match-fail {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #ef4444;
+}
+
+/* ── Document type selector (Step 4) ──────────────────────────────── */
+.reg-wrapper .doc-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reg-wrapper .doc-type-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 16px;
+  background: #1e1e1e;
+  border: 2px solid #2e2e2e;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+}
+
+.reg-wrapper .doc-type-card:hover {
+  border-color: rgba(184,141,42,.5);
+  background: rgba(184,141,42,.05);
+}
+
+.reg-wrapper .doc-type-card.selected {
+  border-color: #B88D2A;
+  background: rgba(184,141,42,.1);
+  box-shadow: 0 0 0 3px rgba(184,141,42,.15);
+}
+
+.reg-wrapper .dtc-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.reg-wrapper .dtc-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reg-wrapper .dtc-body strong {
+  color: #f0f0f0 !important;
+  font-size: .9rem !important;
+  font-weight: 700 !important;
+  display: block !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.reg-wrapper .dtc-body span {
+  color: #666 !important;
+  font-size: .78rem !important;
+  display: block !important;
+}
+
+.reg-wrapper .dtc-check {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #B88D2A;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Responsive additions ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .reg-wrapper .doc-type-selector { gap: 8px; }
+  .reg-wrapper .doc-type-card { padding: 13px 13px; }
+  .reg-wrapper .dtc-icon { font-size: 1.5rem; }
+}
 /* ── Payment verification note (Step 5, below account details) ──── */
 .reg-wrapper .payment-verification-note {
   display: flex;
