@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.celcium360solutions.com'
+  apiUrl: 'https://hydrant-roamer-frenzied.ngrok-free.dev'
 };

@@ -1,47 +1,27 @@
 /**
  * models/Registration.js
- * Registration Document Schema (FULL UPDATED VERSION)
  */
 
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 /**
- * ─────────────────────────────────────────────────────────────
  * Assessment Answer Schema
- * ─────────────────────────────────────────────────────────────
  */
-
 const AssessmentAnswerSchema = new mongoose.Schema(
   {
-    questionId: {
-      type: Number
-    },
-
-    selectedOption: {
-      type: String
-    },
-
-    isCorrect: {
-      type: Boolean
-    }
+    questionId: Number,
+    selectedOption: String,
+    isCorrect: Boolean
   },
-  {
-    _id: false
-  }
+  { _id: false }
 );
 
 /**
- * ─────────────────────────────────────────────────────────────
  * Registration Schema
- * ─────────────────────────────────────────────────────────────
  */
-
 const RegistrationSchema = new mongoose.Schema(
   {
-    //
-    // ── Basic Information ────────────────────────────────────
-    //
-
     fullName: {
       type: String,
       required: [true, 'Full name is required'],
@@ -54,7 +34,6 @@ const RegistrationSchema = new mongoose.Schema(
       required: [true, 'Email is required'],
       lowercase: true,
       trim: true,
-      unique: true,
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/,
         'Invalid email format'
@@ -68,15 +47,18 @@ const RegistrationSchema = new mongoose.Schema(
       maxlength: 20
     },
 
+    password: {
+      type: String,
+      required: true,
+      minlength: 8,
+      select: false
+    },
+
     category: {
       type: String,
       enum: ['nysc', 'graduate'],
       required: [true, 'Category is required']
     },
-
-    //
-    // ── Uploaded Photo ───────────────────────────────────────
-    //
 
     photo: {
       filename: String,
@@ -85,10 +67,6 @@ const RegistrationSchema = new mongoose.Schema(
       size: Number,
       mimeType: String
     },
-
-    //
-    // ── NYSC Documents ───────────────────────────────────────
-    //
 
     statement: {
       filename: String,
@@ -105,10 +83,6 @@ const RegistrationSchema = new mongoose.Schema(
       size: Number,
       mimeType: String
     },
-
-    //
-    // ── Payment Section ──────────────────────────────────────
-    //
 
     paymentProof: {
       filename: String,
@@ -129,50 +103,18 @@ const RegistrationSchema = new mongoose.Schema(
       default: false
     },
 
-    //
-    // ── Assessment Section ───────────────────────────────────
-    //
-
     assessment: {
-      score: {
-        type: Number,
-        min: 0,
-        default: 0
-      },
-
-      total: {
-        type: Number,
-        default: 10
-      },
-
-      percentage: {
-        type: Number,
-        min: 0,
-        max: 100,
-        default: 0
-      },
-
+      score: { type: Number, min: 0, default: 0 },
+      total: { type: Number, default: 10 },
+      percentage: { type: Number, min: 0, max: 100, default: 0 },
       level: {
         type: String,
-        enum: [
-          'below-expectation',
-          'foundational',
-          'strong'
-        ],
+        enum: ['below-expectation', 'foundational', 'strong'],
         default: 'foundational'
       },
-
       answers: [AssessmentAnswerSchema],
-
-      completedAt: {
-        type: Date,
-        default: null
-      }
+      completedAt: { type: Date, default: null }
     },
-
-    //
-    // ── Status & Verification ────────────────────────────────
-    //
 
     status: {
       type: String,
@@ -187,111 +129,63 @@ const RegistrationSchema = new mongoose.Schema(
       default: 'pending'
     },
 
-    rejectionReason: {
-      type: String,
-      default: null
-    },
-
-    verificationNotes: {
-      type: String,
-      default: null
-    },
-
-    //
-    // ── Metadata ─────────────────────────────────────────────
-    //
+    rejectionReason: { type: String, default: null },
+    verificationNotes: { type: String, default: null },
 
     submittedAt: {
       type: Date,
       default: Date.now
     },
 
-    verifiedAt: {
-      type: Date,
-      default: null
-    },
+    verifiedAt: { type: Date, default: null },
 
-    ipAddress: {
-      type: String,
-      default: null
-    },
-
-    userAgent: {
-      type: String,
-      default: null
-    }
+    ipAddress: { type: String, default: null },
+    userAgent: { type: String, default: null }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
 /**
- * ─────────────────────────────────────────────────────────────
  * Indexes
- * ─────────────────────────────────────────────────────────────
  */
+RegistrationSchema.index({ email: 1 }, { unique: true, sparse: true });
+RegistrationSchema.index({ status: 1, submittedAt: -1 });
+RegistrationSchema.index({ category: 1 });
 
-RegistrationSchema.index(
-  {
-    email: 1
-  },
-  {
-    unique: true,
-    sparse: true
+/**
+ * ✅ FIXED Pre-save Hook (NO next)
+ */
+RegistrationSchema.pre('save', async function () {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 12);
   }
-);
-
-RegistrationSchema.index({
-  status: 1,
-  submittedAt: -1
-});
-
-RegistrationSchema.index({
-  category: 1
 });
 
 /**
- * ─────────────────────────────────────────────────────────────
- * Pre-save Hook (FIXED)
- * IMPORTANT:
- * Do NOT use async + next together
- * This avoids:
- * TypeError: next is not a function
- * ─────────────────────────────────────────────────────────────
+ * ✅ Second Hook (no async, no next needed)
  */
-
 RegistrationSchema.pre('save', function () {
-  // Ensure submittedAt always exists
   if (!this.submittedAt) {
     this.submittedAt = new Date();
   }
 
-  // Auto-set verifiedAt if approved/verified
   if (
-    (this.status === 'approved' ||
-      this.status === 'verified') &&
+    (this.status === 'approved' || this.status === 'verified') &&
     !this.verifiedAt
   ) {
     this.verifiedAt = new Date();
   }
 
-  // Clear rejection reason if approved
-  if (
-    this.status === 'approved' ||
-    this.status === 'verified'
-  ) {
+  if (this.status === 'approved' || this.status === 'verified') {
     this.rejectionReason = null;
   }
 });
 
 /**
- * ─────────────────────────────────────────────────────────────
- * Export Model
- * ─────────────────────────────────────────────────────────────
+ * Methods
  */
+RegistrationSchema.methods.checkPassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
-module.exports = mongoose.model(
-  'Registration',
-  RegistrationSchema
-);
+module.exports = mongoose.model('Registration', RegistrationSchema);

@@ -1,5 +1,5 @@
 /**
- * routes/registration.routes.js - Registration API Routes (UPDATED FULL CODE)
+ * routes/registration.routes.js - Registration API Routes
  */
 
 const express = require('express');
@@ -8,9 +8,15 @@ const registrationController = require('../controllers/registration.controller')
 const { upload } = require('../middleware/upload.middleware');
 const { validateRegistration } = require('../middleware/validation.middleware');
 
+
+
 /**
- * POST /api/registration/submit
- * Submit complete registration form with all files
+ * ✅ LOGIN ROUTE
+ */
+router.post('/login', registrationController.login);
+
+/**
+ * ✅ SUBMIT REGISTRATION
  */
 router.post(
   '/submit',
@@ -25,45 +31,34 @@ router.post(
 );
 
 /**
- * GET /api/registration/email/:email
- * Retrieve a registration by email
- * IMPORTANT: place BEFORE /:id route
+ * ✅ GET BY EMAIL
+ * Must be placed BEFORE /:id to prevent "email" being treated as an ID
  */
 router.get('/email/:email', registrationController.getRegistrationByEmail);
 
 /**
- * GET /api/registration
- * Get all registrations (admin only)
+ * ✅ GET ALL (Admin)
  */
 router.get('/', registrationController.getAllRegistrations);
 
 /**
- * GET /api/registration/:id
- * Retrieve a registration by ID
+ * ✅ GET BY ID
  */
 router.get('/:id', registrationController.getRegistration);
 
 /**
- * PATCH /api/registration/:id/verify
- * Existing verification route
+ * ✅ VERIFICATION & STATUS UPDATES
  */
 router.patch('/:id/verify', registrationController.updateVerificationStatus);
-
-/**
- * PATCH /api/registration/:id/status
- * NEW alias route used by admin UI
- */
 router.patch('/:id/status', registrationController.updateVerificationStatus);
 
 /**
- * GET /api/registration/:id/file/:filename
- * NEW route for serving uploaded files to admin viewer
+ * ✅ SERVE FILES
  */
 router.get('/:id/file/:filename', registrationController.serveFile);
 
 /**
- * DELETE /api/registration/:id
- * Delete a registration
+ * ✅ DELETE REGISTRATION
  */
 router.delete('/:id', registrationController.deleteRegistration);
 

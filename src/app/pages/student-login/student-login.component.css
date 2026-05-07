@@ -1,54 +1,110 @@
 .login-container {
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: black;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* 🔥 Modern gradient background */
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-card {
+  width: 380px;
+  background: #ffffff;
+  padding: 2.2rem;
+  border-radius: 12px;
+
+  /* 🔥 smoother shadow */
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+
+  /* subtle animation */
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+.login-card h2 {
+  margin-bottom: 5px;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: goldenrod;
+}
+
+.subtitle {
+  color: #64748b;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+/* 🔥 Better input styling */
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  outline: none;
+  font-size: 0.95rem;
+
+  transition: all 0.2s ease;
+}
+
+/* focus effect */
+input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 🔥 Button upgrade */
+button {
+  width: 100%;
+  padding: 12px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+}
+
+/* hover effect */
+button:hover:not(:disabled) {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+
+/* disabled */
+button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* 🔥 Error styling */
+.error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+/* small validation text */
+small.error {
+  display: block;
+  margin-top: 5px;
+}
+
+/* 🔥 Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
   }
-  
-  .login-card {
-    width: 350px;
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .login-card h2 {
-    margin-bottom: 5px;
-  }
-  
-  .subtitle {
-    color: #777;
-    margin-bottom: 20px;
-  }
-  
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
-  input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-  }
-  
-  button {
-    width: 100%;
-    padding: 12px;
-    background: #0f172a;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  button:disabled {
-    background: #999;
-  }
-  
-  .error {
-    color: red;
-    margin-bottom: 10px;
-  }
+}

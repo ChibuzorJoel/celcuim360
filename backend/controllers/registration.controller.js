@@ -5,6 +5,7 @@
 const Registration = require('../models/Registration');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcrypt');
 
 /**
  * Submit a new registration
@@ -16,6 +17,7 @@ exports.submitRegistration = async (req, res) => {
       fullName,
       email,
       phone,
+      password,
       category,
       assessmentScore,
       assessmentTotal,
@@ -24,19 +26,29 @@ exports.submitRegistration = async (req, res) => {
       assessmentAnswers
     } = req.body;
 
-    // Check if email already exists
-    const existingRegistration = await Registration.findOne({
-      email: email.toLowerCase().trim()
-    });
+    // 1. Basic Validation
+    if (!password || password.length < 6) {
+      cleanupUploadedFiles(req.files);
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required and must be at least 6 characters long.'
+      });
+    }
+
+    // 2. Check if email already exists
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingRegistration = await Registration.findOne({ email: normalizedEmail });
 
     if (existingRegistration) {
       cleanupUploadedFiles(req.files);
-
       return res.status(409).json({
         success: false,
         message: 'This email is already registered. Please use a different email.'
       });
     }
+
+    
+    
 
     // Uploaded files
     const photoFile = req.files?.photo?.[0];
@@ -49,6 +61,7 @@ exports.submitRegistration = async (req, res) => {
       fullName: fullName.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
+      password: password,
       category,
 
       // Photo
@@ -438,7 +451,83 @@ exports.serveFile = async (req, res) => {
     });
   }
 };
+/**
+ * Login user (Student Portal)
+ * POST /api/registration/login
+ */
+exports.login = async (req, res) => {
+  try {
+    let { email, password } = req.body;
 
+    // ✅ SAFETY CHECK (VERY IMPORTANT)
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password must be provided'
+      });
+    }
+
+    // ✅ Normalize AFTER validation
+    email = email.toLowerCase().trim();
+    password = password.trim();
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password cannot be empty'
+      });
+    }
+
+    // Add .select('+password') to force Mongoose to include the hidden field
+const user = await Registration.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // 🔐 bcrypt compare
+    const bcrypt = require('bcrypt');
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // 🔐 JWT
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      'your_secret_key_here',
+      { expiresIn: '1d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        status: user.status
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Login error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
+  }
+};
 /**
  * Helper: Clean uploaded files on failure
  */

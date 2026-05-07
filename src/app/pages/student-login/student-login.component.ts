@@ -22,33 +22,49 @@ export class StudentLoginComponent implements OnInit {
     private router: Router
   ) {}
 
-  // ✅ FIX: required by OnInit
   ngOnInit(): void {
-    // optional: clear old session on login page
+    // Clear previous session
     localStorage.removeItem('token');
     localStorage.removeItem('studentId');
   }
 
+  // ✅ Simple form validation
+  isFormValid(): boolean {
+    return !!this.form.email && !!this.form.password;
+  }
+
   login(): void {
+    if (!this.isFormValid()) {
+      this.error = 'Please fill in all fields';
+      return;
+    }
+
     this.error = '';
     this.loading = true;
 
     this.service.login(this.form).subscribe({
       next: (res: any) => {
-
-        // ✅ Save token + user
+        // Save auth data safely
         localStorage.setItem('token', res.token);
-        localStorage.setItem('studentId', res.user?.id);
+        localStorage.setItem('studentId', res.user?.id || '');
 
         this.loading = false;
 
-        // ✅ Redirect
+        // Redirect after success
         this.router.navigate(['/student-dashboard']);
       },
 
       error: (err: any) => {
         this.loading = false;
-        this.error = err.error?.message || 'Login failed';
+
+        // Better error handling
+        if (err.status === 401) {
+          this.error = 'Invalid email or password';
+        } else if (err.status === 0) {
+          this.error = 'Server not reachable';
+        } else {
+          this.error = err.error?.message || 'Login failed. Try again.';
+        }
       }
     });
   }
