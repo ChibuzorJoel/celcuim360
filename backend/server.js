@@ -62,7 +62,10 @@ app.use('/api/auth', require('./routes/auth.routes'));
 // CORS Configuration
 app.use(
   cors({
-    origin: [process.env.CORS_ORIGIN, 'http://localhost:4200'],
+    origin: [
+      'https://celcuim.netlify.app',
+      'http://localhost:4200'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

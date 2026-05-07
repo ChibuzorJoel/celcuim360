@@ -138,7 +138,7 @@ exports.submitRegistration = async (req, res) => {
         registrationId: registration._id,
         email: registration.email,
         status: registration.status,
-        submittedAt: registration.submittedAt
+        submittedAt: registration.createdAt
       }
     });
   } catch (error) {
