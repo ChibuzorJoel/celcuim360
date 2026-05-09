@@ -1,0 +1,140 @@
+
+
+.controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ctrl-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 7px;
+  padding: 7px 12px;
+}
+
+.search-wrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 11px;
+  color: #888;
+  width: 160px;
+  font-family: inherit;
+}
+
+.search-wrap input::placeholder { color: #2e2e2e; }
+
+/* Contact list */
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contact-card {
+  background: #111;
+  border: 1px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: border-color 0.2s;
+}
+
+.contact-card:hover { border-color: #2e2e2e; }
+
+.contact-card.unread {
+  border-left: 3px solid rgba(245,158,11,0.5);
+  background: rgba(245,158,11,0.02);
+}
+
+.contact-avatar {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
+  background: rgba(184,141,42,0.12);
+  border: 1.5px solid rgba(184,141,42,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #B88D2A;
+}
+
+.contact-info { flex: 1; min-width: 0; }
+
+.contact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.contact-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-date { font-size: 9px; color: #2e2e2e; white-space: nowrap; }
+
+.contact-meta {
+  font-size: 10px;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.contact-msg {
+  font-size: 11px;
+  color: #555;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.contact-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 52px;
+  color: #333;
+  text-align: center;
+}
+
+.empty-state p { margin: 0; font-size: 12px; }
+
+@media (max-width: 600px) {
+  .contact-card { flex-direction: column; }
+  .contact-head { flex-direction: column; align-items: flex-start; }
+}

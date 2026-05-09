@@ -1530,3 +1530,83 @@
 
   .reg-wrapper .results-header { flex-direction: column; align-items: flex-start; }
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   PATCH: Append these styles to the BOTTOM of registration.component.css
+   They power the "Click here to sign in" CTA on the success card.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Sign-in CTA block ────────────────────────────────────────────────────── */
+.reg-wrapper .success-login-cta {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.reg-wrapper .success-login-cta p {
+  margin: 0;
+  font-size: .82rem;
+  color: #555 !important;
+  letter-spacing: .3px;
+}
+
+/* Primary sign-in button */
+.reg-wrapper .btn-goto-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: #B88D2A;
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-size: .9rem;
+  font-weight: 900;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .25s ease;
+  white-space: nowrap;
+}
+
+.reg-wrapper .btn-goto-login:hover {
+  background: #D4A94B;
+  box-shadow: 0 6px 20px rgba(184,141,42,.4);
+  transform: translateY(-2px);
+}
+
+.reg-wrapper .btn-goto-login:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Pulse animation to draw attention */
+.reg-wrapper .btn-goto-login {
+  animation: pulse-gold 2.5s ease-in-out 1.5s infinite;
+}
+
+@keyframes pulse-gold {
+  0%,100% { box-shadow: 0 0 0 0 rgba(184,141,42,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(184,141,42,.25); }
+}
+
+/* Countdown hint (optional — shown if you add countdown text) */
+.reg-wrapper .redirect-hint {
+  font-size: .75rem;
+  color: #333 !important;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .reg-wrapper .btn-goto-login {
+    width: 100%;
+    justify-content: center;
+    padding: 13px 20px;
+    font-size: .85rem;
+  }
+}

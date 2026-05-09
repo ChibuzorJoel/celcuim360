@@ -9,6 +9,7 @@ import {
   ChangeDetectorRef,
   NgZone
 } from '@angular/core';
+import { Router } from '@angular/router';  
 import { RegistrationService } from '../../core/services/registration.service';
 
 export type UserCategory = 'nysc' | 'graduate' | null;
@@ -130,6 +131,7 @@ export class RegistrationComponent implements OnInit, OnDestroy {
 
   constructor(
     private registrationService: RegistrationService,
+    private router: Router, 
     private cdr: ChangeDetectorRef,
     private zone: NgZone
   ) {}
@@ -495,7 +497,10 @@ export class RegistrationComponent implements OnInit, OnDestroy {
       }
     });
   }
-
+// ── NEW: Navigate to login with registered=true flag ──────────────────────
+goToLogin(): void {
+  this.router.navigate(['/student-login'], { queryParams: { registered: 'true' } });
+}
   private dataUrlToBlob(dataUrl: string): Blob {
     const [header, data] = dataUrl.split(',');
     const mime   = header.match(/:(.*?);/)![1];

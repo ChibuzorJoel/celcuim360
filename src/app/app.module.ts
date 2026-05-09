@@ -24,6 +24,9 @@ import { ProgramComponent } from './pages/program/program.component';
 import { AdminRegistrationComponent } from './core/admin-registration/admin-registration.component';
 import { StudentDashboardComponent } from './pages/student-dashboard/student-dashboard.component';
 import { StudentLoginComponent } from './pages/student-login/student-login.component';
+import { AdminShellComponent } from './core/admin-shell/admin-shell.component';
+import { AdminAssessmentComponent } from './core/admin-assessment/admin-assessment.component';
+import { AdminContactComponent } from './core/admin-contact/admin-contact.component';
 
 @NgModule({
   declarations: [
@@ -46,6 +49,9 @@ import { StudentLoginComponent } from './pages/student-login/student-login.compo
     AdminRegistrationComponent,
     StudentDashboardComponent,
     StudentLoginComponent,
+    AdminShellComponent,
+    AdminAssessmentComponent,
+    AdminContactComponent,
   ],
   imports: [
     BrowserModule,

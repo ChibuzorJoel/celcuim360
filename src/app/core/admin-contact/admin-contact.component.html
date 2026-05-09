@@ -1,0 +1,80 @@
+<div class="page-wrap">
+
+    <!-- Filter + controls -->
+    <div class="controls-bar">
+      <div class="filter-row" style="margin-bottom:0;">
+        <button class="filter-chip" [class.active]="activeTab === 'all'"          (click)="setTab('all')">All Forms</button>
+        <button class="filter-chip" [class.active]="activeTab === 'contact'"      (click)="setTab('contact')">Contact</button>
+        <button class="filter-chip" [class.active]="activeTab === 'consultation'" (click)="setTab('consultation')">Consultation</button>
+      </div>
+      <div class="ctrl-right">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" width="13" height="13" style="color:#333;">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input type="text" placeholder="Search messages..." [(ngModel)]="searchTerm" (input)="applyFilters()"/>
+        </div>
+        <button class="act-btn" (click)="exportPDF()">↓ Export PDF</button>
+      </div>
+    </div>
+  
+    <!-- Contact cards -->
+    <div class="section-hdr" style="margin-top:18px;">
+      {{ getTabLabel() }} — {{ filteredRecords.length }} record(s)
+    </div>
+  
+    <div class="contact-list">
+      <div class="contact-card" *ngFor="let r of filteredRecords" [class.unread]="!r.read">
+        <div class="contact-avatar">{{ initials(r.name) }}</div>
+        <div class="contact-info">
+          <div class="contact-head">
+            <span class="contact-name">{{ r.name }}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="pill" [class]="r.read ? 'pill-read' : 'pill-unread'">{{ r.read ? 'Read' : 'Unread' }}</span>
+              <span class="contact-date">{{ r.date | date:'MMM d, h:mm a' }}</span>
+            </div>
+          </div>
+          <div class="contact-meta">{{ r.email }} · {{ r.phone }}</div>
+          <div class="contact-msg">{{ r.message }}</div>
+          <div class="contact-actions">
+            <button class="act-btn" (click)="markRead(r)" *ngIf="!r.read">Mark as read</button>
+            <button class="act-btn" (click)="openReply(r)">Reply</button>
+            <button class="act-btn danger" (click)="deleteRecord(r)">Delete</button>
+          </div>
+        </div>
+      </div>
+  
+      <div class="empty-state" *ngIf="filteredRecords.length === 0">
+        <div style="font-size:28px;">✉</div>
+        <p>No {{ getTabLabel() | lowercase }} records found.</p>
+      </div>
+    </div>
+  
+    <!-- Reply modal -->
+    <div class="modal-overlay" *ngIf="showReplyModal" (click)="closeModals()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-head">
+          <h3>Reply to {{ selectedRecord?.name }}</h3>
+          <button class="modal-x" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:11px;color:#444;margin-bottom:12px;">
+            To: <span style="color:#B88D2A;">{{ selectedRecord?.email }}</span>
+          </p>
+          <textarea
+            [(ngModel)]="replyMessage"
+            rows="5"
+            placeholder="Type your reply..."
+            style="width:100%;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:7px;
+                   color:#ccc;font-size:12px;padding:10px;resize:vertical;font-family:inherit;outline:none;"
+          ></textarea>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-cancel-m" (click)="closeModals()">Cancel</button>
+          <button class="btn-confirm-m" (click)="sendReply()" [disabled]="!replyMessage.trim()">Send Reply</button>
+        </div>
+      </div>
+    </div>
+  
+  </div>

@@ -57,9 +57,6 @@ app.use(
     }
   })
 );
- 
-app.use('/api/auth', require('./routes/auth.routes'));
-// CORS Configuration
 app.use(
   cors({
     origin: [
@@ -71,6 +68,9 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
+app.use('/api/auth', require('./routes/auth.routes'));
+// CORS Configuration
+
 
 // Request logging
 if (process.env.NODE_ENV !== 'test') {
@@ -153,10 +153,10 @@ app.use(
 );
 
 // Alias for admin routes
-app.use(
-  '/api/registrations',
-  require('./routes/registration.routes')
-);
+// app.use(
+//   '/api/registrations',
+//   require('./routes/registration.routes')
+// );
 
 app.use(
   '/api/health',

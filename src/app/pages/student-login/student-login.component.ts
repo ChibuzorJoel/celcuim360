@@ -1,71 +1,127 @@
-import { Component, OnInit } from '@angular/core';
-import { RegistrationService } from '../../core/services/registration.service';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AuthStudentService } from 'src/app/core/auth-student.service';  
+ 
+type View = 'login' | 'forgot';
 
 @Component({
   selector: 'app-student-login',
   templateUrl: './student-login.component.html',
   styleUrls: ['./student-login.component.css']
 })
-export class StudentLoginComponent implements OnInit {
-
-  form = {
-    email: '',
-    password: ''
-  };
-
-  error: string = '';
-  loading: boolean = false;
-
-  constructor(
-    private service: RegistrationService,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
-    // Clear previous session
-    localStorage.removeItem('token');
-    localStorage.removeItem('studentId');
-  }
-
-  // ✅ Simple form validation
-  isFormValid(): boolean {
-    return !!this.form.email && !!this.form.password;
-  }
-
-  login(): void {
-    if (!this.isFormValid()) {
-      this.error = 'Please fill in all fields';
-      return;
-    }
-
-    this.error = '';
-    this.loading = true;
-
-    this.service.login(this.form).subscribe({
-      next: (res: any) => {
-        // Save auth data safely
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('studentId', res.user?.id || '');
-
-        this.loading = false;
-
-        // Redirect after success
-        this.router.navigate(['/student-dashboard']);
-      },
-
-      error: (err: any) => {
-        this.loading = false;
-
-        // Better error handling
-        if (err.status === 401) {
-          this.error = 'Invalid email or password';
-        } else if (err.status === 0) {
-          this.error = 'Server not reachable';
-        } else {
-          this.error = err.error?.message || 'Login failed. Try again.';
+export class StudentLoginComponent implements OnInit, OnDestroy  {
+  
+ 
+    view: View = 'login';
+    slidingOut = false;
+   
+    // ── Login form ────────────────────────────────────────────────────────────
+    loginForm = { email: '', password: '', remember: false };
+    showPassword   = false;
+    isLoading      = false;
+    errorMessage   = '';
+    successMessage = '';
+   
+    // ── Forgot password ───────────────────────────────────────────────────────
+    forgotEmail    = '';
+    forgotError    = '';
+    isSending      = false;
+    resetEmailSent = false;
+    resendCooldown = 0;
+    private cooldownTimer?: ReturnType<typeof setInterval>;
+   
+    // ── Banner for just-registered users ─────────────────────────────────────
+    showRegisteredBanner = false;
+   
+    currentYear = new Date().getFullYear();
+   
+    constructor(
+      private router:  Router,
+      private route:   ActivatedRoute,
+      private auth:    AuthStudentService,
+    ) {}
+   
+    ngOnInit(): void {
+      // Show "already registered" banner when navigated here with ?registered=true
+      this.route.queryParams.subscribe(params => {
+        if (params['registered'] === 'true') {
+          this.showRegisteredBanner = true;
         }
-      }
-    });
+      });
+    }
+   
+    ngOnDestroy(): void {
+      clearInterval(this.cooldownTimer);
+    }
+   
+    // ── View switching ────────────────────────────────────────────────────────
+   
+    switchView(target: View): void {
+      this.slidingOut = true;
+      setTimeout(() => {
+        this.slidingOut    = false;
+        this.view          = target;
+        this.errorMessage  = '';
+        this.successMessage = '';
+        this.forgotError   = '';
+      }, 220);
+    }
+   
+    // ── Login ─────────────────────────────────────────────────────────────────
+   
+    login(): void {
+      this.errorMessage = '';
+      if (!this.loginForm.email.trim())    { this.errorMessage = 'Please enter your email address.'; return; }
+      if (!this.isValidEmail(this.loginForm.email)) { this.errorMessage = 'Please enter a valid email address.'; return; }
+      if (!this.loginForm.password.trim()) { this.errorMessage = 'Please enter your password.'; return; }
+   
+      this.isLoading = true;
+   
+      this.auth.login(this.loginForm.email, this.loginForm.password).subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.router.navigate(['/admin/dashboard']);
+        },
+        error: (err: any) => {
+          this.isLoading = false;
+          this.errorMessage = err?.message ?? 'Invalid email or password. Please try again.';
+        },
+      });
+    }
+   
+    // ── Forgot password ───────────────────────────────────────────────────────
+   
+    sendReset(): void {
+      this.forgotError = '';
+      if (!this.forgotEmail.trim())          { this.forgotError = 'Please enter your email address.'; return; }
+      if (!this.isValidEmail(this.forgotEmail)) { this.forgotError = 'Please enter a valid email address.'; return; }
+   
+      this.isSending = true;
+   
+      // Replace with real service call, e.g.:
+      // this.auth.sendPasswordReset(this.forgotEmail).subscribe({ next: ..., error: ... });
+      setTimeout(() => {
+        this.isSending     = false;
+        this.resetEmailSent = true;
+        this.startCooldown();
+      }, 1500);
+    }
+   
+    private startCooldown(): void {
+      this.resendCooldown = 60;
+      this.cooldownTimer = setInterval(() => {
+        this.resendCooldown--;
+        if (this.resendCooldown <= 0) {
+          clearInterval(this.cooldownTimer);
+          this.resendCooldown = 0;
+        }
+      }, 1000);
+    }
+   
+    // ── Helpers ───────────────────────────────────────────────────────────────
+   
+    private isValidEmail(email: string): boolean {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
   }
-}
+   

@@ -37,6 +37,11 @@ export interface ConsultationRecord extends RecordBase {
   consent: boolean;
   bookingDate: string;
   bookingTime: string;
+
+  // ✅ ADD THIS
+  projectDetails?: string;
+
+  
 }
 
 
