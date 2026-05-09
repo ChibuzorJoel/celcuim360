@@ -1,9 +1,10 @@
-
+<ng-container *ngIf="showPublicNav">
   <app-header></app-header>
-
+</ng-container>
 <router-outlet></router-outlet>
+<ng-container *ngIf="showPublicNav">
 <app-footer></app-footer>
-
+</ng-container>
 <!-- Floating WhatsApp Button (Left Side) -->
 <a
   href="https://wa.me/2348128360437?text=Hello%20I%20need%20help%20with%20an%20order"
