@@ -80,7 +80,7 @@ export class StudentLoginComponent implements OnInit, OnDestroy  {
       this.auth.login(this.loginForm.email, this.loginForm.password).subscribe({
         next: () => {
           this.isLoading = false;
-          this.router.navigate(['/admin/dashboard']);
+          this.router.navigate(['/portal']);
         },
         error: (err: any) => {
           this.isLoading = false;

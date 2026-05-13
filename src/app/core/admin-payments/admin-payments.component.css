@@ -1,0 +1,55 @@
+
+
+.controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ctrl-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 7px;
+  padding: 7px 12px;
+}
+
+.search-wrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 11px;
+  color: #888;
+  width: 160px;
+  font-family: inherit;
+}
+
+.search-wrap input::placeholder { color: #2e2e2e; }
+
+.table-scroll { overflow-x: auto; }
+
+.applicant-wrap { display: flex; align-items: center; gap: 10px; }
+
+.avatar-placeholder {
+  width: 30px; height: 30px; min-width: 30px;
+  border-radius: 50%;
+  background: rgba(184,141,42,0.12);
+  border: 1.5px solid rgba(184,141,42,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; color: #B88D2A;
+}
+
+.row-pending  { border-left: 2px solid rgba(245,158,11,0.4); }
+.row-verified { border-left: 2px solid rgba(16,185,129,0.3); }
+.row-rejected { border-left: 2px solid rgba(239,68,68,0.3); opacity: 0.65; }

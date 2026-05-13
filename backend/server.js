@@ -68,14 +68,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
-app.use('/api/auth', require('./routes/auth.routes'));
-// CORS Configuration
-
-
-// Request logging
-if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined'));
-}
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -86,6 +78,16 @@ app.use(
     extended: true
   })
 );
+app.use('/api/auth', require('./routes/auth.routes'));
+// CORS Configuration
+
+
+// Request logging
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('combined'));
+}
+
+
 
 //
 // ── Static Files for Uploads ─────────────────────────────────

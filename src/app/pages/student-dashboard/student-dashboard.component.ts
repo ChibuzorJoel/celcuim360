@@ -4,15 +4,12 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
-export type WeekStatus = 'completed' | 'pending' | 'overdue' | 'locked';
-export type ActiveTab = 'dashboard' | 'coursework' | 'assignments' | 'grades';
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 
-export interface QuizQuestion {
-  id: string;
-  text: string;
-  options: { key: string; label: string }[];
-  correctKey: string;
-}
+export type WeekStatus = 'completed' | 'pending' | 'overdue' | 'locked';
+export type ActiveTab  = 'dashboard' | 'coursework' | 'assignments' | 'grades';
 
 export interface CourseWeek {
   id: number;
@@ -20,12 +17,16 @@ export interface CourseWeek {
   description: string;
   topics: string[];
   status: WeekStatus;
-  score: number | null;
-  quizScore: number | null;
-  courseworkSubmitted: boolean;
-  quizCompleted: boolean;
+  cwSubmitted: boolean;
+  cwScore: number | null;         // out of 10 (instructor-graded; we store answered count)
   dueDate: string;
-  quizQuestions: QuizQuestion[];
+  cwQuestions: string[];          // 10 open-ended scenario questions
+}
+
+export interface FinalExamSection {
+  title: string;
+  sub: string;
+  questions: string[];
 }
 
 export interface StudentProfile {
@@ -40,6 +41,10 @@ export interface StudentProfile {
   enrolledAt: string;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Component({
   selector: 'app-student-dashboard',
   templateUrl: './student-dashboard.component.html',
@@ -49,176 +54,292 @@ export class StudentDashboardComponent implements OnInit {
 
   private api = environment.apiUrl;
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  // ── UI State ──────────────────────────────────────────────────────────────
+  loading   = true;
   activeTab: ActiveTab = 'dashboard';
-  loading = true;
   student: StudentProfile | null = null;
 
-  // ── Quiz modal ─────────────────────────────────────────────────────────────
-  showQuizModal = false;
-  activeQuiz: CourseWeek | null = null;
-  quizAnswers: Map<string, string> = new Map();
-  quizSubmitting = false;
-  quizResult: { score: number; total: number; percentage: number } | null = null;
-  quizSubmitted = false;
-
-  // ── Coursework submission ──────────────────────────────────────────────────
-  submittingWeek: number | null = null;
-  uploadFile: File | null = null;
-
-  // ── Alerts ─────────────────────────────────────────────────────────────────
+  // ── Alerts ────────────────────────────────────────────────────────────────
   alerts: { type: 'warning' | 'danger' | 'info'; message: string }[] = [];
 
-  // ── Course weeks ───────────────────────────────────────────────────────────
+  // ── Coursework modal ──────────────────────────────────────────────────────
+  showCwModal    = false;
+  activeCwWeek: CourseWeek | null = null;
+  cwModalAnswers: { [idx: number]: string } = {};
+  cwSubmitting   = false;
+  showCwResult   = false;
+  lastSubmittedWeek: CourseWeek | null = null;
+
+  // ── Final exam modal ──────────────────────────────────────────────────────
+  showFinalExam        = false;
+  finalAnswers: { [idx: number]: string } = {};
+  finalExamSubmitting  = false;
+  finalExamSubmitted   = false;
+  finalExamScore: number | null = null;
+
+  // ── Course weeks (6 weeks — open-ended scenario questions from doc) ────────
   courseWeeks: CourseWeek[] = [
     {
       id: 1,
-      title: 'Work Identity & Professional Mindset',
-      description: 'Understanding who you are as a professional and building a career-first mindset.',
-      topics: ['Personal brand', 'Professional values', 'Growth mindset', 'Career vision'],
-      status: 'pending',
-      score: null,
-      quizScore: null,
-      courseworkSubmitted: false,
-      quizCompleted: false,
-      dueDate: '',
-      quizQuestions: [
-        { id: 'w1q1', text: 'What is the most important foundation for a professional identity?', options: [{key:'a',label:'Your job title'},{key:'b',label:'Your values, strengths and purpose'},{key:'c',label:'Your salary level'},{key:'d',label:'Your employer brand'}], correctKey: 'b' },
-        { id: 'w1q2', text: 'A growth mindset is best described as:', options: [{key:'a',label:'Believing talent is fixed'},{key:'b',label:'Avoiding challenges to stay safe'},{key:'c',label:'Believing effort and learning drive improvement'},{key:'d',label:'Relying on past achievements'}], correctKey: 'c' },
-        { id: 'w1q3', text: 'Professional branding means:', options: [{key:'a',label:'Creating a logo for yourself'},{key:'b',label:'How you present and differentiate yourself to employers'},{key:'c',label:'Your social media follower count'},{key:'d',label:'Having an expensive wardrobe'}], correctKey: 'b' },
-        { id: 'w1q4', text: 'Which of these best supports long-term career growth?', options: [{key:'a',label:'Doing the minimum required'},{key:'b',label:'Focusing only on technical skills'},{key:'c',label:'Taking ownership beyond your job description'},{key:'d',label:'Waiting to be assigned opportunities'}], correctKey: 'c' },
-        { id: 'w1q5', text: 'Career vision helps professionals by:', options: [{key:'a',label:'Limiting their options'},{key:'b',label:'Providing focus and direction for daily decisions'},{key:'c',label:'Making them rigid and inflexible'},{key:'d',label:'Replacing the need for skills'}], correctKey: 'b' }
+      title: 'Foundation for Workplace',
+      description: 'Understanding professional identity, values, and work-ready mindset.',
+      topics: ['Work identity', 'Professional values', 'Workplace boundaries', 'Work ethic'],
+      status: 'pending', cwSubmitted: false, cwScore: null, dueDate: '',
+      cwQuestions: [
+        'A colleague starts speaking negatively about your manager and tries to involve you in the conversation during work hours.',
+        'You discover that a teammate presented your idea in a meeting without acknowledging you.',
+        'Your manager corrects your work sharply in front of others during a meeting.',
+        'You missed a deadline due to your own oversight.',
+        'A team member is not contributing to a group task, and it is affecting delivery timelines.',
+        'A colleague shares confidential information about another employee with you and expects you to keep the conversation going.',
+        'During a virtual meeting, you strongly disagree with a point being made while someone else is speaking.',
+        'A junior colleague makes a mistake that directly impacts your own work.',
+        'Your manager asks for an update on a task that is not yet completed, but is close to completion.',
+        'You are working with international colleagues whose communication style feels blunt or too direct.'
       ]
     },
     {
       id: 2,
-      title: 'Workplace Communication',
+      title: 'Communication & Professional Presence',
       description: 'Mastering verbal, written, and non-verbal communication in professional environments.',
-      topics: ['Email etiquette', 'Active listening', 'Meeting skills', 'Conflict communication'],
-      status: 'pending',
-      score: null,
-      quizScore: null,
-      courseworkSubmitted: false,
-      quizCompleted: false,
-      dueDate: '',
-      quizQuestions: [
-        { id: 'w2q1', text: 'Effective workplace communication primarily requires:', options: [{key:'a',label:'Speaking loudly and confidently'},{key:'b',label:'Clarity, respect, and active listening'},{key:'c',label:'Using complex vocabulary'},{key:'d',label:'Agreeing with everyone'}], correctKey: 'b' },
-        { id: 'w2q2', text: 'In a professional email, you should:', options: [{key:'a',label:'Use slang to seem friendly'},{key:'b',label:'Write long paragraphs with all your thoughts'},{key:'c',label:'State your purpose clearly in the first sentence'},{key:'d',label:'Skip greetings to save time'}], correctKey: 'c' },
-        { id: 'w2q3', text: 'Active listening involves:', options: [{key:'a',label:'Waiting for your turn to talk'},{key:'b',label:'Checking your phone while listening'},{key:'c',label:'Fully focusing and reflecting back what you hear'},{key:'d',label:'Interrupting to add value'}], correctKey: 'c' },
-        { id: 'w2q4', text: 'When disagreeing with a colleague professionally, you should:', options: [{key:'a',label:'Avoid the conversation entirely'},{key:'b',label:'Address it emotionally to show you care'},{key:'c',label:'Acknowledge their view then present yours calmly'},{key:'d',label:'Escalate to management immediately'}], correctKey: 'c' },
-        { id: 'w2q5', text: 'Non-verbal communication accounts for approximately:', options: [{key:'a',label:'10% of communication impact'},{key:'b',label:'Over 50% of communication impact'},{key:'c',label:'Exactly 30% of communication impact'},{key:'d',label:'It has no measurable impact'}], correctKey: 'b' }
+      topics: ['Email etiquette', 'LinkedIn presence', 'Professional introduction', 'Conflict communication'],
+      status: 'pending', cwSubmitted: false, cwScore: null, dueDate: '',
+      cwQuestions: [
+        'You receive an email from your manager asking for an urgent update, but the tone feels harsh and demanding.',
+        'You sent an important email to a client and noticed immediately after that it contains an error.',
+        'A recruiter views your LinkedIn profile but does not reach out. You notice your profile is not getting engagement.',
+        'You are asked to introduce yourself in a professional meeting with senior stakeholders.',
+        'A colleague sends you a poorly written email that is unclear, and you are unsure what is required.',
+        'You are applying for a role and your experience does not perfectly match the job description.',
+        'You receive a message from a recruiter asking about your availability, but you are not fully interested in the role.',
+        'You notice your LinkedIn profile does not clearly reflect what you do or the value you bring.',
+        'During a meeting, you are asked a question you do not know the answer to.',
+        'You are communicating with a senior colleague and they respond with very short, direct messages.'
       ]
     },
     {
       id: 3,
-      title: 'Productivity & Time Management',
-      description: 'Building systems that maximize output, reduce burnout, and deliver results consistently.',
-      topics: ['Priority frameworks', 'Deep work', 'Deadline management', 'Energy management'],
-      status: 'pending',
-      score: null,
-      quizScore: null,
-      courseworkSubmitted: false,
-      quizCompleted: false,
-      dueDate: '',
-      quizQuestions: [
-        { id: 'w3q1', text: 'The Eisenhower Matrix helps professionals:', options: [{key:'a',label:'Track time spent on tasks'},{key:'b',label:'Prioritize tasks by urgency and importance'},{key:'c',label:'Delegate all work'},{key:'d',label:'Eliminate all meetings'}], correctKey: 'b' },
-        { id: 'w3q2', text: 'Deep work is most accurately described as:', options: [{key:'a',label:'Working late into the night'},{key:'b',label:'Focused, distraction-free cognitive effort on complex tasks'},{key:'c',label:'Doing multiple tasks simultaneously'},{key:'d',label:'Working on easy tasks first'}], correctKey: 'b' },
-        { id: 'w3q3', text: 'When you have too many tasks, the best approach is:', options: [{key:'a',label:'Work faster on everything'},{key:'b',label:'Ignore low-priority tasks indefinitely'},{key:'c',label:'Prioritize, communicate, and renegotiate timelines'},{key:'d',label:'Refuse new work entirely'}], correctKey: 'c' },
-        { id: 'w3q4', text: 'Energy management in productivity means:', options: [{key:'a',label:'Drinking more coffee'},{key:'b',label:'Aligning demanding tasks with peak energy periods'},{key:'c',label:'Working the same hours every day'},{key:'d',label:'Avoiding rest to maximise output'}], correctKey: 'b' },
-        { id: 'w3q5', text: 'What is the most effective way to handle interruptions at work?', options: [{key:'a',label:'Never respond to colleagues'},{key:'b',label:'Always drop what you are doing'},{key:'c',label:'Set boundaries, batch responses, protect focused time'},{key:'d',label:'Work from home permanently'}], correctKey: 'c' }
+      title: 'Career Positioning & Job Readiness',
+      description: 'Building systems to position yourself effectively for the job market.',
+      topics: ['CV strategy', 'Interview skills', 'Career pitch', 'Job search tactics'],
+      status: 'pending', cwSubmitted: false, cwScore: null, dueDate: '',
+      cwQuestions: [
+        'You are asked in an interview: Tell me about yourself.',
+        'You see a job opportunity you like, but you only meet about 60% of the requirements.',
+        'A recruiter asks about your previous experience, and you feel tempted to exaggerate to appear more qualified.',
+        'You apply for multiple jobs but receive no response after weeks.',
+        'You are given an opportunity to pitch yourself in less than 2 minutes.',
+        'You are offered a role, but the salary is lower than expected.',
+        'You want to transition into a new career path with little direct experience.',
+        'You are asked to provide examples of your work, but you have limited formal experience.',
+        'You find a remote job opportunity with global applicants competing for the same role.',
+        'After an interview, you feel you didn\'t perform your best.'
       ]
     },
     {
       id: 4,
-      title: 'Stakeholder & Relationship Management',
-      description: 'Building professional networks, managing up, and creating visibility within organisations.',
-      topics: ['Managing up', 'Building allies', 'Networking strategy', 'Visibility & recognition'],
-      status: 'locked',
-      score: null,
-      quizScore: null,
-      courseworkSubmitted: false,
-      quizCompleted: false,
-      dueDate: '',
-      quizQuestions: [
-        { id: 'w4q1', text: 'Managing up means:', options: [{key:'a',label:'Telling your manager what to do'},{key:'b',label:'Proactively communicating to make your manager\'s job easier'},{key:'c',label:'Avoiding your manager'},{key:'d',label:'Complaining to senior leadership'}], correctKey: 'b' },
-        { id: 'w4q2', text: 'Professional networking is most valuable when:', options: [{key:'a',label:'You only contact people when you need something'},{key:'b',label:'You build genuine, mutually beneficial relationships over time'},{key:'c',label:'You collect as many contacts as possible'},{key:'d',label:'You focus only on senior people'}], correctKey: 'b' },
-        { id: 'w4q3', text: 'Visibility in the workplace is best achieved by:', options: [{key:'a',label:'Self-promotion and bragging'},{key:'b',label:'Keeping quiet and hoping to be noticed'},{key:'c',label:'Delivering results and communicating your impact strategically'},{key:'d',label:'Working the longest hours'}], correctKey: 'c' },
-        { id: 'w4q4', text: 'When a stakeholder has conflicting priorities from yours, you should:', options: [{key:'a',label:'Ignore their priorities'},{key:'b',label:'Escalate immediately'},{key:'c',label:'Align expectations and find common ground'},{key:'d',label:'Do both simultaneously'}], correctKey: 'c' },
-        { id: 'w4q5', text: 'Building allies at work means:', options: [{key:'a',label:'Only connecting with people who can promote you'},{key:'b',label:'Having people across levels who know and support your work'},{key:'c',label:'Avoiding competition with peers'},{key:'d',label:'Socialising constantly'}], correctKey: 'b' }
+      title: 'Productivity & Workplace Performance',
+      description: 'Building systems that maximize output, reduce burnout, and deliver results consistently.',
+      topics: ['Priority frameworks', 'Task management', 'Deadline management', 'Microsoft tools'],
+      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      cwQuestions: [
+        'You have multiple deadlines due at the same time and limited time to complete them.',
+        'You notice you are constantly busy but not making real progress on important tasks.',
+        'Your manager gives you a task with unclear instructions.',
+        'You are assigned a task using a Microsoft tool you are not familiar with.',
+        'You keep getting distracted during work hours.',
+        'You are working on a task and realize halfway that you misunderstood the requirement.',
+        'Your workload suddenly increases beyond what you can realistically handle.',
+        'You are working on repetitive tasks that take too much time daily.',
+        'You are part of a team project where timelines are tight and coordination is required.',
+        'You complete your tasks early while others are still behind.'
       ]
     },
     {
       id: 5,
-      title: 'Career Strategy & Growth Acceleration',
-      description: 'Designing a deliberate career path and positioning yourself for rapid advancement.',
-      topics: ['Career mapping', 'Skill gaps', 'Strategic positioning', 'Promotion readiness'],
-      status: 'locked',
-      score: null,
-      quizScore: null,
-      courseworkSubmitted: false,
-      quizCompleted: false,
-      dueDate: '',
-      quizQuestions: [
-        { id: 'w5q1', text: 'A strategic career plan includes:', options: [{key:'a',label:'A rigid 20-year roadmap'},{key:'b',label:'Short and long-term goals with quarterly reviews'},{key:'c',label:'Waiting for your company to plan for you'},{key:'d',label:'A list of jobs to apply for'}], correctKey: 'b' },
-        { id: 'w5q2', text: 'Promotion readiness is best demonstrated by:', options: [{key:'a',label:'Asking for a promotion every 6 months'},{key:'b',label:'Operating at the level above your current role'},{key:'c',label:'Having the most years of experience'},{key:'d',label:'Being popular with colleagues'}], correctKey: 'b' },
-        { id: 'w5q3', text: 'A skill gap analysis helps you:', options: [{key:'a',label:'Identify weaknesses to hide from employers'},{key:'b',label:'Understand what to develop to reach your career goals'},{key:'c',label:'Justify staying in your current role'},{key:'d',label:'Compare yourself to peers'}], correctKey: 'b' },
-        { id: 'w5q4', text: 'Strategic positioning means:', options: [{key:'a',label:'Choosing your desk location carefully'},{key:'b',label:'Being known for specific, high-value contributions'},{key:'c',label:'Avoiding responsibility to stay safe'},{key:'d',label:'Knowing the right people only'}], correctKey: 'b' },
-        { id: 'w5q5', text: 'What accelerates career growth the most?', options: [{key:'a',label:'Switching jobs every year'},{key:'b',label:'Waiting for formal training programs'},{key:'c',label:'Delivering impact, building skills, and managing visibility simultaneously'},{key:'d',label:'Having a postgraduate degree'}], correctKey: 'c' }
+      title: 'Workplace Excellence & Growth',
+      description: 'Developing resilience, excellence, and growth acceleration strategies.',
+      topics: ['Client handling', 'Resilience', 'Feedback reception', 'Taking initiative'],
+      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      cwQuestions: [
+        'A client is unhappy and expresses frustration about your service.',
+        'You are feeling mentally drained and unmotivated at work.',
+        'You are under pressure to deliver results within a very short timeframe.',
+        'A colleague consistently delivers poor-quality work that affects your output.',
+        'You need support from another team, but they are unresponsive.',
+        'You receive constructive feedback that highlights your weaknesses.',
+        'You are working with someone whose personality clashes with yours.',
+        'You are given an opportunity to take on more responsibility.',
+        'A client makes a request that goes beyond your role or company policy.',
+        'You feel stuck in your current role with little growth.'
       ]
     },
     {
       id: 6,
-      title: 'Leadership, Initiative & Impact',
-      description: 'Developing leadership qualities and creating measurable impact at any level.',
-      topics: ['Leadership presence', 'Problem-solving', 'Taking initiative', 'Impact measurement'],
-      status: 'locked',
-      score: null,
-      quizScore: null,
-      courseworkSubmitted: false,
-      quizCompleted: false,
-      dueDate: '',
-      quizQuestions: [
-        { id: 'w6q1', text: 'Leadership presence is best described as:', options: [{key:'a',label:'Having a loud personality'},{key:'b',label:'A senior job title'},{key:'c',label:'The ability to inspire confidence and influence without authority'},{key:'d',label:'Being the oldest in the room'}], correctKey: 'c' },
-        { id: 'w6q2', text: 'Taking initiative at work means:', options: [{key:'a',label:'Doing whatever you want without asking'},{key:'b',label:'Identifying and solving problems before being told to'},{key:'c',label:'Working overtime regularly'},{key:'d',label:'Volunteering for low-impact tasks'}], correctKey: 'b' },
-        { id: 'w6q3', text: 'Measuring your impact at work involves:', options: [{key:'a',label:'Counting hours worked'},{key:'b',label:'Getting positive feedback from everyone'},{key:'c',label:'Tracking outcomes, results, and value delivered'},{key:'d',label:'Completing all assigned tasks'}], correctKey: 'c' },
-        { id: 'w6q4', text: 'Effective problem-solving requires:', options: [{key:'a',label:'Finding someone to blame'},{key:'b',label:'Implementing the first solution that comes to mind'},{key:'c',label:'Understanding root causes before acting'},{key:'d',label:'Escalating every issue'}], correctKey: 'c' },
-        { id: 'w6q5', text: 'Leadership at any level means:', options: [{key:'a',label:'Only leading when you are in charge'},{key:'b',label:'Setting the example, taking ownership, and lifting others'},{key:'c',label:'Having direct reports'},{key:'d',label:'Making all the decisions'}], correctKey: 'b' }
+      title: 'Career Direction & Real-World Application',
+      description: 'Applying all learning to real workplace decisions and career acceleration.',
+      topics: ['Career mapping', 'Decision making', 'Leadership readiness', 'Value articulation'],
+      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      cwQuestions: [
+        'You receive two job offers: one with higher pay but poor growth, and another with lower pay but strong growth potential.',
+        'You are placed in a new work environment where expectations are unclear.',
+        'You are asked to handle a situation you have never experienced before.',
+        'You are working in a fast-paced environment where mistakes are not easily tolerated.',
+        'You notice inefficiencies in a process within your team.',
+        'You are required to collaborate with people from different cultural and professional backgrounds.',
+        'You are given feedback that conflicts with how you see your performance.',
+        'You are asked to step into a leadership role unexpectedly.',
+        'You experience a major setback in your work or career.',
+        'You are asked: What value do you bring to this organization?'
       ]
     }
   ];
 
-  // ── Final exam ─────────────────────────────────────────────────────────────
-  showFinalExam = false;
-  finalExamAnswers: Map<string, string> = new Map();
-  finalExamSubmitted = false;
-  finalExamScore: number | null = null;
-  finalExamSubmitting = false;
-
-  finalExamQuestions: QuizQuestion[] = [
-    { id: 'fe1', text: 'What distinguishes high-performing professionals from average ones?', options: [{key:'a',label:'Natural talent alone'},{key:'b',label:'Ownership, adaptability, communication, and strategic thinking'},{key:'c',label:'Working the longest hours'},{key:'d',label:'Having the best education'}], correctKey: 'b' },
-    { id: 'fe2', text: 'A professional who feels undervalued should first:', options: [{key:'a',label:'Resign immediately'},{key:'b',label:'Find structured ways to communicate progress and results'},{key:'c',label:'Reduce effort'},{key:'d',label:'Confront management emotionally'}], correctKey: 'b' },
-    { id: 'fe3', text: 'Managing multiple stakeholders requires:', options: [{key:'a',label:'Satisfying everyone equally'},{key:'b',label:'Ignoring low-priority stakeholders'},{key:'c',label:'Aligning expectations and prioritising clearly'},{key:'d',label:'Escalating all conflicts'}], correctKey: 'c' },
-    { id: 'fe4', text: 'Career acceleration is best driven by:', options: [{key:'a',label:'Seniority and time spent in role'},{key:'b',label:'Delivering results, building visibility, and continuous learning'},{key:'c',label:'Networking events only'},{key:'d',label:'Technical skills exclusively'}], correctKey: 'b' },
-    { id: 'fe5', text: 'Initiative in the workplace is best demonstrated by:', options: [{key:'a',label:'Doing only what is assigned'},{key:'b',label:'Identifying gaps and solving problems proactively'},{key:'c',label:'Waiting for instructions'},{key:'d',label:'Working on weekends'}], correctKey: 'b' },
-    { id: 'fe6', text: 'Effective communication in professional settings requires:', options: [{key:'a',label:'Complex vocabulary to sound credible'},{key:'b',label:'Clarity, brevity, and active listening'},{key:'c',label:'Always agreeing to avoid conflict'},{key:'d',label:'Only written communication'}], correctKey: 'b' },
-    { id: 'fe7', text: 'The purpose of personal branding is to:', options: [{key:'a',label:'Become famous'},{key:'b',label:'Get more social media followers'},{key:'c',label:'Differentiate yourself and communicate your unique value'},{key:'d',label:'Impress friends and family'}], correctKey: 'c' },
-    { id: 'fe8', text: 'Leadership presence can be developed by:', options: [{key:'a',label:'Only people born with charisma'},{key:'b',label:'Anyone who commits to consistent, intentional practice'},{key:'c',label:'Getting a senior title first'},{key:'d',label:'Having a formal leadership course only'}], correctKey: 'b' },
-    { id: 'fe9', text: 'Productive professionals manage their time by:', options: [{key:'a',label:'Working harder for more hours'},{key:'b',label:'Responding to emails immediately always'},{key:'c',label:'Prioritising high-impact tasks and protecting focused time'},{key:'d',label:'Delegating everything'}], correctKey: 'c' },
-    { id: 'fe10', text: 'Work readiness ultimately means:', options: [{key:'a',label:'Having a degree and work experience'},{key:'b',label:'Knowing workplace rules'},{key:'c',label:'The mindset, skills, and behaviours to add value from day one'},{key:'d',label:'Being qualified for the job description'}], correctKey: 'c' }
+  // ── Final exam sections (from uploaded doc — 40 questions, 6 sections) ────
+  finalExamSections: FinalExamSection[] = [
+    {
+      title: 'Section A: LinkedIn, Personal Brand & Professional Identity',
+      sub: '8 Questions',
+      questions: [
+        'Your LinkedIn headline currently says: "Job Seeker | Open to Opportunities." Rewrite it to reflect a clear professional identity and value.',
+        'Write a short LinkedIn "About" section (3–5 lines) that positions you professionally.',
+        'You notice your LinkedIn posts are not aligned with your career goals.',
+        'You see a trending post where people are criticizing their employers publicly.',
+        'A recruiter visits your LinkedIn profile but does not reach out.',
+        'List 3 types of posts you would consistently share on LinkedIn to build your personal brand.',
+        'You want to position yourself as a professional in a specific field but have limited experience.',
+        'You come across a controversial topic online and feel strongly about it.'
+      ]
+    },
+    {
+      title: 'Section B: CV, Job Application & Positioning',
+      sub: '7 Questions',
+      questions: [
+        'You are applying for a role. List 3 specific things you will adjust in your CV before submitting.',
+        'You are tempted to include experience you don\'t fully have in your CV.',
+        'You are applying for similar roles in different companies with slightly different job descriptions.',
+        'Write a short professional email (2–3 lines) to submit your CV for a role.',
+        'You submit your CV but receive no response after some time.',
+        'You are applying for a role you are qualified for but lack confidence.',
+        'You are asked to provide proof of your skills during a hiring process.'
+      ]
+    },
+    {
+      title: 'Section C: Communication, Email & Workplace Presence',
+      sub: '7 Questions',
+      questions: [
+        'You receive an email with instructions but do not fully understand what is required.',
+        'Write a short email acknowledging receipt of a task from your manager.',
+        'You complete a task but your manager has not followed up.',
+        'You are in a meeting and realize you misunderstood a previous instruction.',
+        'You are required to give an update on your work progress.',
+        'You are communicating with a busy senior colleague who gives minimal responses.',
+        'You receive feedback that your communication is not clear.'
+      ]
+    },
+    {
+      title: 'Section D: Workplace Mindset, Responsibility & Growth',
+      sub: '6 Questions',
+      questions: [
+        'You are given additional responsibilities outside your job description without immediate salary increase.',
+        'You feel your salary does not match your workload.',
+        'You are offered a learning opportunity that requires extra effort outside work hours.',
+        'You see others getting ahead faster than you in their careers.',
+        'You are assigned a task that stretches your current ability.',
+        'You feel your role is becoming repetitive and less challenging.'
+      ]
+    },
+    {
+      title: 'Section E: Workplace Behavior, Etiquette & Professionalism',
+      sub: '6 Questions',
+      questions: [
+        'You observe colleagues engaging in unprofessional behavior in the workplace.',
+        'You are in a workplace where people casually ignore structure and process.',
+        'You are copied in an email where there is tension between two colleagues.',
+        'You notice someone consistently fails to acknowledge emails or messages.',
+        'You are asked to handle a situation involving a dissatisfied internal stakeholder.',
+        'You are in a workplace where boundaries are often blurred.'
+      ]
+    },
+    {
+      title: 'Section F: Performance, Productivity & Burnout',
+      sub: '6 Questions',
+      questions: [
+        'You feel overwhelmed with multiple responsibilities and tight deadlines.',
+        'You notice your productivity dropping over time.',
+        'You are working hard but not seeing visible results.',
+        'You are required to deliver under pressure consistently.',
+        'You realize you are close to burnout.',
+        'You are balancing multiple priorities across different expectations.'
+      ]
+    }
   ];
+
+  // ── Section start indices (for getFinalQNum helper) ───────────────────────
+  private sectionStarts: number[] = [];
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // LIFECYCLE
+  // ─────────────────────────────────────────────────────────────────────────
+
   ngOnInit(): void {
-    this.loadStudentData();
+    this.buildSectionStarts();
     this.setWeekDates();
+    this.loadStudentData();
   }
 
-  // ── Load student from localStorage / backend ───────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // INIT HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Pre-compute the global question start index for each final exam section */
+  private buildSectionStarts(): void {
+    let count = 0;
+    this.sectionStarts = this.finalExamSections.map(sec => {
+      const start = count;
+      count += sec.questions.length;
+      return start;
+    });
+  }
+
+  /** Assign rolling due dates from today (+7 days per week) */
+  setWeekDates(): void {
+    const base = new Date();
+    this.courseWeeks.forEach((w, i) => {
+      const d = new Date(base);
+      d.setDate(d.getDate() + (i + 1) * 7);
+      w.dueDate = d.toISOString();
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // LOAD STUDENT
+  // ─────────────────────────────────────────────────────────────────────────
 
   loadStudentData(): void {
-    const stored = localStorage.getItem('studentProfile');
-    const regId  = localStorage.getItem('studentId');
+    const stored  = localStorage.getItem('studentProfile');
+    const regId   = localStorage.getItem('studentId');
+    const weeksSt = localStorage.getItem('c360_weeks');
+    const finalSt = localStorage.getItem('c360_final');
+
+    // Restore week progress
+    if (weeksSt) {
+      const parsed: Pick<CourseWeek, 'cwSubmitted' | 'cwScore' | 'status'>[] = JSON.parse(weeksSt);
+      parsed.forEach((s, i) => {
+        this.courseWeeks[i].cwSubmitted = s.cwSubmitted;
+        this.courseWeeks[i].cwScore    = s.cwScore;
+        this.courseWeeks[i].status     = s.status;
+      });
+    }
+
+    // Restore final exam state
+    if (finalSt) {
+      const f = JSON.parse(finalSt);
+      this.finalExamSubmitted = f.submitted;
+      this.finalExamScore     = f.score;
+    }
 
     if (stored) {
       this.student = JSON.parse(stored);
@@ -230,19 +351,7 @@ export class StudentDashboardComponent implements OnInit {
     if (regId) {
       this.http.get<any>(`${this.api}/api/registrations/${regId}`).subscribe({
         next: (data) => {
-          this.student = {
-            registrationId: data.registrationId || data._id,
-            fullName:        data.fullName,
-            email:           data.email,
-            phone:           data.phone,
-            category:        data.category,
-            photo:           data.files?.photo
-                               ? `${this.api}/api/registrations/${data.registrationId}/file/${data.files.photo}`
-                               : null,
-            assessmentScore:  data.assessmentScore  ?? null,
-            assessmentLevel:  data.assessmentLevel  ?? null,
-            enrolledAt:       data.submittedAt
-          };
+          this.student = this.mapStudentData(data);
           localStorage.setItem('studentProfile', JSON.stringify(this.student));
           this.loading = false;
           this.generateAlerts();
@@ -260,6 +369,22 @@ export class StudentDashboardComponent implements OnInit {
     }
   }
 
+  private mapStudentData(data: any): StudentProfile {
+    return {
+      registrationId: data.registrationId || data._id,
+      fullName:       data.fullName,
+      email:          data.email,
+      phone:          data.phone,
+      category:       data.category,
+      photo:          data.files?.photo
+                        ? `${this.api}/api/registrations/${data.registrationId}/file/${data.files.photo}`
+                        : null,
+      assessmentScore:  data.assessmentScore  ?? null,
+      assessmentLevel:  data.assessmentLevel  ?? null,
+      enrolledAt:       data.submittedAt
+    };
+  }
+
   private setFallback(): void {
     this.student = {
       registrationId: 'demo',
@@ -274,18 +399,9 @@ export class StudentDashboardComponent implements OnInit {
     };
   }
 
-  // ── Week dates (set from enrolment date) ───────────────────────────────────
-
-  setWeekDates(): void {
-    const base = new Date();
-    this.courseWeeks.forEach((w, i) => {
-      const d = new Date(base);
-      d.setDate(d.getDate() + (i + 1) * 7);
-      w.dueDate = d.toISOString();
-    });
-  }
-
-  // ── Progress ───────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // COMPUTED GETTERS
+  // ─────────────────────────────────────────────────────────────────────────
 
   get completionRate(): number {
     const done = this.courseWeeks.filter(w => w.status === 'completed').length;
@@ -304,22 +420,49 @@ export class StudentDashboardComponent implements OnInit {
     return this.courseWeeks.filter(w => w.status === 'overdue').length;
   }
 
-  get averageScore(): number {
-    const scored = this.courseWeeks.filter(w => w.quizScore !== null);
-    if (!scored.length) return 0;
-    return Math.round(scored.reduce((s, w) => s + w.quizScore!, 0) / scored.length);
+  get averageScoreLabel(): string {
+    const scored = this.courseWeeks.filter(w => w.cwScore !== null);
+    if (!scored.length) return '—';
+    const avg = scored.reduce((s, w) => s + w.cwScore!, 0) / scored.length;
+    return Math.round(avg * 10) + '%';
   }
 
   get canTakeFinalExam(): boolean {
-    return this.completionRate === 100;
+    return this.courseWeeks.every(w => w.status === 'completed');
   }
 
-  // ── Alerts ─────────────────────────────────────────────────────────────────
+  get enrolledWeeksLabel(): string {
+    return `${this.completedCount} of 6 weeks complete`;
+  }
+
+  get avatarInitials(): string {
+    if (!this.student?.fullName) return 'S';
+    return this.student.fullName
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  }
+
+  /** Count coursework answers with ≥10 chars as "answered" */
+  get cwAnsweredCount(): number {
+    return Object.values(this.cwModalAnswers).filter(v => v.trim().length >= 10).length;
+  }
+
+  /** Count final exam answers with ≥10 chars as "answered" */
+  get finalAnsweredCount(): number {
+    return Object.values(this.finalAnswers).filter(v => v.trim().length >= 10).length;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ALERTS
+  // ─────────────────────────────────────────────────────────────────────────
 
   generateAlerts(): void {
     this.alerts = [];
     const overdue = this.courseWeeks.filter(w => w.status === 'overdue');
-    const pending = this.courseWeeks.filter(w => w.status === 'pending' && !w.quizCompleted);
+    const pending = this.courseWeeks.filter(w => w.status === 'pending' && !w.cwSubmitted);
 
     if (overdue.length) {
       this.alerts.push({
@@ -330,13 +473,13 @@ export class StudentDashboardComponent implements OnInit {
     if (pending.length) {
       this.alerts.push({
         type: 'warning',
-        message: `${pending.length} week${pending.length > 1 ? 's have' : ' has'} pending coursework or assessments.`
+        message: `${pending.length} week${pending.length > 1 ? 's have' : ' has'} pending coursework.`
       });
     }
     if (this.completionRate === 100 && !this.finalExamSubmitted) {
       this.alerts.push({
         type: 'info',
-        message: 'Congratulations! All weeks complete. Your Final Exam is now unlocked.'
+        message: 'All 6 weeks complete — your Final Assessment is now unlocked!'
       });
     }
   }
@@ -345,98 +488,67 @@ export class StudentDashboardComponent implements OnInit {
     this.alerts.splice(i, 1);
   }
 
-  // ── Coursework submission ──────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // COURSEWORK MODAL
+  // ─────────────────────────────────────────────────────────────────────────
 
-  onFileSelected(event: Event, week: CourseWeek): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    this.submittingWeek = week.id;
-
-    // Simulate upload
-    setTimeout(() => {
-      week.courseworkSubmitted = true;
-      this.submittingWeek = null;
-      this.checkWeekCompletion(week);
-      this.generateAlerts();
-      this.cdr.detectChanges();
-    }, 1200);
-  }
-
-  // ── Quiz ───────────────────────────────────────────────────────────────────
-
-  openQuiz(week: CourseWeek): void {
+  openCwModal(week: CourseWeek): void {
     if (week.status === 'locked') return;
-    this.activeQuiz   = week;
-    this.quizAnswers  = new Map();
-    this.quizResult   = null;
-    this.quizSubmitted = false;
-    this.showQuizModal = true;
+    this.activeCwWeek   = week;
+    this.cwModalAnswers = {};
+    this.cwSubmitting   = false;
+    this.showCwModal    = true;
     document.body.style.overflow = 'hidden';
   }
 
-  closeQuiz(): void {
-    this.showQuizModal  = false;
-    this.activeQuiz     = null;
-    this.quizResult     = null;
-    this.quizSubmitted  = false;
+  closeCwModal(): void {
+    this.showCwModal = false;
     document.body.style.overflow = '';
   }
 
-  selectQuizAnswer(qid: string, key: string): void {
-    this.quizAnswers.set(qid, key);
+  onCwAnswer(idx: number, event: Event): void {
+    const val = (event.target as HTMLTextAreaElement).value;
+    this.cwModalAnswers[idx] = val;
     this.cdr.detectChanges();
   }
 
-  getQuizAnswer(qid: string): string | undefined {
-    return this.quizAnswers.get(qid);
-  }
+  submitCoursework(): void {
+    if (!this.activeCwWeek) return;
+    if (this.cwAnsweredCount < 10) return;
 
-  submitQuiz(): void {
-    if (!this.activeQuiz) return;
-    if (this.quizAnswers.size < this.activeQuiz.quizQuestions.length) return;
+    this.cwSubmitting = true;
 
-    this.quizSubmitting = true;
-    let correct = 0;
-    const total = this.activeQuiz.quizQuestions.length;
-
-    this.activeQuiz.quizQuestions.forEach(q => {
-      if (this.quizAnswers.get(q.id) === q.correctKey) correct++;
-    });
-
-    const pct = Math.round((correct / total) * 100);
-
+    // Simulate async submit (replace with real API call)
     setTimeout(() => {
-      this.quizResult    = { score: correct, total, percentage: pct };
-      this.quizSubmitted = true;
-      this.quizSubmitting = false;
-
-      // Update week
-      this.activeQuiz!.quizScore      = pct;
-      this.activeQuiz!.quizCompleted  = true;
-      this.checkWeekCompletion(this.activeQuiz!);
+      const week = this.activeCwWeek!;
+      week.cwSubmitted = true;
+      week.cwScore     = this.cwAnsweredCount; // 10/10 — instructor will review text
+      this.checkWeekCompletion(week);
+      this.lastSubmittedWeek = week;
+      this.saveState();
+      this.cwSubmitting  = false;
+      this.showCwModal   = false;
+      this.showCwResult  = true;
       this.generateAlerts();
+      document.body.style.overflow = 'hidden';
       this.cdr.detectChanges();
-    }, 800);
+    }, 900);
   }
 
-  private checkWeekCompletion(week: CourseWeek): void {
-    if (week.courseworkSubmitted && week.quizCompleted) {
-      week.status = 'completed';
-      week.score  = week.quizScore;
-      // Unlock next week
-      const next = this.courseWeeks.find(w => w.id === week.id + 1);
-      if (next && next.status === 'locked') next.status = 'pending';
-    }
+  closeCwResult(): void {
+    this.showCwResult = false;
+    document.body.style.overflow = '';
   }
 
-  // ── Final Exam ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // FINAL EXAM
+  // ─────────────────────────────────────────────────────────────────────────
 
   openFinalExam(): void {
     if (!this.canTakeFinalExam) return;
-    this.showFinalExam      = true;
-    this.finalExamAnswers   = new Map();
-    this.finalExamSubmitted = false;
-    this.finalExamScore     = null;
+    this.finalAnswers        = {};
+    this.finalExamSubmitting = false;
+    this.showFinalExam       = true;
     document.body.style.overflow = 'hidden';
   }
 
@@ -445,41 +557,72 @@ export class StudentDashboardComponent implements OnInit {
     document.body.style.overflow = '';
   }
 
-  selectFinalAnswer(qid: string, key: string): void {
-    this.finalExamAnswers.set(qid, key);
+  onFinalAnswer(idx: number, event: Event): void {
+    const val = (event.target as HTMLTextAreaElement).value;
+    this.finalAnswers[idx] = val;
     this.cdr.detectChanges();
   }
 
-  getFinalAnswer(qid: string): string | undefined {
-    return this.finalExamAnswers.get(qid);
-  }
-
   submitFinalExam(): void {
-    if (this.finalExamAnswers.size < this.finalExamQuestions.length) return;
+    if (this.finalAnsweredCount < 40) return;
     this.finalExamSubmitting = true;
 
-    let correct = 0;
-    this.finalExamQuestions.forEach(q => {
-      if (this.finalExamAnswers.get(q.id) === q.correctKey) correct++;
-    });
-
-    const pct = Math.round((correct / this.finalExamQuestions.length) * 100);
-
     setTimeout(() => {
-      this.finalExamScore     = pct;
-      this.finalExamSubmitted = true;
+      this.finalExamScore      = this.finalAnsweredCount; // 40/40 — instructor reviews
+      this.finalExamSubmitted  = true;
       this.finalExamSubmitting = false;
+      localStorage.setItem('c360_final', JSON.stringify({
+        submitted: true,
+        score:     this.finalExamScore
+      }));
       this.generateAlerts();
       this.cdr.detectChanges();
     }, 1000);
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // WEEK COMPLETION LOGIC
+  // ─────────────────────────────────────────────────────────────────────────
 
-  setTab(tab: ActiveTab): void { this.activeTab = tab; }
+  private checkWeekCompletion(week: CourseWeek): void {
+    if (week.cwSubmitted) {
+      week.status = 'completed';
+      // Unlock next week
+      const next = this.courseWeeks.find(w => w.id === week.id + 1);
+      if (next && next.status === 'locked') next.status = 'pending';
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PERSISTENCE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private saveState(): void {
+    localStorage.setItem('c360_weeks', JSON.stringify(
+      this.courseWeeks.map(w => ({
+        cwSubmitted: w.cwSubmitted,
+        cwScore:     w.cwScore,
+        status:      w.status
+      }))
+    ));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  setTab(tab: ActiveTab): void {
+    this.activeTab = tab;
+  }
 
   statusLabel(s: WeekStatus): string {
-    return { completed: 'Completed', pending: 'Pending', overdue: 'Overdue', locked: 'Locked' }[s];
+    const map: Record<WeekStatus, string> = {
+      completed: 'Completed',
+      pending:   'Pending',
+      overdue:   'Overdue',
+      locked:    'Locked'
+    };
+    return map[s] ?? s;
   }
 
   categoryLabel(c: string): string {
@@ -488,22 +631,42 @@ export class StudentDashboardComponent implements OnInit {
 
   formatDate(iso: string): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
   }
 
-  get photoUrl(): string {
-    return this.student?.photo || 'assets/avatar-placeholder.png';
+  getWordCount(val: string | undefined): number {
+    if (!val || !val.trim()) return 0;
+    return val.trim().split(/\s+/).filter(w => w.length > 0).length;
   }
 
-  get enrolledWeeksLabel(): string {
-    return `${this.completedCount} of 6 weeks complete`;
+  /**
+   * Returns the 1-based global question number for a question inside a section.
+   * Used in the final exam template to track answers by global index.
+   */
+  getFinalQNum(section: FinalExamSection, localIndex: number): number {
+    const sectionIdx = this.finalExamSections.indexOf(section);
+    return this.sectionStarts[sectionIdx] + localIndex + 1;
   }
 
-  get quizAnsweredCount(): number {
-    return this.quizAnswers.size;
+  /** Returns an HTML string for the grade badge based on score out of 10 */
+  getGradeLabel(score: number | null): string {
+    if (score === null) return '<span class="grade-na">N/A</span>';
+    const pct = Math.round(score / 10 * 100);
+    if (pct >= 80) return '<span class="grade-a">A</span>';
+    if (pct >= 70) return '<span class="grade-b">B</span>';
+    if (pct >= 60) return '<span class="grade-c">C</span>';
+    return '<span class="grade-f">F</span>';
   }
 
-  get finalAnsweredCount(): number {
-    return this.finalExamAnswers.size;
+  /** Returns grade badge HTML for the final exam (out of 40) */
+  getFinalGradeLabel(): string {
+    if (this.finalExamScore === null) return '<span class="grade-na">N/A</span>';
+    const pct = Math.round(this.finalExamScore / 40 * 100);
+    if (pct >= 80) return '<span class="grade-a">A</span>';
+    if (pct >= 70) return '<span class="grade-b">B</span>';
+    if (pct >= 60) return '<span class="grade-c">C</span>';
+    return '<span class="grade-f">F</span>';
   }
 }

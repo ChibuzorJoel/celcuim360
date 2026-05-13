@@ -1,0 +1,136 @@
+
+
+.controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-create {
+  padding: 9px 18px;
+  background: #B88D2A;
+  border: none;
+  border-radius: 7px;
+  color: #000;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-create:hover { background: #d4af37; box-shadow: 0 4px 14px rgba(184,141,42,0.35); }
+
+/* Cohort grid */
+.cohort-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
+}
+
+.cohort-card {
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 12px;
+  padding: 18px;
+  transition: border-color 0.2s;
+}
+
+.cohort-card:hover { border-color: #2e2e2e; }
+.cohort-card.status-active  { border-left: 3px solid rgba(184,141,42,0.5); }
+.cohort-card.status-forming { border-left: 3px solid rgba(59,130,246,0.5); }
+.cohort-card.status-closed  { border-left: 3px solid rgba(255,255,255,0.1); opacity: 0.7; }
+
+.cohort-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cohort-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #B88D2A;
+  margin-bottom: 3px;
+}
+
+.cohort-meta { font-size: 10px; color: #333; }
+
+/* Stats row inside card */
+.cohort-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: #0e0e0e;
+  border-radius: 8px;
+  border: 1px solid #1a1a1a;
+}
+
+.cstat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cstat-val   { font-size: 18px; font-weight: 900; color: #ccc; }
+.cstat-val.green  { color: #10b981; }
+.cstat-val.amber  { color: #f59e0b; }
+.cstat-val.gold   { color: #B88D2A; }
+.cstat-label { font-size: 8px; color: #333; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Calendar label */
+.cohort-cal-label {
+  font-size: 8.5px;
+  color: #2e2e2e;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* Actions */
+.cohort-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* Form inputs in modal */
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.form-row label {
+  font-size: 9.5px;
+  color: #B88D2A;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.form-input {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 7px;
+  color: #ccc;
+  font-size: 12px;
+  padding: 9px 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: #B88D2A; }
+.form-input::placeholder { color: #333; }
+
+@media (max-width: 700px) {
+  .cohort-grid { grid-template-columns: 1fr; }
+  .cohort-stats { grid-template-columns: repeat(2, 1fr); }
+}

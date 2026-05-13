@@ -26,6 +26,9 @@ import { AdminDashboardComponent }    from './core/admin-dashboard/admin-dashboa
 import { AdminRegistrationComponent } from './core/admin-registration/admin-registration.component';
 import { AdminAssessmentComponent } from './core/admin-assessment/admin-assessment.component';
 import { AdminContactComponent } from './core/admin-contact/admin-contact.component';
+import { AdminCohortsComponent } from './core/admin-cohorts/admin-cohorts.component';
+import { AdminAnalyticsComponent } from './core/admin-analytics/admin-analytics.component';
+import { AdminPaymentsComponent } from './core/admin-payments/admin-payments.component';
 
 // Uncomment as you add more admin pages:
 // import { AdminContactComponent }    from './core/admin-contact/admin-contact.component';
@@ -72,9 +75,9 @@ const routes: Routes = [
       { path: 'registration', component: AdminRegistrationComponent      },
       { path: 'contact',    component: AdminContactComponent    },
       { path: 'assessment', component: AdminAssessmentComponent },
-      // { path: 'cohorts',    component: AdminCohortsComponent    },
-      // { path: 'analytics',  component: AdminAnalyticsComponent  },
-      // { path: 'payments',   component: AdminPaymentsComponent   },
+      { path: 'cohorts',    component: AdminCohortsComponent    },
+      { path: 'analytics',  component: AdminAnalyticsComponent},
+      { path: 'payments',   component: AdminPaymentsComponent   },
     ],
   },
 

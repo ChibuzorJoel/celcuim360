@@ -27,6 +27,9 @@ import { StudentLoginComponent } from './pages/student-login/student-login.compo
 import { AdminShellComponent } from './core/admin-shell/admin-shell.component';
 import { AdminAssessmentComponent } from './core/admin-assessment/admin-assessment.component';
 import { AdminContactComponent } from './core/admin-contact/admin-contact.component';
+import { AdminCohortsComponent } from './core/admin-cohorts/admin-cohorts.component';
+import { AdminAnalyticsComponent } from './core/admin-analytics/admin-analytics.component';
+import { AdminPaymentsComponent } from './core/admin-payments/admin-payments.component';
 
 @NgModule({
   declarations: [
@@ -52,6 +55,9 @@ import { AdminContactComponent } from './core/admin-contact/admin-contact.compon
     AdminShellComponent,
     AdminAssessmentComponent,
     AdminContactComponent,
+    AdminCohortsComponent,
+    AdminAnalyticsComponent,
+    AdminPaymentsComponent,
   ],
   imports: [
     BrowserModule,

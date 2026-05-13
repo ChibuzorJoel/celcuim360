@@ -1,0 +1,112 @@
+<div class="page-wrap">
+
+    <!-- Controls -->
+    <div class="controls-bar">
+      <div class="filter-row" style="margin-bottom:0;">
+        <button class="filter-chip" [class.active]="activeFilter === 'all'"    (click)="setFilter('all')">All</button>
+        <button class="filter-chip" [class.active]="activeFilter === 'active'" (click)="setFilter('active')">Active</button>
+        <button class="filter-chip" [class.active]="activeFilter === 'forming'"(click)="setFilter('forming')">Forming</button>
+        <button class="filter-chip" [class.active]="activeFilter === 'closed'" (click)="setFilter('closed')">Closed</button>
+      </div>
+      <button class="btn-create" (click)="openCreateModal()">+ Create Cohort</button>
+    </div>
+  
+    <!-- Cohort cards -->
+    <div class="cohort-grid" style="margin-top:16px;">
+      <div class="cohort-card" *ngFor="let c of filteredCohorts" [class]="'status-' + c.status">
+        <div class="cohort-card-head">
+          <div>
+            <div class="cohort-name">{{ c.name }}</div>
+            <div class="cohort-meta">{{ c.startDate }} – {{ c.endDate }}</div>
+          </div>
+          <span class="pill" [class]="'pill-' + c.status">{{ c.status }}</span>
+        </div>
+  
+        <div class="cohort-stats">
+          <div class="cstat"><span class="cstat-val">{{ c.enrolled }}</span><span class="cstat-label">Enrolled</span></div>
+          <div class="cstat"><span class="cstat-val green">{{ c.approved }}</span><span class="cstat-label">Approved</span></div>
+          <div class="cstat"><span class="cstat-val amber">{{ c.pending }}</span><span class="cstat-label">Pending</span></div>
+          <div class="cstat"><span class="cstat-val gold">{{ c.avgScore }}%</span><span class="cstat-label">Avg Score</span></div>
+        </div>
+  
+        <!-- Auto-generated 6-week calendar -->
+        <div class="cohort-cal-label">Auto-Generated 6-Week Calendar</div>
+        <div class="cal-grid">
+          <div class="cal-week" *ngFor="let w of c.weeks"
+               [class.done]="w.done" [class.current]="w.current">
+            <div class="cal-wlabel">Wk {{ w.num }}</div>
+            <div class="cal-wdate">{{ w.date }}</div>
+            <div class="cal-wstatus" *ngIf="w.current">●</div>
+          </div>
+        </div>
+  
+        <div class="cohort-actions">
+          <button class="act-btn" (click)="viewStudents(c)">View Students</button>
+          <button class="act-btn" (click)="manageCalendar(c)">Calendar</button>
+          <button class="act-btn danger" (click)="openDeleteModal(c)">Archive</button>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Create Cohort Modal -->
+    <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModals()">
+      <div class="modal-box" (click)="$event.stopPropagation()" style="max-width:500px;">
+        <div class="modal-head">
+          <h3>Create New Cohort</h3>
+          <button class="modal-x" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Cohort Name</label>
+            <input type="text" [(ngModel)]="newCohort.name" placeholder="e.g. Cohort 9" class="form-input"/>
+          </div>
+          <div class="form-row">
+            <label>Start Date</label>
+            <input type="date" [(ngModel)]="newCohort.startDate" class="form-input" (change)="previewCalendar()"/>
+          </div>
+          <div class="form-row">
+            <label>Max Students</label>
+            <input type="number" [(ngModel)]="newCohort.maxStudents" placeholder="30" class="form-input"/>
+          </div>
+  
+          <!-- Calendar preview -->
+          <div *ngIf="calendarPreview.length" style="margin-top:14px;">
+            <div style="font-size:9px;color:#B88D2A;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px;">
+              Auto-Generated Calendar Preview
+            </div>
+            <div class="cal-grid">
+              <div class="cal-week" *ngFor="let w of calendarPreview">
+                <div class="cal-wlabel">Wk {{ w.num }}</div>
+                <div class="cal-wdate">{{ w.date }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-cancel-m" (click)="closeModals()">Cancel</button>
+          <button class="btn-confirm-m" (click)="createCohort()"
+                  [disabled]="!newCohort.name || !newCohort.startDate">
+            Create & Generate Calendar
+          </button>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Delete confirm modal -->
+    <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModals()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-head" style="border-color:#ef4444;">
+          <h3 style="color:#ef4444;">Archive Cohort</h3>
+          <button class="modal-x" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Archive <strong style="color:#ccc;">{{ selectedCohort?.name }}</strong>? This action cannot be undone.</p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-cancel-m" (click)="closeModals()">Cancel</button>
+          <button class="btn-confirm-m danger" (click)="archiveCohort()">Archive</button>
+        </div>
+      </div>
+    </div>
+  
+  </div>

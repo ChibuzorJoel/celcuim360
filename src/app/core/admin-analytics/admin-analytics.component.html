@@ -1,0 +1,118 @@
+<div class="page-wrap">
+
+    <!-- Filter -->
+    <div class="filter-row">
+      <button class="filter-chip" [class.active]="activeCohort === c" *ngFor="let c of cohortOptions" (click)="setCohort(c)">{{ c }}</button>
+    </div>
+  
+    <!-- Stats row -->
+    <div class="stats-row" style="margin-top:14px;">
+      <div class="stat-card">
+        <div class="stat-icon gold">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-body"><span class="stat-val">{{ stats.avgScore }}%</span><span class="stat-label">Avg Score</span><span class="stat-sub">All assessments</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-body"><span class="stat-val green">{{ stats.passRate }}%</span><span class="stat-label">Pass Rate</span><span class="stat-sub">Above 60%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="stat-body"><span class="stat-val red">{{ stats.atRisk }}</span><span class="stat-label">At Risk</span><span class="stat-sub">Below 60%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-body"><span class="stat-val amber">{{ stats.topScore }}%</span><span class="stat-label">Top Score</span><span class="stat-sub">{{ stats.topStudent }}</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="12" y1="20" x2="12" y2="4"  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="6"  y1="20" x2="6"  y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="stat-body"><span class="stat-val blue">{{ stats.completionRate }}%</span><span class="stat-label">Completion</span><span class="stat-sub">Submissions rate</span></div>
+      </div>
+    </div>
+  
+    <!-- Charts row -->
+    <div class="two-col" style="margin-top:16px;">
+  
+      <!-- Student performance bars -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Student Performance Breakdown</span>
+          <span style="font-size:9px;color:#333;">{{ activeCohort }}</span>
+        </div>
+        <div style="padding:16px;">
+          <div class="perf-row" *ngFor="let s of studentPerformance">
+            <span class="perf-name">{{ s.name }}</span>
+            <div class="perf-bar-wrap">
+              <div class="perf-bar" [class]="barClass(s.score)" [style.width.%]="s.score"
+                   style="transition:width 0.8s ease;"></div>
+            </div>
+            <span class="perf-pct" [class]="scoreClass(s.score)">{{ s.score }}%</span>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Week-by-week table -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Week-by-Week Avg Scores</span>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>Week</th><th>Avg Score</th><th>Submissions</th><th>Trend</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let w of weeklyStats">
+              <td style="color:#B88D2A;font-weight:700;">{{ w.week }}</td>
+              <td><span class="score" [class]="scoreClass(w.avg)">{{ w.avg > 0 ? w.avg + '%' : '—' }}</span></td>
+              <td class="dim-cell">{{ w.submitted }} / {{ w.total }}</td>
+              <td>
+                <span *ngIf="w.trend > 0"  style="color:#10b981;font-size:11px;font-weight:700;">▲ {{ w.trend }}%</span>
+                <span *ngIf="w.trend < 0"  style="color:#ef4444;font-size:11px;font-weight:700;">▼ {{ Math.abs(w.trend) }}%</span>
+                <span *ngIf="w.trend === 0" style="color:#333;font-size:11px;">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  
+    </div>
+  
+    <!-- Registration breakdown -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head">
+        <span class="card-title">Registration Type Breakdown</span>
+      </div>
+      <div class="reg-breakdown">
+        <div class="reg-type-bar" *ngFor="let r of regBreakdown">
+          <div class="reg-type-label">{{ r.type }}</div>
+          <div class="reg-bar-wrap">
+            <div class="reg-bar" [style.width.%]="r.pct" [style.background]="r.color"></div>
+          </div>
+          <div class="reg-type-count" [style.color]="r.color">{{ r.count }} ({{ r.pct }}%)</div>
+        </div>
+      </div>
+    </div>
+  
+  </div>

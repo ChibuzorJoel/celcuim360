@@ -1,0 +1,42 @@
+
+
+.reg-breakdown {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reg-type-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reg-type-label {
+  width: 90px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+}
+
+.reg-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.reg-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+.reg-type-count {
+  width: 80px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 700;
+}
