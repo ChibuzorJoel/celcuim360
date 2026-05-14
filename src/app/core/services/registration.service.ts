@@ -1,7 +1,7 @@
 // src/app/core/services/registration.service.ts
 
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -11,9 +11,9 @@ export interface RegistrationResponse {
   message: string;
   data?: {
     registrationId: string;
-    email: string;
-    status: string;
-    submittedAt: string;
+    email:          string;
+    status:         string;
+    submittedAt:    string;
   };
 }
 
@@ -22,24 +22,30 @@ export interface RegistrationResponse {
 })
 export class RegistrationService {
 
-  // ✅ Base API URL
-  private readonly apiUrl = `${environment.apiUrl}/api/registration`;
+  private readonly apiUrl  = `${environment.apiUrl}/api/registration`;
+  private readonly authUrl = `${environment.apiUrl}/api/auth`;
+
+  // ngrok-skip-browser-warning bypasses ngrok's interstitial HTML page,
+  // which has no CORS headers and causes a false CORS error in the browser.
+  private readonly baseHeaders = new HttpHeaders({
+    'ngrok-skip-browser-warning': 'true'
+  });
 
   constructor(private http: HttpClient) {}
 
-  // =========================================================
-  // ✅ 1. SUBMIT REGISTRATION (EXISTING)
-  // =========================================================
+  // ── 1. Submit registration ─────────────────────────────────────────────
   submitRegistration(payload: FormData): Observable<RegistrationResponse> {
-    console.log('[RegistrationService] POST →', `${this.apiUrl}/submit`);
+    const url = `${this.apiUrl}/submit`;
+    console.log('[RegistrationService] POST →', url);
 
+    // Do NOT set Content-Type for FormData — browser sets it with boundary.
     return this.http
-      .post<RegistrationResponse>(`${this.apiUrl}/submit`, payload)
+      .post<RegistrationResponse>(url, payload, {
+        headers: this.baseHeaders
+      })
       .pipe(
         tap(res => {
           console.log('[RegistrationService] Success:', res);
-
-          // ✅ Save ID for dashboard usage
           if (res?.data?.registrationId) {
             localStorage.setItem('studentId', res.data.registrationId);
           }
@@ -47,97 +53,85 @@ export class RegistrationService {
         catchError(this.handleError)
       );
   }
-  login(data: any) {
-    return this.http.post(`${this.apiUrl}/login`, data);
-  }
-  // =========================================================
-  // ✅ 2. GET STUDENT DATA (FOR DASHBOARD)
-  // =========================================================
-  getStudent(id: string): Observable<any> {
-    console.log('[RegistrationService] GET →', `${this.apiUrl}/student/${id}`);
+
+  // ── 2. Student login — correct URL: /api/auth/login ───────────────────
+  login(data: { email: string; password: string }): Observable<any> {
+    const url = `${this.authUrl}/login`;
+    console.log('[RegistrationService] POST →', url);
 
     return this.http
-      .get(`${this.apiUrl}/student/${id}`)
-      .pipe(
-        tap(res => console.log('[RegistrationService] Student Loaded:', res)),
-        catchError(this.handleError)
-      );
-  }
-
-  // =========================================================
-  // ✅ 3. SUBMIT ASSIGNMENT
-  // =========================================================
-  submitAssignment(studentId: string, weekId: number): Observable<any> {
-    console.log('[RegistrationService] POST → submit-assignment');
-
-    return this.http
-      .post(`${this.apiUrl}/submit-assignment`, {
-        studentId,
-        weekId
+      .post(url, data, {
+        headers: this.baseHeaders.set('Content-Type', 'application/json')
       })
       .pipe(
-        tap(res => console.log('[RegistrationService] Assignment Submitted:', res)),
+        tap((res: any) => {
+          if (res?.token) {
+            localStorage.setItem('studentToken',   res.token);
+            localStorage.setItem('studentId',      res.student?.registrationId ?? '');
+            localStorage.setItem('studentProfile', JSON.stringify(res.student));
+          }
+        }),
         catchError(this.handleError)
       );
   }
 
-  // =========================================================
-  // ✅ 4. UPDATE PROFILE (OPTIONAL FUTURE FEATURE)
-  // =========================================================
+  // ── 3. Get student data ────────────────────────────────────────────────
+  getStudent(id: string): Observable<any> {
+    return this.http
+      .get(`${this.apiUrl}/${id}`, { headers: this.baseHeaders })
+      .pipe(
+        tap(res => console.log('[RegistrationService] Student loaded:', res)),
+        catchError(this.handleError)
+      );
+  }
+
+  // ── 4. Submit assignment ───────────────────────────────────────────────
+  submitAssignment(studentId: string, weekId: number): Observable<any> {
+    return this.http
+      .post(`${this.apiUrl}/submit-assignment`, { studentId, weekId }, {
+        headers: this.baseHeaders.set('Content-Type', 'application/json')
+      })
+      .pipe(
+        tap(res => console.log('[RegistrationService] Assignment submitted:', res)),
+        catchError(this.handleError)
+      );
+  }
+
+  // ── 5. Update profile ──────────────────────────────────────────────────
   updateProfile(id: string, data: any): Observable<any> {
     return this.http
-      .put(`${this.apiUrl}/update/${id}`, data)
+      .put(`${this.apiUrl}/update/${id}`, data, {
+        headers: this.baseHeaders.set('Content-Type', 'application/json')
+      })
       .pipe(
-        tap(res => console.log('[RegistrationService] Profile Updated:', res)),
+        tap(res => console.log('[RegistrationService] Profile updated:', res)),
         catchError(this.handleError)
       );
   }
 
-  // =========================================================
-  // ❌ ERROR HANDLER (UNCHANGED BUT IMPROVED)
-  // =========================================================
+  // ── Error handler ──────────────────────────────────────────────────────
   private handleError(err: HttpErrorResponse): Observable<never> {
-
     console.error('[RegistrationService] HTTP Error:', {
-      status: err.status,
-      statusText: err.statusText,
-      url: err.url,
-      error: err.error
+      status: err.status, statusText: err.statusText,
+      url: err.url, error: err.error
     });
 
     let message: string;
-
-    if (err.status === 0) {
-      message = `Cannot connect to server at ${err.url}. Make sure your backend is running.`;
-    } 
-    else if (err.status === 400) {
-      message = err.error?.message ?? 'Bad request. Please check your input.';
-    } 
-    else if (err.status === 401) {
-      message = 'Unauthorized. Please login again.';
+    switch (err.status) {
+      case 0:   message = 'Cannot connect to server. Check your backend and ngrok tunnel.'; break;
+      case 400: message = err.error?.message ?? 'Bad request. Please check your input.'; break;
+      case 401: message = err.error?.message ?? 'Unauthorized. Please log in again.'; break;
+      case 403: message = err.error?.message ?? 'Access denied.'; break;
+      case 404: message = err.error?.message ?? 'Resource not found.'; break;
+      case 409: message = err.error?.message ?? 'This email is already registered.'; break;
+      case 413: message = 'File too large. Maximum size is 5MB.'; break;
+      case 422:
+        const errors = err.error?.errors;
+        message = errors?.length ? errors[0] : (err.error?.message ?? 'Validation failed.');
+        break;
+      case 500: message = err.error?.message ?? 'Server error. Please try again later.'; break;
+      default:  message = err.error?.message ?? `Error ${err.status}: ${err.statusText}`;
     }
-    else if (err.status === 404) {
-      message = 'Resource not found.';
-    } 
-    else if (err.status === 409) {
-      message = err.error?.message ?? 'Email already exists.';
-    } 
-    else if (err.status === 413) {
-      message = 'File too large (max 5MB).';
-    } 
-    else if (err.status === 422) {
-      const errors = err.error?.errors;
-      message = errors?.length
-        ? errors[0]
-        : (err.error?.message ?? 'Validation failed.');
-    } 
-    else if (err.status === 500) {
-      message = err.error?.message ?? 'Internal server error.';
-    } 
-    else {
-      message = err.error?.message ?? `Error ${err.status}: ${err.statusText}`;
-    }
-
     return throwError(() => new Error(message));
   }
 }
