@@ -84,7 +84,7 @@ export class StudentDashboardComponent implements OnInit {
       title: 'Foundation for Workplace',
       description: 'Understanding professional identity, values, and work-ready mindset.',
       topics: ['Work identity', 'Professional values', 'Workplace boundaries', 'Work ethic'],
-      status: 'pending', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
       cwQuestions: [
         'A colleague starts speaking negatively about your manager and tries to involve you in the conversation during work hours.',
         'You discover that a teammate presented your idea in a meeting without acknowledging you.',
@@ -103,7 +103,7 @@ export class StudentDashboardComponent implements OnInit {
       title: 'Communication & Professional Presence',
       description: 'Mastering verbal, written, and non-verbal communication in professional environments.',
       topics: ['Email etiquette', 'LinkedIn presence', 'Professional introduction', 'Conflict communication'],
-      status: 'pending', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
       cwQuestions: [
         'You receive an email from your manager asking for an urgent update, but the tone feels harsh and demanding.',
         'You sent an important email to a client and noticed immediately after that it contains an error.',
@@ -122,7 +122,7 @@ export class StudentDashboardComponent implements OnInit {
       title: 'Career Positioning & Job Readiness',
       description: 'Building systems to position yourself effectively for the job market.',
       topics: ['CV strategy', 'Interview skills', 'Career pitch', 'Job search tactics'],
-      status: 'pending', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
       cwQuestions: [
         'You are asked in an interview: Tell me about yourself.',
         'You see a job opportunity you like, but you only meet about 60% of the requirements.',
