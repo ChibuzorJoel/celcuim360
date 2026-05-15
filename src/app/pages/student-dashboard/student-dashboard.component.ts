@@ -1,90 +1,101 @@
-// src/app/student/student-dashboard/student-dashboard.component.ts
+// src/app/pages/student-dashboard/student-dashboard.component.ts
+// ═══════════════════════════════════════════════════════════════════════════
+//  Changes from original:
+//  1. Welcome popup shown once on first login (localStorage flag)
+//  2. ALL weeks start as 'locked' — unlocked only when admin publishes
+//  3. loadStudentProgress() fetches real unlock status from backend
+//  4. submitCoursework() posts to real API instead of setTimeout
+//  5. submitFinalExam() posts to real API
+//  6. loadProgressFromServer() syncs server grades back to student UI
+// ═══════════════════════════════════════════════════════════════════════════
 
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+import { HttpClient }                            from '@angular/common/http';
+import { environment }                           from '../../../environments/environment';
 
 export type WeekStatus = 'completed' | 'pending' | 'overdue' | 'locked';
 export type ActiveTab  = 'dashboard' | 'coursework' | 'assignments' | 'grades';
 
 export interface CourseWeek {
-  id: number;
-  title: string;
-  description: string;
-  topics: string[];
-  status: WeekStatus;
-  cwSubmitted: boolean;
-  cwScore: number | null;         // out of 10 (instructor-graded; we store answered count)
-  dueDate: string;
-  cwQuestions: string[];          // 10 open-ended scenario questions
+  id:           number;
+  title:        string;
+  description:  string;
+  topics:       string[];
+  status:       WeekStatus;
+  cwSubmitted:  boolean;
+  cwScore:      number | null;
+  cwFeedback:   string | null;
+  cwGraded:     boolean;
+  dueDate:      string;
+  cwQuestions:  string[];
+  publishedByAdmin: boolean;   // ← NEW: only true when admin publishes this week
 }
 
 export interface FinalExamSection {
-  title: string;
-  sub: string;
+  title:     string;
+  sub:       string;
   questions: string[];
 }
 
 export interface StudentProfile {
-  registrationId: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  category: string;
-  photo: string | null;
+  registrationId:  string;
+  fullName:        string;
+  email:           string;
+  phone:           string;
+  category:        string;
+  photo:           string | null;
   assessmentScore: number | null;
   assessmentLevel: string | null;
-  enrolledAt: string;
+  enrolledAt:      string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Component({
-  selector: 'app-student-dashboard',
+  selector:    'app-student-dashboard',
   templateUrl: './student-dashboard.component.html',
-  styleUrls: ['./student-dashboard.component.css']
+  styleUrls:   ['./student-dashboard.component.css'],
 })
 export class StudentDashboardComponent implements OnInit {
 
   private api = environment.apiUrl;
 
-  // ── UI State ──────────────────────────────────────────────────────────────
+  // ── UI state ──────────────────────────────────────────────────────────────
   loading   = true;
   activeTab: ActiveTab = 'dashboard';
-  student: StudentProfile | null = null;
+  student:  StudentProfile | null = null;
+
+  // ── Welcome popup ─────────────────────────────────────────────────────────
+  showWelcomePopup = false;
 
   // ── Alerts ────────────────────────────────────────────────────────────────
   alerts: { type: 'warning' | 'danger' | 'info'; message: string }[] = [];
 
   // ── Coursework modal ──────────────────────────────────────────────────────
-  showCwModal    = false;
-  activeCwWeek: CourseWeek | null = null;
+  showCwModal:    boolean       = false;
+  activeCwWeek:   CourseWeek | null = null;
   cwModalAnswers: { [idx: number]: string } = {};
-  cwSubmitting   = false;
-  showCwResult   = false;
+  cwSubmitting  = false;
+  showCwResult  = false;
   lastSubmittedWeek: CourseWeek | null = null;
 
   // ── Final exam modal ──────────────────────────────────────────────────────
-  showFinalExam        = false;
-  finalAnswers: { [idx: number]: string } = {};
-  finalExamSubmitting  = false;
-  finalExamSubmitted   = false;
-  finalExamScore: number | null = null;
+  showFinalExam:       boolean = false;
+  finalAnswers:        { [idx: number]: string } = {};
+  finalExamSubmitting: boolean = false;
+  finalExamSubmitted:  boolean = false;
+  finalExamScore:      number | null = null;
+  finalExamFeedback:   string | null = null;
+  finalExamGraded:     boolean = false;
 
-  // ── Course weeks (6 weeks — open-ended scenario questions from doc) ────────
+  // ── Course weeks — ALL start LOCKED ──────────────────────────────────────
+  // publishedByAdmin = false means the week is locked regardless of progress.
+  // Admin sets this to true by publishing through admin panel.
   courseWeeks: CourseWeek[] = [
     {
-      id: 1,
-      title: 'Foundation for Workplace',
+      id: 1, title: 'Foundation for Workplace',
       description: 'Understanding professional identity, values, and work-ready mindset.',
       topics: ['Work identity', 'Professional values', 'Workplace boundaries', 'Work ethic'],
-      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, cwFeedback: null,
+      cwGraded: false, dueDate: '', publishedByAdmin: false,
       cwQuestions: [
         'A colleague starts speaking negatively about your manager and tries to involve you in the conversation during work hours.',
         'You discover that a teammate presented your idea in a meeting without acknowledging you.',
@@ -99,11 +110,11 @@ export class StudentDashboardComponent implements OnInit {
       ]
     },
     {
-      id: 2,
-      title: 'Communication & Professional Presence',
+      id: 2, title: 'Communication & Professional Presence',
       description: 'Mastering verbal, written, and non-verbal communication in professional environments.',
       topics: ['Email etiquette', 'LinkedIn presence', 'Professional introduction', 'Conflict communication'],
-      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, cwFeedback: null,
+      cwGraded: false, dueDate: '', publishedByAdmin: false,
       cwQuestions: [
         'You receive an email from your manager asking for an urgent update, but the tone feels harsh and demanding.',
         'You sent an important email to a client and noticed immediately after that it contains an error.',
@@ -118,11 +129,11 @@ export class StudentDashboardComponent implements OnInit {
       ]
     },
     {
-      id: 3,
-      title: 'Career Positioning & Job Readiness',
+      id: 3, title: 'Career Positioning & Job Readiness',
       description: 'Building systems to position yourself effectively for the job market.',
       topics: ['CV strategy', 'Interview skills', 'Career pitch', 'Job search tactics'],
-      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, cwFeedback: null,
+      cwGraded: false, dueDate: '', publishedByAdmin: false,
       cwQuestions: [
         'You are asked in an interview: Tell me about yourself.',
         'You see a job opportunity you like, but you only meet about 60% of the requirements.',
@@ -137,11 +148,11 @@ export class StudentDashboardComponent implements OnInit {
       ]
     },
     {
-      id: 4,
-      title: 'Productivity & Workplace Performance',
+      id: 4, title: 'Productivity & Workplace Performance',
       description: 'Building systems that maximize output, reduce burnout, and deliver results consistently.',
       topics: ['Priority frameworks', 'Task management', 'Deadline management', 'Microsoft tools'],
-      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, cwFeedback: null,
+      cwGraded: false, dueDate: '', publishedByAdmin: false,
       cwQuestions: [
         'You have multiple deadlines due at the same time and limited time to complete them.',
         'You notice you are constantly busy but not making real progress on important tasks.',
@@ -156,11 +167,11 @@ export class StudentDashboardComponent implements OnInit {
       ]
     },
     {
-      id: 5,
-      title: 'Workplace Excellence & Growth',
+      id: 5, title: 'Workplace Excellence & Growth',
       description: 'Developing resilience, excellence, and growth acceleration strategies.',
       topics: ['Client handling', 'Resilience', 'Feedback reception', 'Taking initiative'],
-      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, cwFeedback: null,
+      cwGraded: false, dueDate: '', publishedByAdmin: false,
       cwQuestions: [
         'A client is unhappy and expresses frustration about your service.',
         'You are feeling mentally drained and unmotivated at work.',
@@ -175,11 +186,11 @@ export class StudentDashboardComponent implements OnInit {
       ]
     },
     {
-      id: 6,
-      title: 'Career Direction & Real-World Application',
+      id: 6, title: 'Career Direction & Real-World Application',
       description: 'Applying all learning to real workplace decisions and career acceleration.',
       topics: ['Career mapping', 'Decision making', 'Leadership readiness', 'Value articulation'],
-      status: 'locked', cwSubmitted: false, cwScore: null, dueDate: '',
+      status: 'locked', cwSubmitted: false, cwScore: null, cwFeedback: null,
+      cwGraded: false, dueDate: '', publishedByAdmin: false,
       cwQuestions: [
         'You receive two job offers: one with higher pay but poor growth, and another with lower pay but strong growth potential.',
         'You are placed in a new work environment where expectations are unclear.',
@@ -192,10 +203,10 @@ export class StudentDashboardComponent implements OnInit {
         'You experience a major setback in your work or career.',
         'You are asked: What value do you bring to this organization?'
       ]
-    }
+    },
   ];
 
-  // ── Final exam sections (from uploaded doc — 40 questions, 6 sections) ────
+  // ── Final exam sections ───────────────────────────────────────────────────
   finalExamSections: FinalExamSection[] = [
     {
       title: 'Section A: LinkedIn, Personal Brand & Professional Identity',
@@ -208,7 +219,7 @@ export class StudentDashboardComponent implements OnInit {
         'A recruiter visits your LinkedIn profile but does not reach out.',
         'List 3 types of posts you would consistently share on LinkedIn to build your personal brand.',
         'You want to position yourself as a professional in a specific field but have limited experience.',
-        'You come across a controversial topic online and feel strongly about it.'
+        'You come across a controversial topic online and feel strongly about it.',
       ]
     },
     {
@@ -216,12 +227,12 @@ export class StudentDashboardComponent implements OnInit {
       sub: '7 Questions',
       questions: [
         'You are applying for a role. List 3 specific things you will adjust in your CV before submitting.',
-        'You are tempted to include experience you don\'t fully have in your CV.',
+        "You are tempted to include experience you don't fully have in your CV.",
         'You are applying for similar roles in different companies with slightly different job descriptions.',
         'Write a short professional email (2–3 lines) to submit your CV for a role.',
         'You submit your CV but receive no response after some time.',
         'You are applying for a role you are qualified for but lack confidence.',
-        'You are asked to provide proof of your skills during a hiring process.'
+        'You are asked to provide proof of your skills during a hiring process.',
       ]
     },
     {
@@ -234,7 +245,7 @@ export class StudentDashboardComponent implements OnInit {
         'You are in a meeting and realize you misunderstood a previous instruction.',
         'You are required to give an update on your work progress.',
         'You are communicating with a busy senior colleague who gives minimal responses.',
-        'You receive feedback that your communication is not clear.'
+        'You receive feedback that your communication is not clear.',
       ]
     },
     {
@@ -246,7 +257,7 @@ export class StudentDashboardComponent implements OnInit {
         'You are offered a learning opportunity that requires extra effort outside work hours.',
         'You see others getting ahead faster than you in their careers.',
         'You are assigned a task that stretches your current ability.',
-        'You feel your role is becoming repetitive and less challenging.'
+        'You feel your role is becoming repetitive and less challenging.',
       ]
     },
     {
@@ -258,7 +269,7 @@ export class StudentDashboardComponent implements OnInit {
         'You are copied in an email where there is tension between two colleagues.',
         'You notice someone consistently fails to acknowledge emails or messages.',
         'You are asked to handle a situation involving a dissatisfied internal stakeholder.',
-        'You are in a workplace where boundaries are often blurred.'
+        'You are in a workplace where boundaries are often blurred.',
       ]
     },
     {
@@ -270,12 +281,11 @@ export class StudentDashboardComponent implements OnInit {
         'You are working hard but not seeing visible results.',
         'You are required to deliver under pressure consistently.',
         'You realize you are close to burnout.',
-        'You are balancing multiple priorities across different expectations.'
+        'You are balancing multiple priorities across different expectations.',
       ]
-    }
+    },
   ];
 
-  // ── Section start indices (for getFinalQNum helper) ───────────────────────
   private sectionStarts: number[] = [];
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
@@ -288,13 +298,34 @@ export class StudentDashboardComponent implements OnInit {
     this.buildSectionStarts();
     this.setWeekDates();
     this.loadStudentData();
+    this.checkWelcomePopup();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // WELCOME POPUP
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private checkWelcomePopup(): void {
+    const seen = localStorage.getItem('c360_welcome_seen');
+    if (!seen) {
+      // Show after a short delay so the dashboard renders first
+      setTimeout(() => {
+        this.showWelcomePopup = true;
+        this.cdr.detectChanges();
+      }, 600);
+    }
+  }
+
+  closeWelcomePopup(): void {
+    this.showWelcomePopup = false;
+    localStorage.setItem('c360_welcome_seen', 'true');
+    document.body.style.overflow = '';
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // INIT HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  /** Pre-compute the global question start index for each final exam section */
   private buildSectionStarts(): void {
     let count = 0;
     this.sectionStarts = this.finalExamSections.map(sec => {
@@ -304,7 +335,6 @@ export class StudentDashboardComponent implements OnInit {
     });
   }
 
-  /** Assign rolling due dates from today (+7 days per week) */
   setWeekDates(): void {
     const base = new Date();
     this.courseWeeks.forEach((w, i) => {
@@ -315,58 +345,110 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LOAD STUDENT
+  // LOAD STUDENT DATA
   // ─────────────────────────────────────────────────────────────────────────
 
   loadStudentData(): void {
-    const stored  = localStorage.getItem('studentProfile');
-    const regId   = localStorage.getItem('studentId');
-    const weeksSt = localStorage.getItem('c360_weeks');
-    const finalSt = localStorage.getItem('c360_final');
-
-    // Restore week progress
-    if (weeksSt) {
-      const parsed: Pick<CourseWeek, 'cwSubmitted' | 'cwScore' | 'status'>[] = JSON.parse(weeksSt);
-      parsed.forEach((s, i) => {
-        this.courseWeeks[i].cwSubmitted = s.cwSubmitted;
-        this.courseWeeks[i].cwScore    = s.cwScore;
-        this.courseWeeks[i].status     = s.status;
-      });
-    }
-
-    // Restore final exam state
-    if (finalSt) {
-      const f = JSON.parse(finalSt);
-      this.finalExamSubmitted = f.submitted;
-      this.finalExamScore     = f.score;
-    }
+    const stored = localStorage.getItem('studentProfile');
+    const regId  = localStorage.getItem('studentId');
 
     if (stored) {
       this.student = JSON.parse(stored);
-      this.loading = false;
-      this.generateAlerts();
-      return;
-    }
-
-    if (regId) {
+      this.loadProgressFromServer(this.student!.registrationId);
+    } else if (regId) {
       this.http.get<any>(`${this.api}/api/registrations/${regId}`).subscribe({
-        next: (data) => {
+        next: data => {
           this.student = this.mapStudentData(data);
           localStorage.setItem('studentProfile', JSON.stringify(this.student));
-          this.loading = false;
-          this.generateAlerts();
+          this.loadProgressFromServer(this.student.registrationId);
         },
         error: () => {
           this.setFallback();
-          this.loading = false;
-          this.generateAlerts();
-        }
+          this.loadProgressFromServer('demo');
+        },
       });
     } else {
       this.setFallback();
       this.loading = false;
       this.generateAlerts();
     }
+  }
+
+  // Fetch server-side progress: which weeks are published + student grades
+  private loadProgressFromServer(registrationId: string): void {
+    this.http.get<any>(`${this.api}/api/student/${registrationId}/progress`).subscribe({
+      next: data => {
+        // Apply published weeks from admin
+        if (data.publishedWeeks && Array.isArray(data.publishedWeeks)) {
+          data.publishedWeeks.forEach((pw: any) => {
+            const week = this.courseWeeks.find(w => w.id === pw.weekId);
+            if (week) {
+              week.publishedByAdmin = true;
+              week.dueDate         = pw.dueDate || week.dueDate;
+              // Unlock first published week
+              if (week.status === 'locked') week.status = 'pending';
+            }
+          });
+        }
+
+        // Apply student's submission + grading data
+        if (data.weekProgress) {
+          Object.keys(data.weekProgress).forEach(wid => {
+            const progress = data.weekProgress[wid];
+            const week     = this.courseWeeks.find(w => w.id === Number(wid));
+            if (week) {
+              week.cwSubmitted = progress.submitted  ?? week.cwSubmitted;
+              week.cwScore     = progress.score      ?? week.cwScore;
+              week.cwFeedback  = progress.feedback   ?? null;
+              week.cwGraded    = progress.graded     ?? false;
+              if (progress.submitted) {
+                week.status = 'completed';
+                // Unlock next week if admin has published it
+                const next = this.courseWeeks.find(w => w.id === week.id + 1);
+                if (next && next.publishedByAdmin && next.status === 'locked') {
+                  next.status = 'pending';
+                }
+              }
+            }
+          });
+        }
+
+        // Apply final exam data
+        if (data.finalExam) {
+          this.finalExamSubmitted = data.finalExam.submitted ?? false;
+          this.finalExamScore     = data.finalExam.score     ?? null;
+          this.finalExamFeedback  = data.finalExam.feedback  ?? null;
+          this.finalExamGraded    = data.finalExam.graded    ?? false;
+        }
+
+        this.loading = false;
+        this.generateAlerts();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Fallback: restore from localStorage if server is unreachable
+        const weeksSt = localStorage.getItem('c360_weeks');
+        const finalSt = localStorage.getItem('c360_final');
+        if (weeksSt) {
+          const parsed = JSON.parse(weeksSt);
+          parsed.forEach((s: any, i: number) => {
+            if (i < this.courseWeeks.length) {
+              this.courseWeeks[i].cwSubmitted = s.cwSubmitted;
+              this.courseWeeks[i].cwScore     = s.cwScore;
+              this.courseWeeks[i].status      = s.status;
+            }
+          });
+        }
+        if (finalSt) {
+          const f = JSON.parse(finalSt);
+          this.finalExamSubmitted = f.submitted;
+          this.finalExamScore     = f.score;
+        }
+        this.loading = false;
+        this.generateAlerts();
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   private mapStudentData(data: any): StudentProfile {
@@ -377,25 +459,20 @@ export class StudentDashboardComponent implements OnInit {
       phone:          data.phone,
       category:       data.category,
       photo:          data.files?.photo
-                        ? `${this.api}/api/registrations/${data.registrationId}/file/${data.files.photo}`
-                        : null,
-      assessmentScore:  data.assessmentScore  ?? null,
-      assessmentLevel:  data.assessmentLevel  ?? null,
-      enrolledAt:       data.submittedAt
+        ? `${this.api}/api/registrations/${data.registrationId}/file/${data.files.photo}`
+        : null,
+      assessmentScore: data.assessmentScore ?? null,
+      assessmentLevel: data.assessmentLevel ?? null,
+      enrolledAt:      data.submittedAt,
     };
   }
 
   private setFallback(): void {
     this.student = {
-      registrationId: 'demo',
-      fullName:       'Student',
-      email:          '',
-      phone:          '',
-      category:       'nysc',
-      photo:          null,
-      assessmentScore: null,
-      assessmentLevel: null,
-      enrolledAt:     new Date().toISOString()
+      registrationId: 'demo', fullName: 'Student', email: '',
+      phone: '', category: 'nysc', photo: null,
+      assessmentScore: null, assessmentLevel: null,
+      enrolledAt: new Date().toISOString(),
     };
   }
 
@@ -403,54 +480,32 @@ export class StudentDashboardComponent implements OnInit {
   // COMPUTED GETTERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  get completionRate(): number {
-    const done = this.courseWeeks.filter(w => w.status === 'completed').length;
-    return Math.round((done / this.courseWeeks.length) * 100);
-  }
-
-  get completedCount(): number {
-    return this.courseWeeks.filter(w => w.status === 'completed').length;
-  }
-
-  get pendingCount(): number {
-    return this.courseWeeks.filter(w => w.status === 'pending').length;
-  }
-
-  get overdueCount(): number {
-    return this.courseWeeks.filter(w => w.status === 'overdue').length;
-  }
-
-  get averageScoreLabel(): string {
-    const scored = this.courseWeeks.filter(w => w.cwScore !== null);
-    if (!scored.length) return '—';
-    const avg = scored.reduce((s, w) => s + w.cwScore!, 0) / scored.length;
-    return Math.round(avg * 10) + '%';
-  }
+  get completionRate():  number  { return Math.round((this.completedCount / this.courseWeeks.length) * 100); }
+  get completedCount():  number  { return this.courseWeeks.filter(w => w.status === 'completed').length; }
+  get pendingCount():    number  { return this.courseWeeks.filter(w => w.status === 'pending').length; }
+  get overdueCount():    number  { return this.courseWeeks.filter(w => w.status === 'overdue').length; }
+  get enrolledWeeksLabel(): string { return `${this.completedCount} of 6 weeks complete`; }
 
   get canTakeFinalExam(): boolean {
     return this.courseWeeks.every(w => w.status === 'completed');
   }
 
-  get enrolledWeeksLabel(): string {
-    return `${this.completedCount} of 6 weeks complete`;
+  get averageScoreLabel(): string {
+    const scored = this.courseWeeks.filter(w => w.cwScore !== null && w.cwGraded);
+    if (!scored.length) return '—';
+    const avg = scored.reduce((s, w) => s + w.cwScore!, 0) / scored.length;
+    return Math.round(avg * 10) + '%';
   }
 
   get avatarInitials(): string {
     if (!this.student?.fullName) return 'S';
-    return this.student.fullName
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
+    return this.student.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
-  /** Count coursework answers with ≥10 chars as "answered" */
   get cwAnsweredCount(): number {
     return Object.values(this.cwModalAnswers).filter(v => v.trim().length >= 10).length;
   }
 
-  /** Count final exam answers with ≥10 chars as "answered" */
   get finalAnsweredCount(): number {
     return Object.values(this.finalAnswers).filter(v => v.trim().length >= 10).length;
   }
@@ -463,37 +518,33 @@ export class StudentDashboardComponent implements OnInit {
     this.alerts = [];
     const overdue = this.courseWeeks.filter(w => w.status === 'overdue');
     const pending = this.courseWeeks.filter(w => w.status === 'pending' && !w.cwSubmitted);
+    const allLocked = this.courseWeeks.every(w => !w.publishedByAdmin);
 
-    if (overdue.length) {
-      this.alerts.push({
-        type: 'danger',
-        message: `${overdue.length} week${overdue.length > 1 ? 's are' : ' is'} overdue. Please complete immediately.`
-      });
-    }
-    if (pending.length) {
-      this.alerts.push({
-        type: 'warning',
-        message: `${pending.length} week${pending.length > 1 ? 's have' : ' has'} pending coursework.`
-      });
-    }
-    if (this.completionRate === 100 && !this.finalExamSubmitted) {
+    if (allLocked) {
       this.alerts.push({
         type: 'info',
-        message: 'All 6 weeks complete — your Final Assessment is now unlocked!'
+        message: 'Your coursework will be available no later than June 7th. Check your email for updates.',
       });
+    }
+    if (overdue.length) {
+      this.alerts.push({ type: 'danger', message: `${overdue.length} week(s) are overdue. Please complete immediately.` });
+    }
+    if (pending.length && !allLocked) {
+      this.alerts.push({ type: 'warning', message: `${pending.length} week(s) have pending coursework.` });
+    }
+    if (this.completionRate === 100 && !this.finalExamSubmitted) {
+      this.alerts.push({ type: 'info', message: 'All 6 weeks complete — your Final Assessment is now unlocked!' });
     }
   }
 
-  dismissAlert(i: number): void {
-    this.alerts.splice(i, 1);
-  }
+  dismissAlert(i: number): void { this.alerts.splice(i, 1); }
 
   // ─────────────────────────────────────────────────────────────────────────
   // COURSEWORK MODAL
   // ─────────────────────────────────────────────────────────────────────────
 
   openCwModal(week: CourseWeek): void {
-    if (week.status === 'locked') return;
+    if (week.status === 'locked' || !week.publishedByAdmin) return;
     this.activeCwWeek   = week;
     this.cwModalAnswers = {};
     this.cwSubmitting   = false;
@@ -507,38 +558,56 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   onCwAnswer(idx: number, event: Event): void {
-    const val = (event.target as HTMLTextAreaElement).value;
-    this.cwModalAnswers[idx] = val;
+    this.cwModalAnswers[idx] = (event.target as HTMLTextAreaElement).value;
     this.cdr.detectChanges();
   }
 
   submitCoursework(): void {
-    if (!this.activeCwWeek) return;
-    if (this.cwAnsweredCount < 10) return;
-
+    if (!this.activeCwWeek || this.cwAnsweredCount < 10) return;
     this.cwSubmitting = true;
 
-    // Simulate async submit (replace with real API call)
-    setTimeout(() => {
-      const week = this.activeCwWeek!;
-      week.cwSubmitted = true;
-      week.cwScore     = this.cwAnsweredCount; // 10/10 — instructor will review text
-      this.checkWeekCompletion(week);
-      this.lastSubmittedWeek = week;
-      this.saveState();
-      this.cwSubmitting  = false;
-      this.showCwModal   = false;
-      this.showCwResult  = true;
-      this.generateAlerts();
-      document.body.style.overflow = 'hidden';
-      this.cdr.detectChanges();
-    }, 900);
+    const week    = this.activeCwWeek;
+    const answers = week.cwQuestions.map((q, i) => ({
+      questionIndex: i,
+      questionText:  q,
+      answer:        this.cwModalAnswers[i] || '',
+    }));
+
+    const payload = {
+      registrationId: this.student?.registrationId,
+      studentName:    this.student?.fullName,
+      studentEmail:   this.student?.email,
+      weekId:         week.id,
+      weekTitle:      week.title,
+      answers,
+    };
+
+    this.http.post(`${this.api}/api/coursework`, payload).subscribe({
+      next: () => {
+        week.cwSubmitted = true;
+        week.status      = 'completed';
+        // Unlock next week if admin published it
+        const next = this.courseWeeks.find(w => w.id === week.id + 1);
+        if (next && next.publishedByAdmin && next.status === 'locked') next.status = 'pending';
+
+        this.lastSubmittedWeek = week;
+        this.saveLocalState();
+        this.cwSubmitting  = false;
+        this.showCwModal   = false;
+        this.showCwResult  = true;
+        this.generateAlerts();
+        document.body.style.overflow = 'hidden';
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        alert('Submission failed. Please check your connection and try again.');
+        this.cwSubmitting = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  closeCwResult(): void {
-    this.showCwResult = false;
-    document.body.style.overflow = '';
-  }
+  closeCwResult(): void { this.showCwResult = false; document.body.style.overflow = ''; }
 
   // ─────────────────────────────────────────────────────────────────────────
   // FINAL EXAM
@@ -552,14 +621,10 @@ export class StudentDashboardComponent implements OnInit {
     document.body.style.overflow = 'hidden';
   }
 
-  closeFinalExam(): void {
-    this.showFinalExam = false;
-    document.body.style.overflow = '';
-  }
+  closeFinalExam(): void { this.showFinalExam = false; document.body.style.overflow = ''; }
 
   onFinalAnswer(idx: number, event: Event): void {
-    const val = (event.target as HTMLTextAreaElement).value;
-    this.finalAnswers[idx] = val;
+    this.finalAnswers[idx] = (event.target as HTMLTextAreaElement).value;
     this.cdr.detectChanges();
   }
 
@@ -567,43 +632,52 @@ export class StudentDashboardComponent implements OnInit {
     if (this.finalAnsweredCount < 40) return;
     this.finalExamSubmitting = true;
 
-    setTimeout(() => {
-      this.finalExamScore      = this.finalAnsweredCount; // 40/40 — instructor reviews
-      this.finalExamSubmitted  = true;
-      this.finalExamSubmitting = false;
-      localStorage.setItem('c360_final', JSON.stringify({
-        submitted: true,
-        score:     this.finalExamScore
-      }));
-      this.generateAlerts();
-      this.cdr.detectChanges();
-    }, 1000);
-  }
+    // Build full answer list with section metadata
+    const answers: any[] = [];
+    let globalIdx = 0;
+    this.finalExamSections.forEach(sec => {
+      sec.questions.forEach(q => {
+        answers.push({
+          questionIndex: globalIdx,
+          sectionTitle:  sec.title,
+          questionText:  q,
+          answer:        this.finalAnswers[globalIdx] || '',
+        });
+        globalIdx++;
+      });
+    });
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // WEEK COMPLETION LOGIC
-  // ─────────────────────────────────────────────────────────────────────────
+    const payload = {
+      registrationId: this.student?.registrationId,
+      studentName:    this.student?.fullName,
+      studentEmail:   this.student?.email,
+      answers,
+    };
 
-  private checkWeekCompletion(week: CourseWeek): void {
-    if (week.cwSubmitted) {
-      week.status = 'completed';
-      // Unlock next week
-      const next = this.courseWeeks.find(w => w.id === week.id + 1);
-      if (next && next.status === 'locked') next.status = 'pending';
-    }
+    this.http.post(`${this.api}/api/final-exam`, payload).subscribe({
+      next: () => {
+        this.finalExamScore     = 40;
+        this.finalExamSubmitted = true;
+        this.finalExamSubmitting = false;
+        localStorage.setItem('c360_final', JSON.stringify({ submitted: true, score: 40 }));
+        this.generateAlerts();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        alert('Final exam submission failed. Please check your connection and try again.');
+        this.finalExamSubmitting = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // PERSISTENCE
   // ─────────────────────────────────────────────────────────────────────────
 
-  private saveState(): void {
+  private saveLocalState(): void {
     localStorage.setItem('c360_weeks', JSON.stringify(
-      this.courseWeeks.map(w => ({
-        cwSubmitted: w.cwSubmitted,
-        cwScore:     w.cwScore,
-        status:      w.status
-      }))
+      this.courseWeeks.map(w => ({ cwSubmitted: w.cwSubmitted, cwScore: w.cwScore, status: w.status }))
     ));
   }
 
@@ -611,48 +685,31 @@ export class StudentDashboardComponent implements OnInit {
   // HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  setTab(tab: ActiveTab): void {
-    this.activeTab = tab;
-  }
+  setTab(tab: ActiveTab): void { this.activeTab = tab; }
 
   statusLabel(s: WeekStatus): string {
-    const map: Record<WeekStatus, string> = {
-      completed: 'Completed',
-      pending:   'Pending',
-      overdue:   'Overdue',
-      locked:    'Locked'
-    };
-    return map[s] ?? s;
+    return { completed: 'Completed', pending: 'Pending', overdue: 'Overdue', locked: 'Locked' }[s] ?? s;
   }
 
-  categoryLabel(c: string): string {
-    return c === 'nysc' ? 'NYSC / Awaiting' : 'Graduate / Pro';
-  }
+  categoryLabel(c: string): string { return c === 'nysc' ? 'NYSC / Awaiting' : 'Graduate / Pro'; }
 
   formatDate(iso: string): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric'
-    });
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   getWordCount(val: string | undefined): number {
-    if (!val || !val.trim()) return 0;
+    if (!val?.trim()) return 0;
     return val.trim().split(/\s+/).filter(w => w.length > 0).length;
   }
 
-  /**
-   * Returns the 1-based global question number for a question inside a section.
-   * Used in the final exam template to track answers by global index.
-   */
   getFinalQNum(section: FinalExamSection, localIndex: number): number {
-    const sectionIdx = this.finalExamSections.indexOf(section);
-    return this.sectionStarts[sectionIdx] + localIndex + 1;
+    const idx = this.finalExamSections.indexOf(section);
+    return this.sectionStarts[idx] + localIndex + 1;
   }
 
-  /** Returns an HTML string for the grade badge based on score out of 10 */
   getGradeLabel(score: number | null): string {
-    if (score === null) return '<span class="grade-na">N/A</span>';
+    if (score === null) return '<span class="grade-na">Pending</span>';
     const pct = Math.round(score / 10 * 100);
     if (pct >= 80) return '<span class="grade-a">A</span>';
     if (pct >= 70) return '<span class="grade-b">B</span>';
@@ -660,9 +717,8 @@ export class StudentDashboardComponent implements OnInit {
     return '<span class="grade-f">F</span>';
   }
 
-  /** Returns grade badge HTML for the final exam (out of 40) */
   getFinalGradeLabel(): string {
-    if (this.finalExamScore === null) return '<span class="grade-na">N/A</span>';
+    if (this.finalExamScore === null) return '<span class="grade-na">Pending</span>';
     const pct = Math.round(this.finalExamScore / 40 * 100);
     if (pct >= 80) return '<span class="grade-a">A</span>';
     if (pct >= 70) return '<span class="grade-b">B</span>';

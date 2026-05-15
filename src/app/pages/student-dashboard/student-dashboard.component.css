@@ -1223,3 +1223,275 @@
   .modal-overlay { padding: 0; align-items: flex-end; }
   .modal-box { border-radius: 16px 16px 0 0; max-height: 94vh; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   WELCOME POPUP
+   Append to: student-dashboard.component.css
+══════════════════════════════════════════════════════════════════ */
+
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.88);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: mfade .3s ease;
+}
+
+.welcome-box {
+  background: #111;
+  border: 1px solid rgba(184,141,42,.35);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  box-shadow: 0 28px 70px rgba(0,0,0,.75);
+  animation: mup .3s ease;
+}
+
+/* Header */
+.welcome-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px;
+  background: linear-gradient(135deg, #1a1200, #111);
+  border-bottom: 2px solid rgba(184,141,42,.25);
+}
+
+.welcome-logo {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #555;
+  letter-spacing: .8px;
+  text-transform: lowercase;
+}
+
+.welcome-logo span { color: #B88D2A; }
+
+.welcome-close {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #555;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .18s;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.welcome-close:hover { border-color: #888; color: #e0e0e0; }
+
+/* Body */
+.welcome-body {
+  padding: 28px 28px 20px;
+  text-align: center;
+}
+
+.welcome-icon {
+  font-size: 3rem;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.welcome-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #f0f0f0;
+  margin: 0 0 14px;
+}
+
+.welcome-msg {
+  font-size: .88rem;
+  color: #888;
+  line-height: 1.75;
+  margin: 0 0 18px;
+}
+
+.welcome-msg strong {
+  color: #B88D2A;
+  font-weight: 700;
+}
+
+.welcome-email {
+  color: #B88D2A;
+  text-decoration: none;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.welcome-email:hover { text-decoration: underline; }
+
+/* Info note */
+.welcome-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(184,141,42,.07);
+  border: 1px solid rgba(184,141,42,.22);
+  border-left: 3px solid #B88D2A;
+  border-radius: 0 9px 9px 0;
+  padding: 11px 13px;
+  text-align: left;
+}
+
+.welcome-note svg { flex-shrink: 0; margin-top: 1px; }
+
+.welcome-note span {
+  font-size: .8rem;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* Footer */
+.welcome-footer {
+  padding: 0 28px 26px;
+}
+
+.btn-welcome-ok {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: #B88D2A;
+  border: none;
+  border-radius: 9px;
+  color: #000;
+  font-size: .97rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .22s;
+  font-family: inherit;
+  letter-spacing: .3px;
+}
+
+.btn-welcome-ok:hover {
+  background: #D4A94B;
+  box-shadow: 0 6px 20px rgba(184,141,42,.4);
+  transform: translateY(-1px);
+}
+
+.btn-welcome-ok:active { transform: translateY(0); }
+
+/* ── Additional new classes used in the updated HTML ─────────────────────── */
+
+/* "Coming Soon" badge on week cards */
+.wk-coming-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: .64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  background: rgba(96,165,250,.1);
+  color: #60a5fa;
+  border: 1px solid rgba(96,165,250,.3);
+}
+
+/* Week card — not yet published by admin */
+.wk-not-published {
+  opacity: .55;
+  cursor: default !important;
+}
+
+.wk-not-published:hover { transform: none !important; border-color: var(--border) !important; }
+
+/* Coursework item — not yet published */
+.cw-not-published { opacity: .5; }
+
+/* Grade pending badge */
+.grade-pending {
+  font-size: .72rem;
+  color: #f59e0b;
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* Pending score on week card */
+.wk-score.pending-score {
+  color: #f59e0b;
+  font-size: .68rem;
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* Awaiting grade badge */
+.badge-pending-grade {
+  font-size: .7rem;
+  font-weight: 700;
+  color: #f59e0b;
+  background: rgba(245,158,11,.1);
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(245,158,11,.3);
+  white-space: nowrap;
+}
+
+/* Grade feedback block */
+.cw-grade-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.cw-feedback {
+  font-size: .74rem;
+  color: #888;
+  line-height: 1.5;
+  background: rgba(255,255,255,.03);
+  border-left: 2px solid rgba(184,141,42,.3);
+  padding: 4px 8px;
+  border-radius: 0 5px 5px 0;
+  max-width: 280px;
+  text-align: left;
+}
+
+.cw-feedback strong { color: #B88D2A; font-weight: 700; }
+
+/* Feedback column in grades table */
+.feedback-cell { max-width: 200px; }
+
+.feedback-text {
+  font-size: .76rem;
+  color: #888;
+  line-height: 1.5;
+  display: block;
+}
+
+/* Result modal — next week unlock notice */
+.res-next {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16,185,129,.08);
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(16,185,129,.2);
+  margin-top: 4px;
+}
+
+/* Result modal sizing */
+.result-modal { max-width: 480px; }
+
+/* ── Responsive additions ─────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .welcome-box    { border-radius: 14px 14px 0 0; margin-bottom: 0; align-self: flex-end; }
+  .welcome-body   { padding: 22px 20px 16px; }
+  .welcome-footer { padding: 0 20px 22px; }
+  .welcome-overlay { align-items: flex-end; padding: 0; }
+}
