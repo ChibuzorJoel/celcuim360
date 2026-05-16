@@ -9,23 +9,22 @@ if (!global.crypto) {
   global.crypto = {
     randomUUID: nodeCrypto.randomUUID
       ? nodeCrypto.randomUUID.bind(nodeCrypto)
-      : () =>
-          'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            const r = (Math.random() * 16) | 0;
-            const v = c === 'x' ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-          }),
+      : () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        }),
     getRandomValues: (arr) => nodeCrypto.randomFillSync(arr)
   };
 }
 
-const express    = require('express');
-const cors       = require('cors');
-const helmet     = require('helmet');
-const morgan     = require('morgan');
-const dotenv     = require('dotenv');
-const path       = require('path');
-const fs         = require('fs');
+const express  = require('express');
+const cors     = require('cors');
+const helmet   = require('helmet');
+const morgan   = require('morgan');
+const dotenv   = require('dotenv');
+const path     = require('path');
+const fs       = require('fs');
 
 const mongooseConnect = require('./config/database');
 
@@ -33,58 +32,72 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
-// ── CORS ─────────────────────────────────────────────────────────────────
-// Must be defined BEFORE all routes and BEFORE helmet
+// ══════════════════════════════════════════════════════════════════
+// CORS — must be FIRST, before helmet and all routes
+// ══════════════════════════════════════════════════════════════════
 
 const ALLOWED_ORIGINS = [
+  // Production domains
+  'https://celcium360solutions.com',
+  'https://www.celcium360solutions.com',
+  'https://api.celcium360solutions.com',
+
+  // Netlify deploy
   'https://celcuim.netlify.app',
-  'https://hydrant-roamer-frenzied.ngrok-free.dev',
+
+  // Development
   'http://localhost:4200',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://127.0.0.1:4200'
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow server-to-server / Postman (no origin header)
-    if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    console.warn('⚠️  CORS blocked origin:', origin);
-    return callback(null, false);
+// ── Manual CORS middleware — handles every request including OPTIONS ───────
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin',      origin || '*');
+    res.setHeader('Access-Control-Allow-Methods',     'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers',     'Content-Type,Authorization,ngrok-skip-browser-warning,X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age',           '86400');
+  }
+
+  // Handle OPTIONS preflight immediately — before any other middleware
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  next();
+});
+
+// Also keep cors() as a secondary layer for safety
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'ngrok-skip-browser-warning'   // required for ngrok free tier
-  ],
-  optionsSuccessStatus: 200        // IE11 compatibility
-};
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','ngrok-skip-browser-warning','X-Requested-With'],
+  optionsSuccessStatus: 200
+}));
 
-// Apply CORS globally
-app.use(cors(corsOptions));
+// ── Security ───────────────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
-// ← THIS LINE IS THE KEY FIX
-// Respond to all OPTIONS preflight requests before they hit any route
-app.options(/.*/, cors(corsOptions));
-
-// ── Security ──────────────────────────────────────────────────────────────
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
-  })
-);
-
-// ── Body parsing ──────────────────────────────────────────────────────────
+// ── Body parsing ───────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// ── Request logging ───────────────────────────────────────────────────────
+// ── Logging ────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 
-// ── Static uploads ────────────────────────────────────────────────────────
+// ── Static uploads ─────────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
 
 if (!fs.existsSync(uploadsDir)) {
@@ -100,34 +113,32 @@ app.get('/uploads/:filename', (req, res) => {
     return res.status(404).json({ success: false, message: 'File not found' });
   }
 
-  const ext = path.extname(filepath).toLowerCase();
   const mimeTypes = {
-    '.jpg':  'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png':  'image/png',
-    '.pdf':  'application/pdf',
-    '.gif':  'image/gif',
-    '.webp': 'image/webp'
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.png': 'image/png',  '.pdf': 'application/pdf',
+    '.gif': 'image/gif',  '.webp': 'image/webp'
   };
 
+  const ext = path.extname(filepath).toLowerCase();
   res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.sendFile(filepath);
 });
 
-// ── Database ──────────────────────────────────────────────────────────────
+// ── Database ───────────────────────────────────────────────────────────────
 mongooseConnect();
 
-// ── API Routes ────────────────────────────────────────────────────────────
+// ── API Routes ─────────────────────────────────────────────────────────────
 app.use('/api/auth',         require('./routes/auth.routes'));
 app.use('/api/registration', require('./routes/registration.routes'));
 app.use('/api/health',       require('./routes/health.routes'));
 
-// Uncomment when cohort + coursework routes are ready:
-// app.use('/api/cohorts',    require('./routes/cohort.routes'));
-// app.use('/api/coursework', require('./routes/coursework.routes'));
+// Uncomment when ready:
+// app.use('/api/cohorts',     require('./routes/cohort.routes'));
+// app.use('/api/coursework',  require('./routes/coursework.routes'));
+// app.use('/api/submissions', require('./routes/submission.routes'));
 
-// ── Health check ──────────────────────────────────────────────────────────
+// ── Health check ───────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({
     status:      'OK',
@@ -137,7 +148,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── Global error handler ──────────────────────────────────────────────────
+// ── Global error handler ───────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err);
 
@@ -157,7 +168,7 @@ app.use((err, req, res, next) => {
   }
 
   if (err.name === 'MulterError') {
-    if (err.code === 'FILE_TOO_LARGE')  return res.status(413).json({ success: false, message: 'File is too large. Maximum size is 5MB.' });
+    if (err.code === 'FILE_TOO_LARGE')   return res.status(413).json({ success: false, message: 'File is too large. Maximum size is 5MB.' });
     if (err.code === 'LIMIT_FILE_COUNT') return res.status(413).json({ success: false, message: 'Too many files uploaded.' });
     return res.status(400).json({ success: false, message: `File upload error: ${err.message}` });
   }
@@ -169,25 +180,26 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ── 404 handler ───────────────────────────────────────────────────────────
+// ── 404 handler ────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.path}` });
 });
 
-// ── Start server ──────────────────────────────────────────────────────────
+// ── Start server ───────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════════════════════╗');
   console.log('║   Celcium360 Registration Server                          ║');
-  console.log(`║   🚀 Running on http://localhost:${PORT}                   ║`);
-  console.log(`║   📧 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`║   🔌 CORS Origins: ${ALLOWED_ORIGINS.join(', ')}`);
-  console.log('║   ✅ Ready to accept registrations                        ║');
+  console.log(`║   🚀 Running on port ${PORT}                               ║`);
+  console.log(`║   🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`║   ✅ CORS enabled for ${ALLOWED_ORIGINS.length} origins`);
   console.log('╚════════════════════════════════════════════════════════════╝\n');
+  ALLOWED_ORIGINS.forEach(o => console.log(`   ✓ ${o}`));
+  console.log('');
 });
 
-// ── Graceful shutdown ─────────────────────────────────────────────────────
+// ── Graceful shutdown ──────────────────────────────────────────────────────
 process.on('SIGTERM', () => {
   console.log('\n⚠️  SIGTERM received. Shutting down gracefully...');
   server.close(() => { console.log('✅ Server closed'); process.exit(0); });

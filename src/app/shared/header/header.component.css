@@ -1,61 +1,8 @@
-@media (max-width: 991.98px) {
-  /* Make dropdowns appear as stacked lists */
-  .navbar-nav .dropdown-menu {
-    display: none; /* hide by default */
-    position: static !important;
-    float: none !important;
-    transform: none !important;
-    border: 0;
-    box-shadow: none;
-    margin-top: 0 !important;
-    background: transparent !important;
-    padding-left: 1rem;
-  }
-
-  /* When parent is active (Bootstrap adds .show) */
-  .navbar-nav .dropdown.show .dropdown-menu {
-    display: block; /* show stacked dropdown */
-  }
-
-  .dropdown-item {
-    padding-left: 2rem !important;
-  }
-}
-
-
-.navbar-logo {
-  height: 300px !important;          /* Increase this value to make logo bigger */
-  max-height: 60px !important;      /* Prevent it from stretching navbar */
-  width: auto;           /* Maintain the image aspect ratio */
-  transition: all 0.3s ease; /* Smooth resizing (optional) */
-}
-
-
-.position-absolute{
-  background-color: black;
-}
-
-.text-muted{
-  color: black;
-}
-
-
-
-  .contact-link {
-    color: black !important;
-  }
-  .contact-link i {
-    color: black !important;
-  }
-
-
-
-  /* ══════════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════
    navbar.component.css — celcium360 navbar + account dropdown
 ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Existing styles (keep) ──────────────────────────────────────────────── */
-
+/* ── Logo ────────────────────────────────────────────────────────────────── */
 .navbar-logo {
   height: 300px;
   max-height: 60px;
@@ -63,10 +10,17 @@
   transition: all 0.3s ease;
 }
 
+/* ── Background overlay ──────────────────────────────────────────────────── */
 .position-absolute {
   background-color: black;
 }
 
+/* ── Utility overrides ───────────────────────────────────────────────────── */
+.text-muted {
+  color: black;
+}
+
+/* ── Top-bar contact links ───────────────────────────────────────────────── */
 .contact-link {
   color: black !important;
   text-decoration: none;
@@ -74,7 +28,9 @@
   transition: opacity 0.2s;
 }
 
-.contact-link:hover { opacity: 0.75; }
+.contact-link:hover {
+  opacity: 0.75;
+}
 
 .contact-link i {
   color: black !important;
@@ -157,7 +113,7 @@ a[routerLink="/contact"].nav-link {
   transform: rotate(180deg);
 }
 
-/* ── Dropdown panel ──────────────────────────────────────────────────────── */
+/* ── Dropdown panel (desktop) ────────────────────────────────────────────── */
 .account-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -274,7 +230,24 @@ a[routerLink="/contact"].nav-link {
 ══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 991.98px) {
 
-  /* Stacked dropdowns */
+  /* ── FIX: Make the navbar collapse scrollable so Login is never clipped ── */
+  .navbar-collapse {
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
+  }
+
+  /* ── FIX: Navbar itself must not clip overflow ─────────────────────────── */
+  .navbar {
+    overflow: visible !important;
+  }
+
+  .container-fluid.sticky-top {
+    overflow: visible !important;
+  }
+
+  /* ── Stacked Bootstrap dropdowns ──────────────────────────────────────── */
   .navbar-nav .dropdown-menu {
     display: none;
     position: static !important;
@@ -295,10 +268,11 @@ a[routerLink="/contact"].nav-link {
     padding-left: 2rem !important;
   }
 
-  /* Account dropdown: full width on mobile, not absolute */
+  /* ── Account dropdown wrapper ─────────────────────────────────────────── */
   .account-dropdown {
     width: 100%;
     margin-top: 8px;
+    overflow: visible; /* must not clip the inner menu */
   }
 
   .btn-account {
@@ -307,7 +281,7 @@ a[routerLink="/contact"].nav-link {
     padding: 10px 20px;
   }
 
-  /* Account menu: static, full width on mobile */
+  /* ── Account menu: static + full-width on mobile ──────────────────────── */
   .account-menu {
     position: static;
     opacity: 1;
@@ -319,8 +293,10 @@ a[routerLink="/contact"].nav-link {
     margin-top: 6px;
     box-shadow: none;
     border-color: rgba(184, 141, 42, 0.2);
+    overflow: visible; /* never clip Login item */
+    max-height: none;
 
-    /* Start hidden — controlled by [class.open] */
+    /* Hidden until .open is added */
     display: none;
     transition: none;
   }
@@ -329,7 +305,7 @@ a[routerLink="/contact"].nav-link {
     display: block;
   }
 
-  /* Button/link row on mobile */
+  /* ── Button row stacked on mobile ─────────────────────────────────────── */
   .d-flex.gap-2.ms-3 {
     flex-direction: column;
     align-items: stretch !important;
@@ -346,7 +322,7 @@ a[routerLink="/contact"].nav-link {
     justify-content: center;
   }
 
-  /* Nav links spacing */
+  /* ── Nav link spacing ─────────────────────────────────────────────────── */
   .navbar-nav .nav-link {
     padding: 0.6rem 0.5rem !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -357,6 +333,9 @@ a[routerLink="/contact"].nav-link {
   }
 }
 
+/* ── Very small screens ──────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .navbar-logo { max-height: 48px; }
+  .navbar-logo {
+    max-height: 48px;
+  }
 }

@@ -25,11 +25,10 @@ export class RegistrationService {
   private readonly apiUrl  = `${environment.apiUrl}/api/registration`;
   private readonly authUrl = `${environment.apiUrl}/api/auth`;
 
-  // ngrok-skip-browser-warning bypasses ngrok's interstitial HTML page,
-  // which has no CORS headers and causes a false CORS error in the browser.
-  private readonly baseHeaders = new HttpHeaders({
-    'ngrok-skip-browser-warning': 'true'
-  });
+  // Only send ngrok header in development (ngrok tunnel is not used in production)
+  private readonly baseHeaders = new HttpHeaders(
+    environment.production ? {} : { 'ngrok-skip-browser-warning': 'true' }
+  );
 
   constructor(private http: HttpClient) {}
 
@@ -54,7 +53,7 @@ export class RegistrationService {
       );
   }
 
-  // ── 2. Student login — correct URL: /api/auth/login ───────────────────
+  // ── 2. Student login ───────────────────────────────────────────────────
   login(data: { email: string; password: string }): Observable<any> {
     const url = `${this.authUrl}/login`;
     console.log('[RegistrationService] POST →', url);
@@ -112,25 +111,44 @@ export class RegistrationService {
   // ── Error handler ──────────────────────────────────────────────────────
   private handleError(err: HttpErrorResponse): Observable<never> {
     console.error('[RegistrationService] HTTP Error:', {
-      status: err.status, statusText: err.statusText,
-      url: err.url, error: err.error
+      status:     err.status,
+      statusText: err.statusText,
+      url:        err.url,
+      error:      err.error
     });
 
     let message: string;
     switch (err.status) {
-      case 0:   message = 'Cannot connect to server. Check your backend and ngrok tunnel.'; break;
-      case 400: message = err.error?.message ?? 'Bad request. Please check your input.'; break;
-      case 401: message = err.error?.message ?? 'Unauthorized. Please log in again.'; break;
-      case 403: message = err.error?.message ?? 'Access denied.'; break;
-      case 404: message = err.error?.message ?? 'Resource not found.'; break;
-      case 409: message = err.error?.message ?? 'This email is already registered.'; break;
-      case 413: message = 'File too large. Maximum size is 5MB.'; break;
+      case 0:
+        message = 'Cannot connect to server. Please check your internet connection and try again.';
+        break;
+      case 400:
+        message = err.error?.message ?? 'Bad request. Please check your input.';
+        break;
+      case 401:
+        message = err.error?.message ?? 'Unauthorized. Please log in again.';
+        break;
+      case 403:
+        message = err.error?.message ?? 'Access denied.';
+        break;
+      case 404:
+        message = err.error?.message ?? 'Resource not found.';
+        break;
+      case 409:
+        message = err.error?.message ?? 'This email is already registered.';
+        break;
+      case 413:
+        message = 'File too large. Maximum size is 5MB.';
+        break;
       case 422:
         const errors = err.error?.errors;
         message = errors?.length ? errors[0] : (err.error?.message ?? 'Validation failed.');
         break;
-      case 500: message = err.error?.message ?? 'Server error. Please try again later.'; break;
-      default:  message = err.error?.message ?? `Error ${err.status}: ${err.statusText}`;
+      case 500:
+        message = err.error?.message ?? 'Server error. Please try again later.';
+        break;
+      default:
+        message = err.error?.message ?? `Error ${err.status}: ${err.statusText}`;
     }
     return throwError(() => new Error(message));
   }
