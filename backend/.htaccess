@@ -1,15 +1,49 @@
-# ── CORS headers — allow requests from your frontend ───────────────────────
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/celcium3/celcium360solutions-api"
+PassengerBaseURI "/"
+PassengerNodejs "/home/celcium3/nodevenv/celcium360solutions-api/16/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
 <IfModule mod_headers.c>
-    Header always set Access-Control-Allow-Origin "https://www.celcium360solutions.com"
-    Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
-    Header always set Access-Control-Allow-Credentials "true"
-    Header always set Access-Control-Max-Age "86400"
+
+    # ── Store the EXACT allowed origin string in CORS_ORIGIN ─────────────
+    # Each line stores the literal origin value — no dynamic expansion.
+    # This avoids the '' (empty) header bug from %{HTTP_ORIGIN}e
+
+    SetEnvIf Origin "^https://celcium360solutions\.com$"      CORS_ORIGIN=https://celcium360solutions.com
+    SetEnvIf Origin "^https://www\.celcium360solutions\.com$" CORS_ORIGIN=https://www.celcium360solutions.com
+    SetEnvIf Origin "^https://celcuim\.netlify\.app$"         CORS_ORIGIN=https://celcuim.netlify.app
+    SetEnvIf Origin "^http://localhost:4200$"                 CORS_ORIGIN=http://localhost:4200
+    SetEnvIf Origin "^http://localhost:3000$"                 CORS_ORIGIN=http://localhost:3000
+
+    # ── Apply CORS headers only when origin matched ───────────────────────
+    Header always set   Access-Control-Allow-Origin      "%{CORS_ORIGIN}e" env=CORS_ORIGIN
+    Header always set   Access-Control-Allow-Methods     "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Header always set   Access-Control-Allow-Headers     "Content-Type, Authorization, X-Requested-With"
+    Header always set   Access-Control-Allow-Credentials "true"
+    Header always set   Access-Control-Max-Age           "86400"
+
 </IfModule>
 
-# ── Return 200 immediately for OPTIONS preflight ────────────────────────────
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /
+
+    # ── Handle OPTIONS preflight — respond 204 immediately ───────────────
     RewriteCond %{REQUEST_METHOD} OPTIONS
-    RewriteRule ^(.*)$ $1 [R=200,L]
+    RewriteRule ^(.*)$ $1 [R=204,L]
+
 </IfModule>
+
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
+<IfModule Litespeed>
+SetEnv MONGODB_URI mongodb+srv://chibuzorjoel:Celcuim360@cluster0.arplt.mongodb.net/celcium360?retryWrites=true&w=majority&appName=Cluster0
+SetEnv NODE_ENV production
+SetEnv JWT_SECRET celcium360_super_secret_jwt_key_2024
+SetEnv CORS_ORIGIN https://www.celcium360solutions.com
+SetEnv LOG_LEVEL debug
+SetEnv PORT 5000
+</IfModule>
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END

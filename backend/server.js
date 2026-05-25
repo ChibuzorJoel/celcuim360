@@ -1,15 +1,17 @@
-/**
- * server.js - Main Express server entry point
- * Celcium360 Solutions - Work Readiness Program Registration API
- */
+// **
+//  * server.js - Main Express server entry point
+//  * Celcium360 Solutions - Work Readiness Program Registration API
+//  */
 
+// === BETTER CRYPTO POLYFILL (Top of server.js) ===
 const nodeCrypto = require('crypto');
 
 if (!global.crypto) {
-  global.crypto = {
-    randomUUID: nodeCrypto.randomUUID
+  global.crypto = nodeCrypto.webcrypto || {
+    subtle: nodeCrypto.webcrypto?.subtle || {},
+    randomUUID: nodeCrypto.randomUUID 
       ? nodeCrypto.randomUUID.bind(nodeCrypto)
-      : () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      : () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
           const r = (Math.random() * 16) | 0;
           const v = c === 'x' ? r : (r & 0x3) | 0x8;
           return v.toString(16);
@@ -18,8 +20,13 @@ if (!global.crypto) {
   };
 }
 
+// Ensure subtle is available
+if (!global.crypto.subtle) {
+  global.crypto.subtle = nodeCrypto.webcrypto?.subtle || {};
+}
+
 const express  = require('express');
-const cors     = require('cors');
+const cors = require('cors');
 const helmet   = require('helmet');
 const morgan   = require('morgan');
 const dotenv   = require('dotenv');
@@ -36,40 +43,37 @@ const app = express();
 // CORS — must be FIRST, before helmet and all routes
 // ══════════════════════════════════════════════════════════════════
 
+// === CORS MIDDLEWARE ===
+
+
 const ALLOWED_ORIGINS = [
-  // Production domains
   'https://celcium360solutions.com',
   'https://www.celcium360solutions.com',
-  'https://api.celcium360solutions.com',
-
-  // Netlify deploy
-  'https://celcuim.netlify.app',
-
-  // Development
   'http://localhost:4200',
-  'http://localhost:3000',
-  'http://127.0.0.1:4200'
+  'http://127.0.0.1:4200',
+  'https://api.celcium360solutions.com',
+  'https://celcuim.netlify.app'
 ];
 
-// ── Manual CORS middleware — handles every request including OPTIONS ───────
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+}));
 
-  if (!origin || ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin',      origin || '*');
-    res.setHeader('Access-Control-Allow-Methods',     'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers',     'Content-Type,Authorization,ngrok-skip-browser-warning,X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age',           '86400');
-  }
-
-  // Handle OPTIONS preflight immediately — before any other middleware
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  next();
+// Fix for Express 5 wildcard
+app.options('/*path', (req, res) => {
+  res.status(200).end();
 });
+
+  
 
 // Also keep cors() as a secondary layer for safety
 app.use(cors({

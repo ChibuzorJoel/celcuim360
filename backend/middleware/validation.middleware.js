@@ -4,7 +4,6 @@
 
 const cleanupUploadedFiles = (files) => {
   if (!files) return;
-
   Object.values(files).forEach(fileArray => {
     fileArray.forEach(file => {
       const fs = require('fs');
@@ -26,118 +25,67 @@ const validateRegistration = (req, res, next) => {
     password
   } = req.body;
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Full Name
-  // ─────────────────────────────────────────────
+  // 🔹 Full Name
   if (!fullName || !fullName.trim()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Full name is required'
-    });
+    return res.status(400).json({ success: false, message: 'Full name is required' });
   }
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Email
-  // ─────────────────────────────────────────────
+  // 🔹 Email
   const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-
   if (!email || !emailRegex.test(email)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Valid email is required'
-    });
+    return res.status(400).json({ success: false, message: 'Valid email is required' });
   }
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Phone
-  // ─────────────────────────────────────────────
+  // 🔹 Phone
   const phoneRegex = /^[0-9+]{7,15}$/;
-
   if (!phone || !phoneRegex.test(phone)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Valid phone number is required (7–15 digits)'
-    });
+    return res.status(400).json({ success: false, message: 'Valid phone number is required (7–15 digits)' });
   }
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Category
-  // ─────────────────────────────────────────────
+  // 🔹 Category
   if (!category || !['nysc', 'graduate'].includes(category)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Valid category is required'
-    });
+    return res.status(400).json({ success: false, message: 'Valid category is required' });
   }
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Password
-  // ─────────────────────────────────────────────
+  // 🔹 Password
   if (!password || password.length < 8) {
     cleanupUploadedFiles(req.files);
-    return res.status(422).json({
-      success: false,
-      message: 'Password must be at least 8 characters.'
-    });
+    return res.status(422).json({ success: false, message: 'Password must be at least 8 characters.' });
   }
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Files
-  // ─────────────────────────────────────────────
+  // 🔹 Photo (required for all)
   if (!req.files || !req.files.photo) {
-    return res.status(400).json({
-      success: false,
-      message: 'Photo is required'
-    });
+    return res.status(400).json({ success: false, message: 'Photo is required' });
   }
 
+  // 🔹 NYSC documents — accept EITHER statement OR callUpLetter (user uploads one)
   if (category === 'nysc') {
-    if (!req.files.statement) {
-      return res.status(400).json({
-        success: false,
-        message: 'Statement of Result is required for NYSC category'
-      });
-    }
+    const hasStatement   = !!req.files.statement;
+    const hasCallUp      = !!req.files.callUpLetter;
 
-    if (!req.files.callUpLetter) {
+    if (!hasStatement && !hasCallUp) {
       return res.status(400).json({
         success: false,
-        message: 'NYSC Call-Up Letter is required'
+        message: 'Please upload either your Statement of Result or NYSC Call-Up Letter'
       });
     }
   }
 
+  // 🔹 Payment proof (required for all)
   if (!req.files.paymentProof) {
-    return res.status(400).json({
-      success: false,
-      message: 'Payment proof is required'
-    });
+    return res.status(400).json({ success: false, message: 'Payment proof is required' });
   }
 
-  // ─────────────────────────────────────────────
-  // 🔹 Validate Assessment
-  // ─────────────────────────────────────────────
-  if (
-    assessmentScore === undefined ||
-    assessmentTotal === undefined
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: 'Assessment data is incomplete'
-    });
+  // 🔹 Assessment
+  if (assessmentScore === undefined || assessmentTotal === undefined) {
+    return res.status(400).json({ success: false, message: 'Assessment data is incomplete' });
   }
 
-  // Optional: ensure numbers
   if (isNaN(assessmentScore) || isNaN(assessmentTotal)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Assessment values must be numbers'
-    });
+    return res.status(400).json({ success: false, message: 'Assessment values must be numbers' });
   }
 
-  // ─────────────────────────────────────────────
-  // ✅ Passed all validations
-  // ─────────────────────────────────────────────
+  // ✅ All good
   next();
 };
 
