@@ -1,11 +1,33 @@
 /**
- * controllers/registration.controller.js - Registration request handler (UPDATED FULL CODE)
+ * controllers/registration.controller.js - Final Clean Version
  */
 
 const Registration = require('../models/Registration');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+/**
+ * Helper: Clean uploaded files on failure
+ */
+const cleanupUploadedFiles = (files) => {
+  if (!files) return;
+
+  Object.values(files).forEach((fileArray) => {
+    if (Array.isArray(fileArray)) {
+      fileArray.forEach((file) => {
+        if (file?.path && fs.existsSync(file.path)) {
+          try {
+            fs.unlinkSync(file.path);
+          } catch (err) {
+            console.error(`Failed to delete file: ${file.path}`);
+          }
+        }
+      });
+    }
+  });
+};
 
 /**
  * Submit a new registration
@@ -26,91 +48,86 @@ exports.submitRegistration = async (req, res) => {
       assessmentAnswers
     } = req.body;
 
-    // 1. Basic Validation
-    if (!password || password.length < 6) {
+    // Validation
+    if (!fullName || !email || !phone || !password || !category) {
       cleanupUploadedFiles(req.files);
       return res.status(400).json({
         success: false,
-        message: 'Password is required and must be at least 6 characters long.'
+        message: 'All fields (fullName, email, phone, password, category) are required.'
       });
     }
 
-    // 2. Check if email already exists
-    const normalizedEmail = email.toLowerCase().trim();
-    const existingRegistration = await Registration.findOne({ email: normalizedEmail });
+    if (password.length < 6) {
+      cleanupUploadedFiles(req.files);
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long.'
+      });
+    }
 
-    if (existingRegistration) {
+    // Check duplicate email
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await Registration.findOne({ email: normalizedEmail });
+
+    if (existing) {
       cleanupUploadedFiles(req.files);
       return res.status(409).json({
         success: false,
-        message: 'This email is already registered. Please use a different email.'
+        message: 'This email is already registered.'
       });
     }
 
-    
-    
+    // Hash Password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Uploaded files
+    // Handle files
     const photoFile = req.files?.photo?.[0];
     const statementFile = req.files?.statement?.[0];
     const callUpFile = req.files?.callUpLetter?.[0];
     const paymentProofFile = req.files?.paymentProof?.[0];
 
-    // Create registration
     const registration = new Registration({
       fullName: fullName.trim(),
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: phone.trim(),
-      password: password,
+      password: hashedPassword,
       category,
 
-      // Photo
-      photo: photoFile
-        ? {
-            filename: photoFile.filename,
-            path: photoFile.path,
-            uploadedAt: new Date(),
-            size: photoFile.size,
-            mimeType: photoFile.mimetype
-          }
-        : null,
+      photo: photoFile ? {
+        filename: photoFile.filename,
+        path: photoFile.path,
+        uploadedAt: new Date(),
+        size: photoFile.size,
+        mimeType: photoFile.mimetype
+      } : null,
 
-      // NYSC Statement
-      statement: statementFile
-        ? {
-            filename: statementFile.filename,
-            path: statementFile.path,
-            uploadedAt: new Date(),
-            size: statementFile.size,
-            mimeType: statementFile.mimetype
-          }
-        : null,
+      statement: statementFile ? {
+        filename: statementFile.filename,
+        path: statementFile.path,
+        uploadedAt: new Date(),
+        size: statementFile.size,
+        mimeType: statementFile.mimetype
+      } : null,
 
-      // Call-up Letter
-      callUpLetter: callUpFile
-        ? {
-            filename: callUpFile.filename,
-            path: callUpFile.path,
-            uploadedAt: new Date(),
-            size: callUpFile.size,
-            mimeType: callUpFile.mimetype
-          }
-        : null,
+      callUpLetter: callUpFile ? {
+        filename: callUpFile.filename,
+        path: callUpFile.path,
+        uploadedAt: new Date(),
+        size: callUpFile.size,
+        mimeType: callUpFile.mimetype
+      } : null,
 
-      // Payment Proof
-      paymentProof: paymentProofFile
-        ? {
-            filename: paymentProofFile.filename,
-            path: paymentProofFile.path,
-            uploadedAt: new Date(),
-            size: paymentProofFile.size,
-            mimeType: paymentProofFile.mimetype
-          }
-        : null,
+      paymentProof: paymentProofFile ? {
+        filename: paymentProofFile.filename,
+        path: paymentProofFile.path,
+        uploadedAt: new Date(),
+        size: paymentProofFile.size,
+        mimeType: paymentProofFile.mimetype
+      } : null,
 
       paymentAmount: category === 'nysc' ? '₦50,000' : '₦200,000',
 
-      // Assessment
       assessment: {
         score: parseInt(assessmentScore) || 0,
         total: parseInt(assessmentTotal) || 0,
@@ -120,11 +137,8 @@ exports.submitRegistration = async (req, res) => {
         completedAt: new Date()
       },
 
-      // Metadata
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
-
-      // IMPORTANT: changed from submitted → pending
       status: 'pending'
     });
 
@@ -132,21 +146,17 @@ exports.submitRegistration = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message:
-        'Registration submitted successfully. Verification will be completed within 24 hours.',
+      message: 'Registration submitted successfully. Verification will be completed within 24 hours.',
       data: {
         registrationId: registration._id,
         email: registration.email,
-        status: registration.status,
-        submittedAt: registration.createdAt
+        status: registration.status
       }
     });
-  } catch (error) {
-    console.error('❌ Registration submission error:', error);
 
-    if (req.files) {
-      cleanupUploadedFiles(req.files);
-    }
+  } catch (error) {
+    console.error('❌ Registration error:', error);
+    cleanupUploadedFiles(req.files);
 
     res.status(500).json({
       success: false,
@@ -156,14 +166,74 @@ exports.submitRegistration = async (req, res) => {
 };
 
 /**
- * Get a registration by ID
- * GET /api/registration/:id
+ * Student Login
+ * POST /api/registration/login
+ */
+exports.login = async (req, res) => {
+  try {
+    let { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    email = email.toLowerCase().trim();
+
+    const user = await Registration.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: 'student' },
+      process.env.JWT_SECRET || 'your_secret_key_here_123456',
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        status: user.status
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
+  }
+};
+
+/**
+ * Get registration by ID
  */
 exports.getRegistration = async (req, res) => {
   try {
-    const registration = await Registration.findById(req.params.id).select(
-      '-paymentProof.path'
-    );
+    const registration = await Registration.findById(req.params.id)
+      .select('-password -paymentProof.path');
 
     if (!registration) {
       return res.status(404).json({
@@ -186,13 +256,12 @@ exports.getRegistration = async (req, res) => {
 
 /**
  * Get registration by email
- * GET /api/registration/email/:email
  */
 exports.getRegistrationByEmail = async (req, res) => {
   try {
     const registration = await Registration.findOne({
       email: req.params.email.toLowerCase()
-    }).select('-paymentProof.path');
+    }).select('-password -paymentProof.path');
 
     if (!registration) {
       return res.status(404).json({
@@ -214,14 +283,7 @@ exports.getRegistrationByEmail = async (req, res) => {
 };
 
 /**
- * Get all registrations (admin only)
- * GET /api/registration
- *
- * FIXED:
- * - returns registrationId instead of _id
- * - supports search
- * - supports status/category filters
- * - returns flat structure admin UI expects
+ * Get all registrations (for Admin)
  */
 exports.getAllRegistrations = async (req, res) => {
   try {
@@ -229,26 +291,15 @@ exports.getAllRegistrations = async (req, res) => {
 
     const filter = {};
 
-    if (status && status !== 'all') {
-      filter.status = status;
-    }
-
-    if (category) {
-      filter.category = category;
-    }
-
+    if (status && status !== 'all') filter.status = status;
+    if (category) filter.category = category;
     if (search) {
       const q = new RegExp(search, 'i');
-
-      filter.$or = [
-        { fullName: q },
-        { email: q },
-        { phone: q }
-      ];
+      filter.$or = [{ fullName: q }, { email: q }, { phone: q }];
     }
 
     const registrations = await Registration.find(filter)
-      .sort({ submittedAt: -1 })
+      .sort({ createdAt: -1 })
       .lean();
 
     const mapped = registrations.map((r) => ({
@@ -258,16 +309,9 @@ exports.getAllRegistrations = async (req, res) => {
       phone: r.phone,
       category: r.category,
       status: r.status,
-      submittedAt: r.submittedAt,
-      rejectionReason: r.rejectionReason || null,
-
-      // Assessment (flat for admin TS interface)
+      submittedAt: r.createdAt,
       assessmentScore: r.assessment?.score,
-      assessmentTotal: r.assessment?.total,
       assessmentPercentage: r.assessment?.percentage,
-      assessmentLevel: r.assessment?.level,
-
-      // Files (filenames only)
       files: {
         photo: r.photo?.filename || null,
         statement: r.statement?.filename || null,
@@ -278,59 +322,22 @@ exports.getAllRegistrations = async (req, res) => {
 
     res.status(200).json(mapped);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Update verification status
- * PATCH /api/registration/:id/verify
- * PATCH /api/registration/:id/status
- *
- * FIXED:
- * - supports pending / approved / rejected
- * - also supports old values
- * - requires rejection reason for rejected
+ * Update registration status
  */
 exports.updateVerificationStatus = async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
 
-    const validStatuses = [
-      'pending',
-      'approved',
-      'rejected',
-      'submitted',
-      'under-review',
-      'verified'
-    ];
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status value.'
-      });
+    const updates = { status };
+    if (status === 'rejected' && rejectionReason) {
+      updates.rejectionReason = rejectionReason.trim();
     }
-
-    if (status === 'rejected' && !rejectionReason?.trim()) {
-      return res.status(422).json({
-        success: false,
-        message: 'Rejection reason is required.'
-      });
-    }
-
-    const updates = {
-      status,
-      rejectionReason:
-        status === 'rejected'
-          ? rejectionReason.trim()
-          : null
-    };
-
-    if (status === 'approved' || status === 'verified') {
+    if (status === 'approved') {
       updates.verifiedAt = new Date();
     }
 
@@ -338,37 +345,27 @@ exports.updateVerificationStatus = async (req, res) => {
       req.params.id,
       updates,
       { new: true }
-    ).lean();
+    );
 
     if (!registration) {
       return res.status(404).json({
         success: false,
-        message: 'Registration not found.'
+        message: 'Registration not found'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: `Status updated to '${status}'.`,
-      record: {
-        ...registration,
-        registrationId: registration._id.toString()
-      }
+      message: `Status updated to ${status}`,
+      record: registration
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Delete a registration
- * DELETE /api/registration/:id
- *
- * FIXED:
- * unlinkSync() does NOT use .catch()
+ * Delete registration
  */
 exports.deleteRegistration = async (req, res) => {
   try {
@@ -381,170 +378,43 @@ exports.deleteRegistration = async (req, res) => {
       });
     }
 
-    const deleteFile = (filePath) => {
-      if (filePath && fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (err) {
-          // ignore file deletion errors
-        }
+    // Delete associated files
+    const files = [registration.photo, registration.statement, registration.callUpLetter, registration.paymentProof];
+    files.forEach(file => {
+      if (file?.path && fs.existsSync(file.path)) {
+        try { fs.unlinkSync(file.path); } catch (e) {}
       }
-    };
-
-    deleteFile(registration.photo?.path);
-    deleteFile(registration.statement?.path);
-    deleteFile(registration.callUpLetter?.path);
-    deleteFile(registration.paymentProof?.path);
+    });
 
     res.status(200).json({
       success: true,
       message: 'Registration deleted successfully'
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * Serve uploaded files for admin document viewer
- * GET /api/registration/:id/file/:filename
+ * Serve uploaded file
  */
 exports.serveFile = async (req, res) => {
   try {
     const registration = await Registration.findById(req.params.id);
-
-    if (!registration) {
-      return res.status(404).json({
-        success: false,
-        message: 'Registration not found.'
-      });
-    }
+    if (!registration) return res.status(404).json({ success: false, message: 'Not found' });
 
     const filename = req.params.filename;
+    const allFiles = [registration.photo, registration.statement, registration.callUpLetter, registration.paymentProof]
+      .filter(Boolean);
 
-    const allFiles = [
-      registration.photo,
-      registration.statement,
-      registration.callUpLetter,
-      registration.paymentProof
-    ].filter(Boolean);
-
-    const fileRecord = allFiles.find(
-      (file) => file.filename === filename
-    );
+    const fileRecord = allFiles.find(f => f.filename === filename);
 
     if (!fileRecord || !fs.existsSync(fileRecord.path)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found.'
-      });
+      return res.status(404).json({ success: false, message: 'File not found' });
     }
 
     res.sendFile(path.resolve(fileRecord.path));
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-/**
- * Login user (Student Portal)
- * POST /api/registration/login
- */
-exports.login = async (req, res) => {
-  try {
-    let { email, password } = req.body;
-
-    // ✅ SAFETY CHECK (VERY IMPORTANT)
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password must be provided'
-      });
-    }
-
-    // ✅ Normalize AFTER validation
-    email = email.toLowerCase().trim();
-    password = password.trim();
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password cannot be empty'
-      });
-    }
-
-    // Add .select('+password') to force Mongoose to include the hidden field
-const user = await Registration.findOne({ email }).select('+password');
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // 🔐 bcrypt compare
-    const bcrypt = require('bcrypt');
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // 🔐 JWT
-    const jwt = require('jsonwebtoken');
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      'your_secret_key_here',
-      { expiresIn: '1d' }
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        status: user.status
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Login error:', error);
-
-    return res.status(500).json({
-      success: false,
-      message: 'Server error during login'
-    });
-  }
-};
-/**
- * Helper: Clean uploaded files on failure
- */
-function cleanupUploadedFiles(files) {
-  if (!files) return;
-
-  Object.values(files).forEach((fileArray) => {
-    if (Array.isArray(fileArray)) {
-      fileArray.forEach((file) => {
-        if (file.path && fs.existsSync(file.path)) {
-          try {
-            fs.unlinkSync(file.path);
-          } catch (err) {
-            // ignore cleanup errors
-          }
-        }
-      });
-    }
-  });
-}

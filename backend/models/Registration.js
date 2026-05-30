@@ -1,316 +1,347 @@
 /**
- * models/Registration.js
+ * controllers/registration.controller.js - Compatible with your Registration Model
  */
 
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const Registration = require('../models/Registration');
+const fs = require('fs');
+const path = require('path');
+const jwt = require('jsonwebtoken');
 
 /**
- * Assessment Answer Schema
+ * Helper: Clean uploaded files on failure
  */
-const AssessmentAnswerSchema = new mongoose.Schema(
-  {
-    questionId: Number,
-    selectedOption: String,
-    isCorrect: Boolean
-  },
-  { _id: false }
-);
+const cleanupUploadedFiles = (files) => {
+  if (!files) return;
 
-/**
- * Registration Schema
- */
-const RegistrationSchema = new mongoose.Schema(
-  {
-    /**
-     * Added from new schema
-     */
-    registrationId: {
-      type: String,
-      unique: true,
-      index: true,
-      sparse: true
-    },
-
-    fullName: {
-      type: String,
-      required: [true, 'Full name is required'],
-      trim: true,
-      maxlength: 100
-    },
-
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      lowercase: true,
-      trim: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/,
-        'Invalid email format'
-      ]
-    },
-
-    phone: {
-      type: String,
-      required: [true, 'Phone number is required'],
-      trim: true,
-      maxlength: 20
-    },
-
-    category: {
-      type: String,
-      enum: ['nysc', 'graduate'],
-      required: [true, 'Category is required']
-    },
-
-    password: {
-      type: String,
-      required: true,
-      minlength: 8,
-      select: false
-    },
-
-    /**
-     * Files
-     */
-    files: {
-      photo: {
-        type: String,
-        default: null
-      },
-
-      statement: {
-        type: String,
-        default: null
-      },
-
-      callUpLetter: {
-        type: String,
-        default: null
-      },
-
-      paymentProof: {
-        type: String,
-        default: null
-      }
-    },
-
-    /**
-     * Optional detailed file objects
-     */
-    photo: {
-      filename: String,
-      path: String,
-      uploadedAt: Date,
-      size: Number,
-      mimeType: String
-    },
-
-    statement: {
-      filename: String,
-      path: String,
-      uploadedAt: Date,
-      size: Number,
-      mimeType: String
-    },
-
-    callUpLetter: {
-      filename: String,
-      path: String,
-      uploadedAt: Date,
-      size: Number,
-      mimeType: String
-    },
-
-    paymentProof: {
-      filename: String,
-      path: String,
-      uploadedAt: Date,
-      size: Number,
-      mimeType: String
-    },
-
-    paymentAmount: {
-      type: String,
-      enum: ['₦50,000', '₦200,000'],
-      required: [true, 'Payment amount is required']
-    },
-
-    paymentVerified: {
-      type: Boolean,
-      default: false
-    },
-
-    /**
-     * Assessment
-     */
-    assessment: {
-      score: {
-        type: Number,
-        min: 0,
-        default: 0
-      },
-
-      total: {
-        type: Number,
-        default: 10
-      },
-
-      percentage: {
-        type: Number,
-        min: 0,
-        max: 100,
-        default: 0
-      },
-
-      level: {
-        type: String,
-        enum: ['below-expectation', 'foundational', 'strong'],
-        default: 'foundational'
-      },
-
-      answers: [AssessmentAnswerSchema],
-
-      completedAt: {
-        type: Date,
-        default: null
-      }
-    },
-
-    /**
-     * Added flat assessment fields
-     */
-    assessmentScore: {
-      type: Number,
-      default: null
-    },
-
-    assessmentTotal: {
-      type: Number,
-      default: null
-    },
-
-    assessmentPercentage: {
-      type: Number,
-      default: null
-    },
-
-    assessmentLevel: {
-      type: String,
-      default: null
-    },
-
-    assessmentAnswers: {
-      type: mongoose.Schema.Types.Mixed,
-      default: null
-    },
-
-    status: {
-      type: String,
-      enum: [
-        'pending',
-        'approved',
-        'rejected',
-        'submitted',
-        'under-review',
-        'verified'
-      ],
-      default: 'pending',
-      index: true
-    },
-
-    rejectionReason: {
-      type: String,
-      default: null
-    },
-
-    verificationNotes: {
-      type: String,
-      default: null
-    },
-
-    submittedAt: {
-      type: Date,
-      default: Date.now
-    },
-
-    verifiedAt: {
-      type: Date,
-      default: null
-    },
-
-    ipAddress: {
-      type: String,
-      default: null
-    },
-
-    userAgent: {
-      type: String,
-      default: null
+  Object.values(files).forEach((fileArray) => {
+    if (Array.isArray(fileArray)) {
+      fileArray.forEach((file) => {
+        if (file?.path && fs.existsSync(file.path)) {
+          try {
+            fs.unlinkSync(file.path);
+          } catch (err) {
+            console.error(`Failed to delete file: ${file.path}`);
+          }
+        }
+      });
     }
-  },
-  { timestamps: true }
-);
-
-/**
- * Indexes
- */
-RegistrationSchema.index({ email: 1 }, { unique: true, sparse: true });
-RegistrationSchema.index({ status: 1, submittedAt: -1 });
-RegistrationSchema.index({ category: 1 });
-
-/**
- * Hash Password
- */
-RegistrationSchema.pre('save', async function () {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 12);
-  }
-});
-
-/**
- * Additional Logic
- */
-RegistrationSchema.pre('save', function () {
-  if (!this.submittedAt) {
-    this.submittedAt = new Date();
-  }
-
-  if (
-    (this.status === 'approved' || this.status === 'verified') &&
-    !this.verifiedAt
-  ) {
-    this.verifiedAt = new Date();
-  }
-
-  if (
-    this.status === 'approved' ||
-    this.status === 'verified'
-  ) {
-    this.rejectionReason = null;
-  }
-});
-
-/**
- * Remove sensitive fields from JSON
- */
-RegistrationSchema.set('toJSON', {
-  transform: (doc, ret) => {
-    delete ret.password;
-    delete ret.__v;
-    return ret;
-  }
-});
-
-/**
- * Methods
- */
-RegistrationSchema.methods.checkPassword = async function (
-  candidatePassword
-) {
-  return bcrypt.compare(candidatePassword, this.password);
+  });
 };
 
-module.exports =
-  mongoose.models.Registration ||
-  mongoose.model('Registration', RegistrationSchema);
+/**
+ * Submit Registration
+ * POST /api/registration/submit
+ */
+exports.submitRegistration = async (req, res) => {
+  try {
+    const {
+      fullName,
+      email,
+      phone,
+      password,
+      category,
+      assessmentScore,
+      assessmentTotal,
+      assessmentPercentage,
+      assessmentLevel,
+      assessmentAnswers
+    } = req.body;
+
+    // Validation
+    if (!fullName || !email || !phone || !password || !category) {
+      cleanupUploadedFiles(req.files);
+      return res.status(400).json({
+        success: false,
+        message: 'All fields (fullName, email, phone, password, category) are required.'
+      });
+    }
+
+    if (password.length < 6) {
+      cleanupUploadedFiles(req.files);
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long.'
+      });
+    }
+
+    // Check duplicate email
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await Registration.findOne({ email: normalizedEmail });
+
+    if (existing) {
+      cleanupUploadedFiles(req.files);
+      return res.status(409).json({
+        success: false,
+        message: 'This email is already registered.'
+      });
+    }
+
+    // Handle files
+    const photoFile = req.files?.photo?.[0];
+    const statementFile = req.files?.statement?.[0];
+    const callUpFile = req.files?.callUpLetter?.[0];
+    const paymentProofFile = req.files?.paymentProof?.[0];
+
+    const registration = new Registration({
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      phone: phone.trim(),
+      password: password,                    // ← Let model middleware hash it
+      category,
+
+      // File objects (matches your model)
+      photo: photoFile ? {
+        filename: photoFile.filename,
+        path: photoFile.path,
+        uploadedAt: new Date(),
+        size: photoFile.size,
+        mimeType: photoFile.mimetype
+      } : null,
+
+      statement: statementFile ? {
+        filename: statementFile.filename,
+        path: statementFile.path,
+        uploadedAt: new Date(),
+        size: statementFile.size,
+        mimeType: statementFile.mimetype
+      } : null,
+
+      callUpLetter: callUpFile ? {
+        filename: callUpFile.filename,
+        path: callUpFile.path,
+        uploadedAt: new Date(),
+        size: callUpFile.size,
+        mimeType: callUpFile.mimetype
+      } : null,
+
+      paymentProof: paymentProofFile ? {
+        filename: paymentProofFile.filename,
+        path: paymentProofFile.path,
+        uploadedAt: new Date(),
+        size: paymentProofFile.size,
+        mimeType: paymentProofFile.mimetype
+      } : null,
+
+      paymentAmount: category === 'nysc' ? '₦50,000' : '₦200,000',
+
+      // Assessment
+      assessment: {
+        score: parseInt(assessmentScore) || 0,
+        total: parseInt(assessmentTotal) || 10,
+        percentage: parseInt(assessmentPercentage) || 0,
+        level: assessmentLevel || 'foundational',
+        answers: assessmentAnswers ? JSON.parse(assessmentAnswers) : [],
+        completedAt: new Date()
+      },
+
+      // Flat fields (for backward compatibility)
+      assessmentScore: parseInt(assessmentScore) || 0,
+      assessmentTotal: parseInt(assessmentTotal) || 10,
+      assessmentPercentage: parseInt(assessmentPercentage) || 0,
+      assessmentLevel: assessmentLevel || 'foundational',
+
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+      status: 'pending'
+    });
+
+    await registration.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration submitted successfully!',
+      data: {
+        registrationId: registration._id,
+        email: registration.email,
+        status: registration.status
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Registration error:', error);
+    cleanupUploadedFiles(req.files);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to submit registration'
+    });
+  }
+};
+
+/**
+ * Student Login
+ */
+exports.login = async (req, res) => {
+  try {
+    let { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    email = email.toLowerCase().trim();
+
+    const user = await Registration.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const isMatch = await user.checkPassword(password);   // Using model's method
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: 'student' },
+      process.env.JWT_SECRET || 'your_secret_key_here_123456',
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        status: user.status
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
+  }
+};
+
+// ==================== Other Admin Functions ====================
+
+exports.getRegistration = async (req, res) => {
+  try {
+    const registration = await Registration.findById(req.params.id)
+      .select('-password');
+
+    if (!registration) {
+      return res.status(404).json({ success: false, message: 'Registration not found' });
+    }
+
+    res.status(200).json({ success: true, data: registration });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getRegistrationByEmail = async (req, res) => {
+  try {
+    const registration = await Registration.findOne({ 
+      email: req.params.email.toLowerCase() 
+    }).select('-password');
+
+    if (!registration) {
+      return res.status(404).json({ success: false, message: 'Registration not found' });
+    }
+
+    res.status(200).json({ success: true, data: registration });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getAllRegistrations = async (req, res) => {
+  try {
+    const { status, category, search } = req.query;
+    const filter = {};
+
+    if (status && status !== 'all') filter.status = status;
+    if (category) filter.category = category;
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      filter.$or = [{ fullName: regex }, { email: regex }, { phone: regex }];
+    }
+
+    const registrations = await Registration.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json(registrations);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateVerificationStatus = async (req, res) => {
+  try {
+    const { status, rejectionReason } = req.body;
+
+    const updates = { status };
+    if (status === 'rejected' && rejectionReason) updates.rejectionReason = rejectionReason;
+    if (['approved', 'verified'].includes(status)) updates.verifiedAt = new Date();
+
+    const registration = await Registration.findByIdAndUpdate(req.params.id, updates, { new: true });
+
+    if (!registration) {
+      return res.status(404).json({ success: false, message: 'Registration not found' });
+    }
+
+    res.status(200).json({ success: true, message: `Status updated to ${status}`, record: registration });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteRegistration = async (req, res) => {
+  try {
+    const registration = await Registration.findByIdAndDelete(req.params.id);
+    if (!registration) {
+      return res.status(404).json({ success: false, message: 'Not found' });
+    }
+
+    // Delete files
+    const fileFields = ['photo', 'statement', 'callUpLetter', 'paymentProof'];
+    fileFields.forEach(field => {
+      const file = registration[field];
+      if (file?.path && fs.existsSync(file.path)) {
+        try { fs.unlinkSync(file.path); } catch (e) {}
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Registration deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.serveFile = async (req, res) => {
+  try {
+    const registration = await Registration.findById(req.params.id);
+    if (!registration) return res.status(404).json({ success: false, message: 'Not found' });
+
+    const filename = req.params.filename;
+    const fields = ['photo', 'statement', 'callUpLetter', 'paymentProof'];
+
+    for (let field of fields) {
+      const file = registration[field];
+      if (file && file.filename === filename && fs.existsSync(file.path)) {
+        return res.sendFile(path.resolve(file.path));
+      }
+    }
+
+    res.status(404).json({ success: false, message: 'File not found' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
