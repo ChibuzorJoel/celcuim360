@@ -44,6 +44,6 @@ SetEnv NODE_ENV production
 SetEnv JWT_SECRET celcium360_super_secret_jwt_key_2024
 SetEnv CORS_ORIGIN https://www.celcium360solutions.com
 SetEnv LOG_LEVEL debug
-SetEnv PORT 5000
+SetEnv PORT 3000
 </IfModule>
 # DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END

@@ -1,217 +1,97 @@
-// **
-//  * server.js - Main Express server entry point
-//  * Celcium360 Solutions - Work Readiness Program Registration API
-//  */
+/**
+ * server.js - Final Version for cPanel (Strong CORS)
+ */
 
-// === BETTER CRYPTO POLYFILL (Top of server.js) ===
-const nodeCrypto = require('crypto');
-
-if (!global.crypto) {
-  global.crypto = nodeCrypto.webcrypto || {
-    subtle: nodeCrypto.webcrypto?.subtle || {},
-    randomUUID: nodeCrypto.randomUUID 
-      ? nodeCrypto.randomUUID.bind(nodeCrypto)
-      : () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-          const r = (Math.random() * 16) | 0;
-          const v = c === 'x' ? r : (r & 0x3) | 0x8;
-          return v.toString(16);
-        }),
-    getRandomValues: (arr) => nodeCrypto.randomFillSync(arr)
-  };
-}
-
-// Ensure subtle is available
-if (!global.crypto.subtle) {
-  global.crypto.subtle = nodeCrypto.webcrypto?.subtle || {};
-}
-
-const express  = require('express');
+const express = require('express');
 const cors = require('cors');
-const helmet   = require('helmet');
-const morgan   = require('morgan');
-const dotenv   = require('dotenv');
-const path     = require('path');
-const fs       = require('fs');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 
-const mongooseConnect = require('./config/database');
+// Crypto Fix
+if (!global.crypto) global.crypto = crypto;
+if (!global.crypto.subtle) global.crypto.subtle = crypto.webcrypto?.subtle || {};
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const mongooseConnect = require('./config/database');
+
 const app = express();
 
-// ══════════════════════════════════════════════════════════════════
-// CORS — must be FIRST, before helmet and all routes
-// ══════════════════════════════════════════════════════════════════
-
-// === CORS MIDDLEWARE ===
-
-
+// ====================== STRONG CORS CONFIG ======================
 const ALLOWED_ORIGINS = [
-  'https://celcium360solutions.com',
-  'https://www.celcium360solutions.com',
   'http://localhost:4200',
   'http://127.0.0.1:4200',
-  'https://api.celcium360solutions.com',
+  'https://celcium360solutions.com',
+  'https://www.celcium360solutions.com',
   'https://celcuim.netlify.app'
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || ALLOWED_ORIGINS.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true,                    // Allow all for now (safer for testing)
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
-}));
-
-// Fix for Express 5 wildcard
-app.options('/*path', (req, res) => {
-  res.status(200).end();
-});
-
-  
-
-// Also keep cors() as a secondary layer for safety
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','ngrok-skip-browser-warning','X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'ngrok-skip-browser-warning',
+    'X-Requested-With'
+  ],
   optionsSuccessStatus: 200
 }));
 
-// ── Security ───────────────────────────────────────────────────────────────
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}));
+// Extra preflight handler
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,ngrok-skip-browser-warning');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
-// ── Body parsing ───────────────────────────────────────────────────────────
+// ====================== OTHER MIDDLEWARE ======================
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// ── Logging ────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 
-// ── Static uploads ─────────────────────────────────────────────────────────
+// Uploads
 const uploadsDir = path.join(__dirname, 'uploads');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', express.static(uploadsDir));
 
-app.get('/uploads/:filename', (req, res) => {
-  const filepath = path.join(uploadsDir, req.params.filename);
-
-  if (!fs.existsSync(filepath)) {
-    return res.status(404).json({ success: false, message: 'File not found' });
-  }
-
-  const mimeTypes = {
-    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-    '.png': 'image/png',  '.pdf': 'application/pdf',
-    '.gif': 'image/gif',  '.webp': 'image/webp'
-  };
-
-  const ext = path.extname(filepath).toLowerCase();
-  res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  res.sendFile(filepath);
-});
-
-// ── Database ───────────────────────────────────────────────────────────────
+// Database & Routes
 mongooseConnect();
 
-// ── API Routes ─────────────────────────────────────────────────────────────
-app.use('/api/auth',         require('./routes/auth.routes'));
+app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/registration', require('./routes/registration.routes'));
-app.use('/api/health',       require('./routes/health.routes'));
+app.use('/api/health', require('./routes/health.routes'));
 
-// Uncomment when ready:
-// app.use('/api/cohorts',     require('./routes/cohort.routes'));
-// app.use('/api/coursework',  require('./routes/coursework.routes'));
-// app.use('/api/submissions', require('./routes/submission.routes'));
+app.get('/health', (req, res) => res.json({ success: true, message: 'Server running' }));
 
-// ── Health check ───────────────────────────────────────────────────────────
-app.get('/health', (req, res) => {
-  res.json({
-    status:      'OK',
-    message:     'Celcium360 Registration API is running',
-    timestamp:   new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// ── Global error handler ───────────────────────────────────────────────────
+// Error Handlers
 app.use((err, req, res, next) => {
-  console.error('❌ Error:', err);
-
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation error',
-      errors:  Object.values(err.errors).map(e => e.message)
-    });
-  }
-
-  if (err.code === 11000) {
-    return res.status(409).json({
-      success: false,
-      message: 'This email is already registered. Please use a different email.'
-    });
-  }
-
-  if (err.name === 'MulterError') {
-    if (err.code === 'FILE_TOO_LARGE')   return res.status(413).json({ success: false, message: 'File is too large. Maximum size is 5MB.' });
-    if (err.code === 'LIMIT_FILE_COUNT') return res.status(413).json({ success: false, message: 'Too many files uploaded.' });
-    return res.status(400).json({ success: false, message: `File upload error: ${err.message}` });
-  }
-
-  res.status(err.statusCode || err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    error:   process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+  console.error('Error:', err);
+  res.status(500).json({ success: false, message: err.message || 'Server Error' });
 });
 
-// ── 404 handler ────────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.path}` });
+  res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-// ── Start server ───────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-
-const server = app.listen(PORT, () => {
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
-  console.log('║   Celcium360 Registration Server                          ║');
-  console.log(`║   🚀 Running on port ${PORT}                               ║`);
-  console.log(`║   🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`║   ✅ CORS enabled for ${ALLOWED_ORIGINS.length} origins`);
-  console.log('╚════════════════════════════════════════════════════════════╝\n');
-  ALLOWED_ORIGINS.forEach(o => console.log(`   ✓ ${o}`));
-  console.log('');
+// Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 CORS enabled for all origins (testing mode)`);
 });
-
-// ── Graceful shutdown ──────────────────────────────────────────────────────
-process.on('SIGTERM', () => {
-  console.log('\n⚠️  SIGTERM received. Shutting down gracefully...');
-  server.close(() => { console.log('✅ Server closed'); process.exit(0); });
-});
-
-process.on('SIGINT', () => {
-  console.log('\n⚠️  SIGINT received. Shutting down gracefully...');
-  server.close(() => { console.log('✅ Server closed'); process.exit(0); });
-});
-
-module.exports = app;

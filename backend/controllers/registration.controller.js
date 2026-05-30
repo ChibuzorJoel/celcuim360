@@ -1,11 +1,11 @@
 /**
- * controllers/registration.controller.js - Final Clean Version
+ * controllers/registration.controller.js - Final Updated Version (Recommended)
  */
 
 const Registration = require('../models/Registration');
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');     // Changed to bcryptjs for better cPanel compatibility
 const jwt = require('jsonwebtoken');
 
 /**
@@ -77,10 +77,6 @@ exports.submitRegistration = async (req, res) => {
       });
     }
 
-    // Hash Password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     // Handle files
     const photoFile = req.files?.photo?.[0];
     const statementFile = req.files?.statement?.[0];
@@ -91,7 +87,7 @@ exports.submitRegistration = async (req, res) => {
       fullName: fullName.trim(),
       email: normalizedEmail,
       phone: phone.trim(),
-      password: hashedPassword,
+      password: password,                    // Let model pre-save hook hash it
       category,
 
       photo: photoFile ? {
@@ -130,9 +126,9 @@ exports.submitRegistration = async (req, res) => {
 
       assessment: {
         score: parseInt(assessmentScore) || 0,
-        total: parseInt(assessmentTotal) || 0,
+        total: parseInt(assessmentTotal) || 10,
         percentage: parseInt(assessmentPercentage) || 0,
-        level: assessmentLevel || '',
+        level: assessmentLevel || 'foundational',
         answers: assessmentAnswers ? JSON.parse(assessmentAnswers) : [],
         completedAt: new Date()
       },
@@ -166,12 +162,12 @@ exports.submitRegistration = async (req, res) => {
 };
 
 /**
- * Student Login
- * POST /api/registration/login
+ * Student Login (Keep here for now, but you can move to auth.controller later)
+ * POST /api/registration/login   OR   /api/auth/login
  */
 exports.login = async (req, res) => {
   try {
-    let { email, password } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -180,14 +176,22 @@ exports.login = async (req, res) => {
       });
     }
 
-    email = email.toLowerCase().trim();
-
-    const user = await Registration.findOne({ email }).select('+password');
+    const user = await Registration.findOne({ 
+      email: email.toLowerCase().trim() 
+    }).select('+password');
 
     if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    // Only approved students can login
+    if (user.status !== 'approved' && user.status !== 'verified') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is still under review. Please wait for admin approval.'
       });
     }
 
@@ -201,9 +205,14 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: 'student' },
-      process.env.JWT_SECRET || 'your_secret_key_here_123456',
-      { expiresIn: '1d' }
+      { 
+        id: user._id, 
+        email: user.email, 
+        role: 'student',
+        category: user.category 
+      },
+      process.env.JWT_SECRET || 'celcium360_strong_secret_2026',
+      { expiresIn: '7d' }
     );
 
     res.status(200).json({
@@ -214,6 +223,8 @@ exports.login = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        phone: user.phone,
+        category: user.category,
         status: user.status
       }
     });
@@ -227,68 +238,42 @@ exports.login = async (req, res) => {
   }
 };
 
-/**
- * Get registration by ID
- */
+// ==================== ADMIN & SUPPORT FUNCTIONS ====================
+
 exports.getRegistration = async (req, res) => {
   try {
     const registration = await Registration.findById(req.params.id)
-      .select('-password -paymentProof.path');
+      .select('-password');
 
     if (!registration) {
-      return res.status(404).json({
-        success: false,
-        message: 'Registration not found'
-      });
+      return res.status(404).json({ success: false, message: 'Registration not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: registration
-    });
+    res.status(200).json({ success: true, data: registration });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/**
- * Get registration by email
- */
 exports.getRegistrationByEmail = async (req, res) => {
   try {
     const registration = await Registration.findOne({
       email: req.params.email.toLowerCase()
-    }).select('-password -paymentProof.path');
+    }).select('-password');
 
     if (!registration) {
-      return res.status(404).json({
-        success: false,
-        message: 'Registration not found'
-      });
+      return res.status(404).json({ success: false, message: 'Registration not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: registration
-    });
+    res.status(200).json({ success: true, data: registration });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/**
- * Get all registrations (for Admin)
- */
 exports.getAllRegistrations = async (req, res) => {
   try {
     const { status, category, search } = req.query;
-
     const filter = {};
 
     if (status && status !== 'all') filter.status = status;
@@ -302,56 +287,28 @@ exports.getAllRegistrations = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const mapped = registrations.map((r) => ({
-      registrationId: r._id.toString(),
-      fullName: r.fullName,
-      email: r.email,
-      phone: r.phone,
-      category: r.category,
-      status: r.status,
-      submittedAt: r.createdAt,
-      assessmentScore: r.assessment?.score,
-      assessmentPercentage: r.assessment?.percentage,
-      files: {
-        photo: r.photo?.filename || null,
-        statement: r.statement?.filename || null,
-        callUpLetter: r.callUpLetter?.filename || null,
-        paymentProof: r.paymentProof?.filename || null
-      }
-    }));
-
-    res.status(200).json(mapped);
+    res.status(200).json(registrations);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/**
- * Update registration status
- */
 exports.updateVerificationStatus = async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
 
     const updates = { status };
-    if (status === 'rejected' && rejectionReason) {
-      updates.rejectionReason = rejectionReason.trim();
-    }
-    if (status === 'approved') {
-      updates.verifiedAt = new Date();
-    }
+    if (status === 'rejected' && rejectionReason) updates.rejectionReason = rejectionReason.trim();
+    if (['approved', 'verified'].includes(status)) updates.verifiedAt = new Date();
 
     const registration = await Registration.findByIdAndUpdate(
-      req.params.id,
-      updates,
+      req.params.id, 
+      updates, 
       { new: true }
     );
 
     if (!registration) {
-      return res.status(404).json({
-        success: false,
-        message: 'Registration not found'
-      });
+      return res.status(404).json({ success: false, message: 'Registration not found' });
     }
 
     res.status(200).json({
@@ -364,56 +321,44 @@ exports.updateVerificationStatus = async (req, res) => {
   }
 };
 
-/**
- * Delete registration
- */
 exports.deleteRegistration = async (req, res) => {
   try {
     const registration = await Registration.findByIdAndDelete(req.params.id);
-
     if (!registration) {
-      return res.status(404).json({
-        success: false,
-        message: 'Registration not found'
-      });
+      return res.status(404).json({ success: false, message: 'Registration not found' });
     }
 
-    // Delete associated files
-    const files = [registration.photo, registration.statement, registration.callUpLetter, registration.paymentProof];
-    files.forEach(file => {
+    // Delete files
+    const fileFields = ['photo', 'statement', 'callUpLetter', 'paymentProof'];
+    fileFields.forEach(field => {
+      const file = registration[field];
       if (file?.path && fs.existsSync(file.path)) {
         try { fs.unlinkSync(file.path); } catch (e) {}
       }
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'Registration deleted successfully'
-    });
+    res.status(200).json({ success: true, message: 'Registration deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/**
- * Serve uploaded file
- */
 exports.serveFile = async (req, res) => {
   try {
     const registration = await Registration.findById(req.params.id);
     if (!registration) return res.status(404).json({ success: false, message: 'Not found' });
 
     const filename = req.params.filename;
-    const allFiles = [registration.photo, registration.statement, registration.callUpLetter, registration.paymentProof]
-      .filter(Boolean);
+    const fields = ['photo', 'statement', 'callUpLetter', 'paymentProof'];
 
-    const fileRecord = allFiles.find(f => f.filename === filename);
-
-    if (!fileRecord || !fs.existsSync(fileRecord.path)) {
-      return res.status(404).json({ success: false, message: 'File not found' });
+    for (let field of fields) {
+      const file = registration[field];
+      if (file && file.filename === filename && fs.existsSync(file.path)) {
+        return res.sendFile(path.resolve(file.path));
+      }
     }
 
-    res.sendFile(path.resolve(fileRecord.path));
+    res.status(404).json({ success: false, message: 'File not found' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
