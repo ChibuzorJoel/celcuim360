@@ -1,143 +1,164 @@
-// src/app/core/services/registration.service.ts
-
-import { Injectable } from '@angular/core';
+import { Injectable }                               from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
+import { Observable, throwError }                   from 'rxjs';
+import { catchError, tap }                          from 'rxjs/operators';
+import { environment }                              from '../../../environments/environment';
 
 export interface RegistrationResponse {
-  success: boolean;
-  message: string;
+  success:  boolean;
+  message:  string;
   data?: {
     registrationId: string;
-    email: string;
-    status: string;
-    submittedAt?: string;
+    email:          string;
+    status:         string;
+    submittedAt?:   string;
   };
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class RegistrationService {
 
-  // Clean base URL - remove trailing slash if present
   private readonly baseUrl = environment.apiUrl.replace(/\/$/, '');
-
-  private readonly apiUrl = `${this.baseUrl}/api/registration`;
+  private readonly apiUrl  = `${this.baseUrl}/api/registration`;
   private readonly authUrl = `${this.baseUrl}/api/auth`;
 
-  private readonly baseHeaders = new HttpHeaders(
-    environment.production 
-      ? {} 
-      : { 'ngrok-skip-browser-warning': 'true' }
-  );
+  /**
+   * Centralized headers (JWT only + ngrok bypass)
+   */
+  private get baseHeaders(): HttpHeaders {
+    const token = localStorage.getItem('celcium_token')
+               || localStorage.getItem('studentToken');
+
+    const headers: Record<string, string> = {
+      'ngrok-skip-browser-warning': 'true',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return new HttpHeaders(headers);
+  }
 
   constructor(private http: HttpClient) {
-    console.log('[RegistrationService] Initialized with API URL:', this.apiUrl);
+    console.log('[RegistrationService] Initialized:', this.apiUrl);
   }
 
-  // ── Submit Registration ─────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  REGISTER STUDENT (FormData)
+  // ═══════════════════════════════════════════════════════════════
   submitRegistration(payload: FormData): Observable<RegistrationResponse> {
     const url = `${this.apiUrl}/submit`;
-    console.log('[RegistrationService] POST →', url);
 
-    return this.http
-      .post<RegistrationResponse>(url, payload, {
-        headers: this.baseHeaders,
-        withCredentials: true   // Important for CORS with credentials
-      })
-      .pipe(
-        tap(res => {
-          console.log('[RegistrationService] Registration Success:', res);
-          if (res?.data?.registrationId) {
-            localStorage.setItem('studentId', res.data.registrationId);
-          }
-        }),
-        catchError(this.handleError)
-      );
+    return this.http.post<RegistrationResponse>(url, payload, {
+      headers: this.baseHeaders
+    }).pipe(
+      tap(res => {
+        if (res?.data?.registrationId) {
+          localStorage.setItem('studentId', res.data.registrationId);
+        }
+      }),
+      catchError(this.handleError)
+    );
   }
 
-  // ── Student Login ───────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  LOGIN
+  // ═══════════════════════════════════════════════════════════════
   login(data: { email: string; password: string }): Observable<any> {
-    const url = `${this.authUrl}/login`;
-    console.log('[RegistrationService] Login →', url);
+    const url = `${this.authUrl}/student-login`;
 
-    return this.http
-      .post(url, data, {
-        headers: this.baseHeaders.set('Content-Type', 'application/json'),
-        withCredentials: true
-      })
-      .pipe(
-        tap((res: any) => {
-          console.log('[RegistrationService] Login Success:', res);
-          if (res?.token) {
-            localStorage.setItem('studentToken', res.token);
-            localStorage.setItem('studentId', res.student?.registrationId ?? '');
-            localStorage.setItem('studentProfile', JSON.stringify(res.student || {}));
-          }
-        }),
-        catchError(this.handleError)
-      );
+    return this.http.post(url, data, {
+      headers: this.baseHeaders.set('Content-Type', 'application/json')
+    }).pipe(
+      tap((res: any) => {
+        if (res?.token) {
+          localStorage.setItem('celcium_token', res.token);
+        }
+
+        if (res?.student?.registrationId) {
+          localStorage.setItem('studentId', res.student.registrationId);
+          localStorage.setItem('studentProfile', JSON.stringify(res.student));
+        }
+
+        if (res?.data?.registrationId) {
+          localStorage.setItem('studentId', res.data.registrationId);
+          localStorage.setItem('studentProfile', JSON.stringify(res.data));
+        }
+      }),
+      catchError(this.handleError)
+    );
   }
 
-  // ── Get Student by ID ───────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  GET STUDENT
+  // ═══════════════════════════════════════════════════════════════
   getStudent(id: string): Observable<any> {
-    return this.http
-      .get(`${this.apiUrl}/${id}`, { 
-        headers: this.baseHeaders,
-        withCredentials: true 
-      })
-      .pipe(
-        tap(res => console.log('[RegistrationService] Student data loaded:', res)),
-        catchError(this.handleError)
-      );
+    return this.http.get(`${this.apiUrl}/${id}`, {
+      headers: this.baseHeaders
+    }).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  // ── Submit Assignment ───────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  SUBMIT ASSIGNMENT
+  // ═══════════════════════════════════════════════════════════════
   submitAssignment(studentId: string, weekId: number): Observable<any> {
-    return this.http
-      .post(`${this.apiUrl}/submit-assignment`, { studentId, weekId }, {
-        headers: this.baseHeaders.set('Content-Type', 'application/json'),
-        withCredentials: true
-      })
-      .pipe(catchError(this.handleError));
+    return this.http.post(
+      `${this.apiUrl}/submit-assignment`,
+      { studentId, weekId },
+      {
+        headers: this.baseHeaders.set('Content-Type', 'application/json')
+      }
+    ).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  // ── Update Profile ──────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  UPDATE PROFILE
+  // ═══════════════════════════════════════════════════════════════
   updateProfile(id: string, data: any): Observable<any> {
-    return this.http
-      .put(`${this.apiUrl}/update/${id}`, data, {
-        headers: this.baseHeaders.set('Content-Type', 'application/json'),
-        withCredentials: true
-      })
-      .pipe(catchError(this.handleError));
+    return this.http.put(
+      `${this.apiUrl}/update/${id}`,
+      data,
+      {
+        headers: this.baseHeaders.set('Content-Type', 'application/json')
+      }
+    ).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  // ── Error Handler ───────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  //  ERROR HANDLER
+  // ═══════════════════════════════════════════════════════════════
   private handleError(err: HttpErrorResponse): Observable<never> {
-    console.error('[RegistrationService] HTTP Error Details:', {
+    console.error('[RegistrationService] Error:', {
       status: err.status,
       url: err.url,
-      error: err.error
+      error: err.error,
     });
 
     let message = 'An unexpected error occurred. Please try again.';
 
     if (err.status === 0) {
-      message = 'Cannot connect to server. Please check your internet connection.';
+      message = 'Cannot connect to server. Check your internet connection.';
     } else if (err.error?.message) {
       message = err.error.message;
     } else {
-      switch (err.status) {
-        case 400: message = 'Invalid input. Please check your data.'; break;
-        case 401: message = 'Unauthorized. Please check your credentials.'; break;
-        case 403: message = 'Access denied. Your account may not be approved yet.'; break;
-        case 409: message = 'This email is already registered.'; break;
-        case 413: message = 'File is too large. Maximum size is 5MB.'; break;
-        case 500: message = 'Server error. Please try again later.'; break;
-      }
+      const map: Record<number, string> = {
+        400: 'Invalid input.',
+        401: 'Unauthorized.',
+        403: 'Access denied.',
+        409: 'Already exists.',
+        413: 'File too large.',
+        422: 'Validation error.',
+        500: 'Server error.',
+      };
+
+      message = map[err.status] ?? message;
     }
 
     return throwError(() => new Error(message));

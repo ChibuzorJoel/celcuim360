@@ -1,43 +1,62 @@
-/**
- * routes/registration.routes.js
- */
+// ─────────────────────────────────────────────────────────────────────────────
+//  EXPRESS ROUTER wiring — paste into routes/registration.js
+// ─────────────────────────────────────────────────────────────────────────────
 
-const express = require('express');
-const router = express.Router();
-
-const registrationController = require('../controllers/registration.controller');
-const { upload } = require('../middleware/upload.middleware');
-const { validateRegistration } = require('../middleware/validation.middleware');
-
-// ==================== REGISTRATION ROUTES ====================
-
-// Submit Registration (with file uploads)
+ 
+const express  = require('express');
+const router   = express.Router();
+const ctrl     = require('../controllers/registration.controller');
+ 
+// ── Public ──────────────────────────────────────────────────────────────────
 router.post(
   '/submit',
-  upload.fields([
-    { name: 'photo', maxCount: 1 },
-    { name: 'statement', maxCount: 1 },
-    { name: 'callUpLetter', maxCount: 1 },
-    { name: 'paymentProof', maxCount: 1 }
-  ]),
-  validateRegistration,
-  registrationController.submitRegistration
+  ctrl.uploadMiddleware,                       // multer processes files first
+  ctrl.submitRegistration
 );
-
-// Get Registration by Email
-router.get('/email/:email', registrationController.getRegistrationByEmail);
-
-// Get All Registrations (Admin only)
-router.get('/', registrationController.getAllRegistrations);
-
-// Get Single Registration by ID
-router.get('/:id', registrationController.getRegistration);
-
-// Update Verification Status
-router.patch('/:id/verify', registrationController.updateVerificationStatus);
-router.patch('/:id/status', registrationController.updateVerificationStatus);
-
-// Serve Uploaded Files
-router.get('/:id/file/:filename', registrationController.serveFile);
-
+ 
+// ── Auth ─────────────────────────────────────────────────────────────────────
+// (mounted under /api/auth in server.js)
+// router.post('/student-login', ctrl.studentLogin);
+ 
+// ── Protected — student ───────────────────────────────────────────────────────
+router.get(
+  '/:id',
+  ctrl.requireAuth,
+  ctrl.getStudent
+);
+ 
+router.put(
+  '/update/:id',
+  ctrl.requireAuth,
+  ctrl.updateProfile
+);
+ 
+router.get(
+  '/:id/file/:filename',
+  ctrl.requireAuth,
+  ctrl.serveFile
+);
+ 
+// ── Protected — admin ─────────────────────────────────────────────────────────
+router.get(
+  '/',
+  ctrl.requireAuth,
+  ctrl.requireAdmin,
+  ctrl.adminGetAll
+);
+ 
+router.patch(
+  '/:id/status',
+  ctrl.requireAuth,
+  ctrl.requireAdmin,
+  ctrl.adminUpdateStatus
+);
+ 
+router.delete(
+  '/:id',
+  ctrl.requireAuth,
+  ctrl.requireAdmin,
+  ctrl.adminDelete
+);
+ 
 module.exports = router;
