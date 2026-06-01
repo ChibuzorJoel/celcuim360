@@ -2,12 +2,12 @@
   "name": "logistic",
   "version": "0.0.0",
   "scripts": {
-    "ng":    "ng",
+    "ng": "ng",
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider ng serve",
     "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider ng build",
     "build:prod": "cross-env NODE_OPTIONS=--openssl-legacy-provider ng build --configuration production",
     "watch": "cross-env NODE_OPTIONS=--openssl-legacy-provider ng build --watch --configuration development",
-    "test":  "cross-env NODE_OPTIONS=--openssl-legacy-provider ng test"
+    "test": "cross-env NODE_OPTIONS=--openssl-legacy-provider ng test"
   },
   "private": true,
   "dependencies": {
@@ -20,6 +20,7 @@
     "@angular/platform-browser-dynamic": "~12.2.0",
     "@angular/router": "~12.2.0",
     "express": "^5.2.1",
+    "mongoose": "^9.6.3",
     "nodemon": "^3.1.14",
     "rxjs": "~6.6.0",
     "tslib": "^2.3.0",
