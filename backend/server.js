@@ -34,8 +34,11 @@ dotenv.config({
   path: path.join(__dirname, '.env'),
 });
 
+
+// This checks cPanel's port first, then your .env PORT (3000), and defaults to 5000 if both fail
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // -----------------------------------------------------------------------------
 // IMPROVED CORS CONFIGURATION
