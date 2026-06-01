@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.celcium360solutions.com'
+  apiUrl: 'https://celcuim360.onrender.com'
 };
