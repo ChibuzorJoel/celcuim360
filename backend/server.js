@@ -48,7 +48,7 @@ const ALLOWED_ORIGINS = [
   'https://celcium360solutions.com',
   'https://www.celcium360solutions.com',
   'https://api.celcium360solutions.com',
-  'https://celcuim360.onrender.com',
+  'https://celcuim360-7934.onrender.com',
   'https://celcuim.netlify.app',
 
   'http://localhost:4200',
@@ -236,7 +236,7 @@ mongooseConnect();
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/registration', require('./routes/registration.routes'));
-app.use('/api/admin/registrations', require('./routes/admin.routes'));
+app.use('/api/registrations', require('./routes/admin.routes'));
 
 // -----------------------------------------------------------------------------
 // ERROR HANDLER

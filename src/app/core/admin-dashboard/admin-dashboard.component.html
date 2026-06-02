@@ -1,9 +1,13 @@
 <!-- ═══════════════════════════════════════════════════════════════════════
   admin-dashboard.component.html
-  Do NOT add <app-admin-shell> here — the shell wraps all child pages
-  automatically via <router-outlet> inside admin-shell.component.html
 ════════════════════════════════════════════════════════════════════════ -->
 <div class="page-wrap">
+
+  <!-- Error banner -->
+  <div *ngIf="error" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);
+       color:#ef4444;padding:10px 16px;border-radius:8px;font-size:11px;margin-bottom:14px;">
+    {{ error }}
+  </div>
 
   <!-- Stats row -->
   <div class="stats-row">
@@ -17,7 +21,7 @@
       <div class="stat-body">
         <span class="stat-val">{{ stats.totalRegistrations }}</span>
         <span class="stat-label">Total Registrations</span>
-        <span class="stat-sub">+12 this week</span>
+        <span class="stat-sub">{{ stats.nyscCount }} NYSC · {{ stats.graduateCount }} Graduate</span>
       </div>
     </div>
 
@@ -35,7 +39,7 @@
       </div>
     </div>
 
-    <div class="stat-card" (click)="navigate('cohorts')">
+    <div class="stat-card" (click)="navigate('registration')">
       <div class="stat-icon green">
         <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -44,36 +48,37 @@
         </svg>
       </div>
       <div class="stat-body">
-        <span class="stat-val green">{{ stats.activeCohorts }}</span>
-        <span class="stat-label">Active Cohorts</span>
-        <span class="stat-sub">6-week programs</span>
+        <span class="stat-val green">{{ stats.approvedCount }}</span>
+        <span class="stat-label">Approved</span>
+        <span class="stat-sub">Active students</span>
       </div>
     </div>
 
-    <div class="stat-card" (click)="navigate('contact')">
+    <div class="stat-card" (click)="navigate('registration')">
       <div class="stat-icon blue">
         <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div class="stat-body">
-        <span class="stat-val blue">{{ stats.contactRequests }}</span>
-        <span class="stat-label">Contact Requests</span>
-        <span class="stat-sub">Unread messages</span>
+        <span class="stat-val blue">{{ stats.assessmentCount }}</span>
+        <span class="stat-label">Assessments Done</span>
+        <span class="stat-sub">Avg score: {{ stats.avgScore }}%</span>
       </div>
     </div>
 
-    <div class="stat-card" (click)="navigate('payments')">
+    <div class="stat-card" (click)="navigate('registration')">
       <div class="stat-icon red">
         <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-          <rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/>
-          <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
       </div>
       <div class="stat-body">
-        <span class="stat-val red">{{ stats.unverifiedPayments }}</span>
-        <span class="stat-label">Payments Pending</span>
-        <span class="stat-sub">Verification needed</span>
+        <span class="stat-val red">{{ stats.rejectedCount }}</span>
+        <span class="stat-label">Rejected</span>
+        <span class="stat-sub">Not approved</span>
       </div>
     </div>
   </div>
@@ -91,34 +96,51 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>Type</th>
+            <th>Category</th>
             <th>Status</th>
             <th>Date</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let r of recentRegistrations">
-            <td class="name-cell">{{ r.name }}</td>
-            <td><span class="type-badge" [class]="r.type | lowercase">{{ r.type }}</span></td>
-            <td><span class="pill" [class]="'pill-' + r.status">{{ r.status }}</span></td>
-            <td class="date-cell">{{ r.date | date:'MMM d' }}</td>
+            <td class="name-cell">{{ r.fullName }}</td>
+            <td>
+              <span class="type-badge" [ngClass]="r.category === 'nysc' ? 'nysc' : 'graduate'">
+                {{ categoryLabel(r.category) }}
+              </span>
+            </td>
+            <td><span class="pill" [ngClass]="'pill-' + r.status">{{ r.status }}</span></td>
+            <td class="date-cell">{{ r.submittedAt | date:'MMM d' }}</td>
+          </tr>
+          <tr *ngIf="recentRegistrations.length === 0 && !loading">
+            <td colspan="4" style="color:#333;text-align:center;padding:20px;">No registrations yet</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Cohort calendar -->
+    <!-- Assessment performance -->
     <div class="card">
       <div class="card-head">
-        <span class="card-title">Cohort 7 — Calendar</span>
-        <button class="link-btn" (click)="navigate('cohorts')">Manage →</button>
+        <span class="card-title">Assessment Performance</span>
+        <button class="link-btn" (click)="navigate('registration')">View all →</button>
       </div>
-      <div class="cohort-meta">Jun 2 – Jul 11, 2025 &nbsp;·&nbsp; 24 students enrolled</div>
-      <div class="cal-grid">
-        <div class="cal-week" *ngFor="let w of cohortWeeks" [class.done]="w.done" [class.current]="w.current">
-          <div class="cal-wlabel">Wk {{ w.num }}</div>
-          <div class="cal-wdate">{{ w.date }}</div>
-          <div class="cal-wstatus" *ngIf="w.current">●</div>
+      <div style="padding: 14px 16px;">
+        <div class="perf-row" *ngFor="let r of topScorers">
+          <div class="perf-name">{{ r.fullName }}</div>
+          <div class="perf-bar-wrap">
+            <div class="perf-bar"
+                 [ngClass]="(r.assessmentPercentage ?? 0) >= 75 ? 'green' : (r.assessmentPercentage ?? 0) >= 60 ? 'amber' : 'red'"
+                 [style.width.%]="r.assessmentPercentage ?? 0">
+            </div>
+          </div>
+          <span class="perf-pct" [ngClass]="scoreClass(r.assessmentPercentage)">
+            {{ r.assessmentPercentage ?? 0 }}%
+          </span>
+        </div>
+        <div *ngIf="topScorers.length === 0 && !loading"
+             style="color:#333;text-align:center;padding:20px;font-size:11px;">
+          No assessment data yet
         </div>
       </div>
     </div>
@@ -127,14 +149,15 @@
   <!-- Live submissions -->
   <div class="card" style="margin-top: 16px;">
     <div class="card-head">
-      <span class="card-title">Live Submission Scores</span>
-      <button class="link-btn" (click)="navigate('assessment')">All assessments →</button>
+      <span class="card-title">Latest Assessment Submissions</span>
+      <button class="link-btn" (click)="navigate('registration')">All registrations →</button>
     </div>
     <table class="tbl">
       <thead>
         <tr>
           <th>Student</th>
-          <th>Assessment</th>
+          <th>Email</th>
+          <th>Category</th>
           <th>Score</th>
           <th>Submitted</th>
           <th>Status</th>
@@ -142,11 +165,23 @@
       </thead>
       <tbody>
         <tr *ngFor="let s of liveSubmissions">
-          <td class="name-cell">{{ s.student }}</td>
-          <td class="dim-cell">{{ s.assessment }}</td>
-          <td><span class="score" [class]="scoreClass(s.score)">{{ s.score }}%</span></td>
-          <td class="date-cell">{{ s.submitted }}</td>
-          <td><span class="pill" [class]="'pill-' + s.status">{{ s.status }}</span></td>
+          <td class="name-cell">{{ s.fullName }}</td>
+          <td class="dim-cell">{{ s.email }}</td>
+          <td>
+            <span class="type-badge" [ngClass]="s.category === 'nysc' ? 'nysc' : 'graduate'">
+              {{ categoryLabel(s.category) }}
+            </span>
+          </td>
+          <td>
+            <span class="score" [ngClass]="scoreClass(s.assessmentPercentage)">
+              {{ s.assessmentPercentage ?? 0 }}%
+            </span>
+          </td>
+          <td class="date-cell">{{ s.submittedAt | date:'MMM d, h:mm a' }}</td>
+          <td><span class="pill" [ngClass]="'pill-' + s.status">{{ s.status }}</span></td>
+        </tr>
+        <tr *ngIf="liveSubmissions.length === 0 && !loading">
+          <td colspan="6" style="color:#333;text-align:center;padding:20px;">No assessment submissions yet</td>
         </tr>
       </tbody>
     </table>

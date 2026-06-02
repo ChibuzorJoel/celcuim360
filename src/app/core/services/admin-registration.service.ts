@@ -5,7 +5,6 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Observable, throwError }                     from 'rxjs';
 import { map, catchError, tap }                       from 'rxjs/operators';
 import { environment }                                from '../../../environments/environment';
-import { AuthService }                                from '../auth/auth.service';
 
 export interface RegistrationRecord {
   registrationId:        string;
@@ -33,19 +32,32 @@ export class AdminRegistrationService {
 
   private adminApi = `${environment.apiUrl}/api/admin/registrations`;
 
-  constructor(
-    private http: HttpClient,
-    private auth: AuthService          // ← injected: single source of truth for token
-  ) {}
+  constructor(private http: HttpClient) {}
 
-  // ── Auth headers — reads token via AuthService ───────────────────────────
+  // ── Reads the admin token — checks every key your app might use ──────────
+  private get adminToken(): string | null {
+    // Your admin login (auth.routes.js) returns { token, admin }
+    // Whatever key your admin login component passes to localStorage.setItem()
+    // must appear in this list. 'celcium_admin_token' is the canonical key
+    // we enforce in auth.service.ts below — keep that in sync.
+    return (
+      localStorage.getItem('celcium_admin_token') ||  // ← canonical (set by auth.service)
+      localStorage.getItem('adminToken')           ||
+      localStorage.getItem('admin_token')          ||
+      localStorage.getItem('celcium_token')        ||
+      localStorage.getItem('token')                ||
+      null
+    );
+  }
+
   private get authHeaders(): HttpHeaders {
-    const token = this.auth.getToken();   // always uses the same key as login
+    const token = this.adminToken;
 
     if (!token) {
-      console.warn('[AdminService] ⚠️  No token found — user is not logged in.');
-    } else {
-      console.log('[AdminService] ✅ Token found, length:', token.length);
+      console.warn(
+        '[AdminService] ⚠️ No admin token found in localStorage.\n' +
+        'Keys present:', Object.keys(localStorage)
+      );
     }
 
     return new HttpHeaders({
@@ -60,16 +72,11 @@ export class AdminRegistrationService {
   // =========================================================
   getAll(): Observable<RegistrationRecord[]> {
     return this.http.get<any>(this.adminApi, { headers: this.authHeaders }).pipe(
-
       tap(res => console.log('[AdminService] RAW RESPONSE:', res)),
-
       map(res => {
-        const data = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.registrations ?? [];
+        const data = Array.isArray(res) ? res : (res?.data ?? res?.registrations ?? []);
         return Array.isArray(data) ? data : [];
       }),
-
       catchError(this.handleError)
     );
   }
@@ -113,11 +120,10 @@ export class AdminRegistrationService {
     });
 
     let message = 'Something went wrong.';
-
-    if      (err.status === 0)   message = 'Cannot connect to server. Is the backend running?';
-    else if (err.status === 401) message = 'Not authenticated. Please log in as admin first.';
-    else if (err.status === 403) message = 'Access denied. Token does not have admin role.';
-    else if (err.status === 404) message = 'API route not found. Check server routing.';
+    if      (err.status === 0)   message = 'Cannot connect to server.';
+    else if (err.status === 401) message = 'Not authenticated — please log in as admin.';
+    else if (err.status === 403) message = 'Access denied — token lacks admin role.';
+    else if (err.status === 404) message = 'API route not found.';
     else if (err.status === 500) message = err.error?.message || 'Internal server error.';
     else                         message = err.error?.message || message;
 

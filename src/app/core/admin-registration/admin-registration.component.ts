@@ -1,184 +1,218 @@
-// src/app/core/admin-registration/admin-registration.component.ts
-// KEY FIX: mapRecords() normalises MongoDB fields → what the template expects
+// src/app/admin/admin-registration/admin-registration.component.ts
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AuthService }                  from '../../core/auth/auth.service';
-import { Router }                       from '@angular/router';
-import { environment }                  from '../../../environments/environment';
-import { interval, Subscription }       from 'rxjs';
-import { switchMap }                    from 'rxjs/operators';
-import { AdminRegistrationService } from '../services/admin-registration.service';
-
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../core/auth/auth.service';
+import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
+import { interval, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
-export type ViewMode            = 'table' | 'detail';
+export type ActiveTab = 'registrations' | 'contacts' | 'consultations';
+export type ViewMode = 'table' | 'detail';
 
 export interface RegistrationRecord {
-  registrationId:        string;
-  fullName:              string;
-  email:                 string;
-  phone:                 string;
-  category:              'nysc' | 'graduate';
-  status:                RegistrationStatus;
-  submittedAt:           string;
-  rejectionReason?:      string;
-  assessmentScore?:      number;
-  assessmentTotal?:      number;
+  registrationId: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  category: 'nysc' | 'graduate';
+  status: RegistrationStatus;
+  submittedAt: string;
+
+  rejectionReason?: string;
+
+  assessmentScore?: number;
+  assessmentTotal?: number;
   assessmentPercentage?: number;
-  assessmentLevel?:      'below-expectation' | 'foundational' | 'strong';
+  assessmentLevel?: 'below-expectation' | 'foundational' | 'strong';
+
   files: {
-    photo:        string | null;
-    statement:    string | null;
+    photo: string | null;
+    statement: string | null;
     callUpLetter: string | null;
     paymentProof: string | null;
   };
 }
 
+export interface ContactRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  date: string;
+}
+
 @Component({
-  selector:    'app-admin-registration',
+  selector: 'app-admin-registration',
   templateUrl: './admin-registration.component.html',
-  styleUrls:   ['./admin-registration.component.css'],
+  styleUrls: ['./admin-registration.component.css']
 })
 export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   Math = Math;
 
-  viewMode:     ViewMode                  = 'table';
+  // ── View mode ─────────────────────────────────────────────────────────────
+  viewMode: ViewMode = 'table';
   detailRecord: RegistrationRecord | null = null;
 
-  lightboxSrc   = '';
+  // ── Lightbox ─────────────────────────────────────────────────────────────
+  lightboxSrc: string | null = null;
   lightboxTitle = '';
 
-  registrations:          RegistrationRecord[] = [];
-  filteredRegistrations:  RegistrationRecord[] = [];
+  // ── State ─────────────────────────────────────────────────────────────────
+  activeTab: ActiveTab = 'registrations';
+
+  registrations: RegistrationRecord[] = [];
+  filteredRegistrations: RegistrationRecord[] = [];
   paginatedRegistrations: RegistrationRecord[] = [];
 
-  searchTerm   = '';
+  contacts: ContactRecord[] = [];
+
+  // ── Filters ───────────────────────────────────────────────────────────────
+  searchTerm = '';
   statusFilter: RegistrationStatus | 'all' = 'all';
 
-  currentPage  = 1;
+  // ── Pagination ────────────────────────────────────────────────────────────
+  currentPage = 1;
   itemsPerPage = 10;
-  totalPages   = 0;
+  totalPages = 0;
 
-  loading      = false;
+  // ── UI ────────────────────────────────────────────────────────────────────
+  loading = false;
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'success';
-  showToast    = false;
+  showToast = false;
 
-  showStatusModal    = false;
+  // ── Status modal ──────────────────────────────────────────────────────────
+  showStatusModal = false;
   statusModalRecord: RegistrationRecord | null = null;
-  pendingStatus:     RegistrationStatus | null = null;
-  rejectionReason    = '';
-  statusUpdating     = false;
+  pendingStatus: RegistrationStatus | null = null;
+  rejectionReason = '';
+  statusUpdating = false;
 
+  // ── Delete modal ──────────────────────────────────────────────────────────
   showDeleteModal = false;
   deleteTarget: { id: string; name: string } | null = null;
-  deleteLoading   = false;
+  deleteLoading = false;
 
+  // ── Polling ───────────────────────────────────────────────────────────────
   private pollSub?: Subscription;
   private readonly POLL_INTERVAL = 15_000;
   private api = environment.apiUrl;
 
   constructor(
-   
-      private adminService: AdminRegistrationService,
-      private auth: AuthService,
-      private router: Router
-    
+    private http: HttpClient,
+    private auth: AuthService,
+    private router: Router
   ) {}
 
-  ngOnInit():    void { this.loadAll(); this.startPolling(); }
-  ngOnDestroy(): void { this.pollSub?.unsubscribe(); }
+  ngOnInit(): void {
+    this.loadAll();
+    this.startPolling();
+  }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  loadAll: fetch from MongoDB via backend
-  // ─────────────────────────────────────────────────────────────────────────
+  ngOnDestroy(): void {
+    this.pollSub?.unsubscribe();
+  }
+
+
+  assessmentLevelLabel(
+    level?: 'below-expectation' | 'foundational' | 'strong'
+  ): string {
+    switch (level) {
+      case 'below-expectation':
+        return 'Below Expectation';
+  
+      case 'foundational':
+        return 'Foundational';
+  
+      case 'strong':
+        return 'Strong';
+  
+      default:
+        return 'Not Available';
+    }
+  }
+
+  getAssessmentColor(
+    level?: 'below-expectation' | 'foundational' | 'strong'
+  ): string {
+    switch (level) {
+      case 'below-expectation':
+        return '#dc2626';
+  
+      case 'foundational':
+        return '#f59e0b';
+  
+      case 'strong':
+        return '#16a34a';
+  
+      default:
+        return '#6b7280';
+    }
+  }
+  
+  getAssessmentPercentage(record: RegistrationRecord): number {
+    if (record.assessmentPercentage !== undefined) {
+      return record.assessmentPercentage;
+    }
+  
+    if (
+      record.assessmentScore !== undefined &&
+      record.assessmentTotal &&
+      record.assessmentTotal > 0
+    ) {
+      return Math.round(
+        (record.assessmentScore / record.assessmentTotal) * 100
+      );
+    }
+  
+    return 0;
+  }
+  // ── Data ──────────────────────────────────────────────────────────────────
 
   loadAll(): void {
     this.loading = true;
-  
-    this.adminService.getAll().subscribe({
-      next: (data: any[]) => {
-        this.registrations = this.mapRecords(data);
+    this.http.get<RegistrationRecord[]>(`${this.api}/api/registrations`).subscribe({
+      next: data => {
+        this.registrations = data.sort(
+          (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+        );
         this.applyFilters();
         this.loading = false;
       },
-      error: (err: any) => {
-        console.error('[AdminRegistration] loadAll failed:', err);
-        this.toast('Could not load registrations. Is the backend running?', 'error');
+      error: () => {
+        this.toast('Failed to load registrations', 'error');
         this.loading = false;
       }
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  mapRecords: normalise MongoDB doc → RegistrationRecord
-  //
-  //  MongoDB stores: registrationId, fullName, email, phone, category,
-  //  status, submittedAt, files{photo, statement, callUpLetter, paymentProof}
-  //  assessment*, rejectionReason
-  //
-  //  This handles both the new schema (server.js above) AND older records
-  //  that might have different field names.
-  // ─────────────────────────────────────────────────────────────────────────
-
-  private mapRecords(raw: any[]): RegistrationRecord[] {
-    if (!Array.isArray(raw)) return [];
-
-    return raw
-      .map((r): RegistrationRecord => ({
-        registrationId:        r.registrationId || r._id?.toString() || '',
-        fullName:              r.fullName        || r.name            || 'Unknown',
-        email:                 r.email           || '',
-        phone:                 r.phone           || r.mobile          || '',
-        category:              (r.category?.toLowerCase() === 'nysc' ? 'nysc' : 'graduate'),
-        status:                (['pending', 'approved', 'rejected'].includes(r.status)
-                                  ? r.status : 'pending') as RegistrationStatus,
-        rejectionReason:       r.rejectionReason || undefined,
-        submittedAt:           r.submittedAt
-                                 ? new Date(r.submittedAt).toISOString()
-                                 : r.createdAt
-                                   ? new Date(r.createdAt).toISOString()
-                                   : new Date().toISOString(),
-        assessmentScore:       r.assessmentScore      != null ? Number(r.assessmentScore)      : undefined,
-        assessmentTotal:       r.assessmentTotal      != null ? Number(r.assessmentTotal)      : undefined,
-        assessmentPercentage:  r.assessmentPercentage != null ? Number(r.assessmentPercentage) : undefined,
-        assessmentLevel:       r.assessmentLevel      || undefined,
-        files: {
-          photo:        r.files?.photo        || null,
-          statement:    r.files?.statement    || null,
-          callUpLetter: r.files?.callUpLetter || null,
-          paymentProof: r.files?.paymentProof || null,
-        },
-      }))
-      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Polling: re-fetch every 15s, re-render only when data changed
-  // ─────────────────────────────────────────────────────────────────────────
-
   private startPolling(): void {
     this.pollSub = interval(this.POLL_INTERVAL)
-      .pipe(switchMap(() => this.adminService.getAll()))
+      .pipe(switchMap(() => this.http.get<RegistrationRecord[]>(`${this.api}/api/registrations`)))
       .subscribe({
         next: data => {
-          const updated = this.mapRecords(data);
+          const updated = data.sort(
+            (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+          );
           if (JSON.stringify(updated) !== JSON.stringify(this.registrations)) {
             this.registrations = updated;
+            // Update detailRecord if open
             if (this.detailRecord) {
               const fresh = updated.find(r => r.registrationId === this.detailRecord!.registrationId);
               if (fresh) this.detailRecord = fresh;
             }
             this.applyFilters();
           }
-        },
+        }
       });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Filter & paginate
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Filter & paginate ─────────────────────────────────────────────────────
 
   applyFilters(): void {
     let list = [...this.registrations];
@@ -186,68 +220,61 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     if (this.searchTerm.trim()) {
       const q = this.searchTerm.toLowerCase();
       list = list.filter(r =>
-        r.fullName.toLowerCase().includes(q)       ||
-        r.email.toLowerCase().includes(q)          ||
-        r.phone.includes(q)                        ||
+        r.fullName.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.phone.includes(q) ||
         r.registrationId.toLowerCase().includes(q)
       );
     }
     this.filteredRegistrations = list;
-    this.totalPages  = Math.ceil(list.length / this.itemsPerPage);
+    this.totalPages = Math.ceil(list.length / this.itemsPerPage);
     this.currentPage = Math.min(this.currentPage, Math.max(1, this.totalPages));
     this.paginate();
   }
 
   paginate(): void {
-    const s = (this.currentPage - 1) * this.itemsPerPage;
-    this.paginatedRegistrations = this.filteredRegistrations.slice(s, s + this.itemsPerPage);
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    this.paginatedRegistrations = this.filteredRegistrations.slice(start, start + this.itemsPerPage);
   }
 
-  onSearch():                                     void { this.currentPage = 1; this.applyFilters(); }
+  onSearch(): void { this.currentPage = 1; this.applyFilters(); }
   setStatusFilter(f: RegistrationStatus | 'all'): void { this.statusFilter = f; this.currentPage = 1; this.applyFilters(); }
   nextPage(): void { if (this.currentPage < this.totalPages) { this.currentPage++; this.paginate(); } }
-  prevPage(): void { if (this.currentPage > 1)               { this.currentPage--; this.paginate(); } }
+  prevPage(): void { if (this.currentPage > 1) { this.currentPage--; this.paginate(); } }
   goToPage(p: number): void { this.currentPage = p; this.paginate(); }
   get pages(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Stats
-  // ─────────────────────────────────────────────────────────────────────────
-
-  get totalCount():    number { return this.registrations.length; }
-  get pendingCount():  number { return this.registrations.filter(r => r.status === 'pending').length;  }
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  get totalCount(): number    { return this.registrations.length; }
+  get pendingCount(): number  { return this.registrations.filter(r => r.status === 'pending').length; }
   get approvedCount(): number { return this.registrations.filter(r => r.status === 'approved').length; }
   get rejectedCount(): number { return this.registrations.filter(r => r.status === 'rejected').length; }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Detail view
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Detail view ───────────────────────────────────────────────────────────
 
   openDetail(record: RegistrationRecord): void {
     this.detailRecord = record;
-    this.viewMode     = 'detail';
+    this.viewMode = 'detail';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   goBack(): void {
-    this.viewMode     = 'table';
+    this.viewMode = 'table';
     this.detailRecord = null;
     this.closeLightbox();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Lightbox
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Lightbox ──────────────────────────────────────────────────────────────
 
   openLightbox(src: string, title: string): void {
-    this.lightboxSrc             = src;
-    this.lightboxTitle           = title;
+    this.lightboxSrc = src;
+    this.lightboxTitle = title;
     document.body.style.overflow = 'hidden';
   }
 
   closeLightbox(): void {
-    this.lightboxSrc             = '';
-    this.lightboxTitle           = '';
+    this.lightboxSrc = null;
+    this.lightboxTitle = '';
     document.body.style.overflow = '';
   }
 
@@ -256,31 +283,20 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  File URL builder
-  // ─────────────────────────────────────────────────────────────────────────
-
-  fileUrl(registrationId: string, filename: string | null): string | null {
-    if (!filename) return null;
-    return `${this.api}/api/registration/${registrationId}/file/${filename}`;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Status change
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Status update ─────────────────────────────────────────────────────────
 
   promptStatusChange(record: RegistrationRecord, newStatus: RegistrationStatus): void {
     this.statusModalRecord = record;
-    this.pendingStatus     = newStatus;
-    this.rejectionReason   = '';
-    this.showStatusModal   = true;
+    this.pendingStatus = newStatus;
+    this.rejectionReason = '';
+    this.showStatusModal = true;
   }
 
   closeStatusModal(): void {
-    this.showStatusModal   = false;
+    this.showStatusModal = false;
     this.statusModalRecord = null;
-    this.pendingStatus     = null;
-    this.rejectionReason   = '';
+    this.pendingStatus = null;
+    this.rejectionReason = '';
   }
 
   confirmStatusChange(): void {
@@ -289,94 +305,68 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
       this.toast('Please provide a rejection reason.', 'error');
       return;
     }
-    this.statusUpdating     = true;
-    const payload: any      = { status: this.pendingStatus };
+    this.statusUpdating = true;
+    const payload: any = { status: this.pendingStatus };
     if (this.pendingStatus === 'rejected') payload.rejectionReason = this.rejectionReason.trim();
 
-    this.adminService.updateStatus(
-      this.statusModalRecord.registrationId,
-      payload
-    ).subscribe({
-      next: () => {
-        const rec = this.registrations.find(
-          r => r.registrationId === this.statusModalRecord!.registrationId
-        );
-    
-        if (rec) {
-          rec.status = this.pendingStatus!;
-          rec.rejectionReason =
-            this.pendingStatus === 'rejected' ? this.rejectionReason : undefined;
+    this.http
+      .patch(`${this.api}/api/registrations/${this.statusModalRecord.registrationId}/status`, payload)
+      .subscribe({
+        next: () => {
+          const rec = this.registrations.find(r => r.registrationId === this.statusModalRecord!.registrationId);
+          if (rec) {
+            rec.status = this.pendingStatus!;
+            rec.rejectionReason = this.pendingStatus === 'rejected' ? this.rejectionReason : undefined;
+          }
+          if (this.detailRecord?.registrationId === this.statusModalRecord!.registrationId) {
+            this.detailRecord!.status = this.pendingStatus!;
+            if (this.pendingStatus === 'rejected') this.detailRecord!.rejectionReason = this.rejectionReason;
+          }
+          this.applyFilters();
+          this.toast(`Marked ${this.pendingStatus}. Email sent to applicant.`, 'success');
+          this.statusUpdating = false;
+          this.closeStatusModal();
+        },
+        error: () => {
+          this.toast('Status update failed.', 'error');
+          this.statusUpdating = false;
         }
-    
-        if (this.detailRecord?.registrationId === this.statusModalRecord!.registrationId) {
-          this.detailRecord.status = this.pendingStatus!;
-          this.detailRecord.rejectionReason =
-            this.pendingStatus === 'rejected' ? this.rejectionReason : undefined;
-        }
-    
-        this.applyFilters();
-        this.toast(`Marked as ${this.pendingStatus}.`, 'success');
-        this.statusUpdating = false;
-        this.closeStatusModal();
-      },
-      error: () => {
-        this.toast('Status update failed.', 'error');
-        this.statusUpdating = false;
-      }
-    });
+      });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Delete
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────────────────────
 
   openDeleteModal(id: string, name: string): void {
-    this.deleteTarget    = { id, name };
+    this.deleteTarget = { id, name };
     this.showDeleteModal = true;
   }
 
-  closeDeleteModal(): void {
-    this.showDeleteModal = false;
-    this.deleteTarget    = null;
-  }
+  closeDeleteModal(): void { this.showDeleteModal = false; this.deleteTarget = null; }
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
     this.deleteLoading = true;
-    this.adminService.delete(this.deleteTarget.id).subscribe({
+    this.http.delete(`${this.api}/api/registrations/${this.deleteTarget.id}`).subscribe({
       next: () => {
-        this.registrations = this.registrations.filter(
-          r => r.registrationId !== this.deleteTarget!.id
-        );
-    
+        this.registrations = this.registrations.filter(r => r.registrationId !== this.deleteTarget!.id);
         this.applyFilters();
-        this.toast('Record deleted successfully.', 'success');
-    
-        if (this.detailRecord?.registrationId === this.deleteTarget?.id) {
-          this.goBack();
-        }
-    
-        this.closeDeleteModal();
+        this.toast('Record deleted.', 'success');
         this.deleteLoading = false;
+        this.closeDeleteModal();
+        if (this.detailRecord?.registrationId === this.deleteTarget?.id) this.goBack();
       },
       error: () => {
-        this.toast('Delete failed. Please try again.', 'error');
+        this.toast('Delete failed.', 'error');
         this.deleteLoading = false;
       }
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  Helpers
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  assessmentLevelLabel(level?: string): string {
-    const map: Record<string, string> = {
-      'below-expectation': 'Below Expectation',
-      'foundational':      'Foundational Awareness',
-      'strong':            'Strong Awareness',
-    };
-    return level ? (map[level] ?? level) : 'N/A';
+  fileUrl(registrationId: string, filename: string | null): string | null {
+    if (!filename) return null;
+    return `${this.api}/api/registrations/${registrationId}/file/${filename}`;
   }
 
   statusLabel(s: RegistrationStatus): string {
@@ -388,7 +378,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   }
 
   downloadPDF(): void {
-    const list   = this.filteredRegistrations;
+    const list = this.filteredRegistrations;
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
@@ -396,43 +386,24 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     if (!doc) return;
     doc.open();
     doc.write(`<html><head><title>Registrations Export</title>
-      <style>
-        body  { font-family: Arial; padding: 20px; font-size: 12px; }
-        h2    { text-align: center; color: #B88D2A; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th,td { border: 1px solid #ccc; padding: 7px 10px; }
-        th    { background: #f5f5f5; }
-        .pending  { color: #f59e0b; }
-        .approved { color: #10b981; }
-        .rejected { color: #ef4444; }
-      </style></head>
-      <body>
-        <h2>Work Readiness Registrations</h2>
-        <p>Generated: ${new Date().toLocaleString()} | Total: ${list.length}</p>
-        <table>
-          <thead><tr>
-            <th>#</th><th>Name</th><th>Email</th><th>Phone</th>
-            <th>Category</th><th>Status</th><th>Assessment</th><th>Submitted</th>
-          </tr></thead>
-          <tbody>
-            ${list.map((r, i) => `<tr>
-              <td>${i + 1}</td><td>${r.fullName}</td><td>${r.email}</td><td>${r.phone}</td>
-              <td>${r.category === 'nysc' ? 'NYSC/Awaiting' : 'Graduate/Pro'}</td>
-              <td class="${r.status}">${r.status.toUpperCase()}</td>
-              <td>${r.assessmentPercentage != null ? r.assessmentPercentage + '%' : 'N/A'}</td>
-              <td>${new Date(r.submittedAt).toLocaleString()}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </body></html>`);
+      <style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}h2{text-align:center;color:#B88D2A;}
+      table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ccc;padding:7px 10px;}
+      th{background:#f5f5f5;}.pending{color:#f59e0b;}.approved{color:#10b981;}.rejected{color:#ef4444;}</style></head>
+      <body><h2>Work Readiness Registrations</h2><p>Generated: ${new Date().toLocaleString()}</p>
+      <table><thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Category</th><th>Status</th><th>Submitted</th></tr></thead>
+      <tbody>${list.map((r, i) => `<tr><td>${i+1}</td><td>${r.fullName}</td><td>${r.email}</td><td>${r.phone}</td>
+        <td>${r.category === 'nysc' ? 'NYSC/Awaiting' : 'Graduate/Pro'}</td>
+        <td class="${r.status}">${r.status.toUpperCase()}</td>
+        <td>${new Date(r.submittedAt).toLocaleString()}</td></tr>`).join('')}
+      </tbody></table></body></html>`);
     doc.close();
     setTimeout(() => { iframe.contentWindow?.print(); document.body.removeChild(iframe); }, 400);
   }
 
   toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     this.toastMessage = message;
-    this.toastType    = type;
-    this.showToast    = true;
+    this.toastType = type;
+    this.showToast = true;
     setTimeout(() => { this.showToast = false; }, 4000);
   }
 
