@@ -30,18 +30,22 @@ export interface RegistrationRecord {
 @Injectable({ providedIn: 'root' })
 export class AdminRegistrationService {
 
+  /**
+   * FIX: this must match your server.js mount point exactly.
+   * Your backend: app.use('/api/admin/registrations', adminRouter)
+   */
   private adminApi = `${environment.apiUrl}/api/admin/registrations`;
 
   constructor(private http: HttpClient) {}
 
-  // ── Reads the admin token — checks every key your app might use ──────────
+  // ── Token resolution ──────────────────────────────────────────────────────
+  /**
+   * FIX: reads 'celcium_admin_token' first (canonical key written by AuthService.loginAdmin).
+   * Falls back to legacy keys so existing sessions aren't broken.
+   */
   private get adminToken(): string | null {
-    // Your admin login (auth.routes.js) returns { token, admin }
-    // Whatever key your admin login component passes to localStorage.setItem()
-    // must appear in this list. 'celcium_admin_token' is the canonical key
-    // we enforce in auth.service.ts below — keep that in sync.
     return (
-      localStorage.getItem('celcium_admin_token') ||  // ← canonical (set by auth.service)
+      localStorage.getItem('celcium_admin_token') || // canonical — set by AuthService.loginAdmin()
       localStorage.getItem('adminToken')           ||
       localStorage.getItem('admin_token')          ||
       localStorage.getItem('celcium_token')        ||
@@ -67,13 +71,13 @@ export class AdminRegistrationService {
     });
   }
 
-  // =========================================================
-  //  GET ALL REGISTRATIONS
-  // =========================================================
+  // ── GET ALL ───────────────────────────────────────────────────────────────
+
   getAll(): Observable<RegistrationRecord[]> {
     return this.http.get<any>(this.adminApi, { headers: this.authHeaders }).pipe(
       tap(res => console.log('[AdminService] RAW RESPONSE:', res)),
       map(res => {
+        // Handle both array responses and wrapped { data: [...] } / { registrations: [...] }
         const data = Array.isArray(res) ? res : (res?.data ?? res?.registrations ?? []);
         return Array.isArray(data) ? data : [];
       }),
@@ -81,10 +85,9 @@ export class AdminRegistrationService {
     );
   }
 
-  // =========================================================
-  //  UPDATE STATUS
-  // =========================================================
-  updateStatus(id: string, payload: any): Observable<any> {
+  // ── UPDATE STATUS ─────────────────────────────────────────────────────────
+
+  updateStatus(id: string, payload: { status: string; rejectionReason?: string }): Observable<any> {
     return this.http.patch(
       `${this.adminApi}/${id}/status`,
       payload,
@@ -95,9 +98,8 @@ export class AdminRegistrationService {
     );
   }
 
-  // =========================================================
-  //  DELETE REGISTRATION
-  // =========================================================
+  // ── DELETE ────────────────────────────────────────────────────────────────
+
   delete(id: string): Observable<any> {
     return this.http.delete(
       `${this.adminApi}/${id}`,
@@ -108,9 +110,8 @@ export class AdminRegistrationService {
     );
   }
 
-  // =========================================================
-  //  ERROR HANDLER
-  // =========================================================
+  // ── ERROR HANDLER ─────────────────────────────────────────────────────────
+
   private handleError(err: HttpErrorResponse): Observable<never> {
     console.error('[AdminService ERROR]:', {
       status:  err.status,

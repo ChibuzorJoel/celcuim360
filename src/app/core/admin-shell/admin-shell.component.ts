@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
-import { ContactService } from '../services/contact.service';
+import { AdminRegistrationService } from '../services/admin-registration.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -11,13 +11,17 @@ import { filter } from 'rxjs/operators';
   styleUrls: ['./admin-shell.component.css'],
 })
 export class AdminShellComponent implements OnInit, OnDestroy {
-  sidebarCollapsed = false;
-  pageTitle = 'Dashboard';
-  globalSearch = '';
+  sidebarCollapsed  = false;
+  pageTitle         = 'Dashboard';
+  globalSearch      = '';
 
-  pendingCount = 4;
-  unreadCount = 7;
-  unverifiedPayments = 2;
+  // ── Live badge counts ─────────────────────────────────────────────────────
+  pendingCount         = 0;
+  unreadCount          = 0;
+  unverifiedPayments   = 0;
+  approvedCount        = 0;
+  rejectedCount        = 0;
+  totalCount           = 0;
 
   private routerSub!: Subscription;
 
@@ -32,9 +36,9 @@ export class AdminShellComponent implements OnInit, OnDestroy {
   };
 
   constructor(
-    private router: Router,
-    private auth: AuthService,
-    private contactService: ContactService
+    private router:        Router,
+    private auth:          AuthService,
+    private adminService:  AdminRegistrationService,
   ) {}
 
   ngOnInit(): void {
@@ -57,9 +61,26 @@ export class AdminShellComponent implements OnInit, OnDestroy {
   }
 
   private loadBadgeCounts(): void {
-    // Pull live counts from service — replace with real observables as needed
-    this.contactService.getRegistrations().subscribe(list => {
-      this.pendingCount = list.filter((r: any) => r.status === 'pending').length;
+    this.adminService.getAll().subscribe({
+      next: list => {
+        this.totalCount        = list.length;
+        this.pendingCount      = list.filter(r => r.status === 'pending').length;
+        this.approvedCount     = list.filter(r => r.status === 'approved').length;
+        this.rejectedCount     = list.filter(r => r.status === 'rejected').length;
+
+        // unverifiedPayments — registrations pending that have a paymentProof file
+        this.unverifiedPayments = list.filter(
+          r => r.status === 'pending' && !!r.files?.paymentProof
+        ).length;
+
+        // unreadCount — pending registrations with no paymentProof yet
+        this.unreadCount = list.filter(
+          r => r.status === 'pending' && !r.files?.paymentProof
+        ).length;
+      },
+      error: (err: Error) => {
+        console.warn('[AdminShell] Badge count load failed:', err.message);
+      }
     });
   }
 

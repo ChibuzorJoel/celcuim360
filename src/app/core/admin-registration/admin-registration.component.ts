@@ -3,10 +3,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/auth/auth.service';
+import { AdminRegistrationService, RegistrationRecord as ServiceRecord } from '../../core/services/admin-registration.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { interval, Subscription } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, catchError } from 'rxjs/operators';
+import { EMPTY } from 'rxjs';
 
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
 export type ActiveTab = 'registrations' | 'contacts' | 'consultations';
@@ -58,7 +60,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   viewMode: ViewMode = 'table';
   detailRecord: RegistrationRecord | null = null;
 
-  // ── Lightbox ─────────────────────────────────────────────────────────────
+  // ── Lightbox ──────────────────────────────────────────────────────────────
   lightboxSrc: string | null = null;
   lightboxTitle = '';
 
@@ -106,6 +108,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private auth: AuthService,
+    private adminService: AdminRegistrationService, // ← injected; handles auth headers & correct URL
     private router: Router
   ) {}
 
@@ -118,22 +121,16 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     this.pollSub?.unsubscribe();
   }
 
+  // ── Assessment helpers ────────────────────────────────────────────────────
 
   assessmentLevelLabel(
     level?: 'below-expectation' | 'foundational' | 'strong'
   ): string {
     switch (level) {
-      case 'below-expectation':
-        return 'Below Expectation';
-  
-      case 'foundational':
-        return 'Foundational';
-  
-      case 'strong':
-        return 'Strong';
-  
-      default:
-        return 'Not Available';
+      case 'below-expectation': return 'Below Expectation';
+      case 'foundational':      return 'Foundational';
+      case 'strong':            return 'Strong';
+      default:                  return 'Not Available';
     }
   }
 
@@ -141,67 +138,63 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     level?: 'below-expectation' | 'foundational' | 'strong'
   ): string {
     switch (level) {
-      case 'below-expectation':
-        return '#dc2626';
-  
-      case 'foundational':
-        return '#f59e0b';
-  
-      case 'strong':
-        return '#16a34a';
-  
-      default:
-        return '#6b7280';
+      case 'below-expectation': return '#dc2626';
+      case 'foundational':      return '#f59e0b';
+      case 'strong':            return '#16a34a';
+      default:                  return '#6b7280';
     }
   }
-  
+
   getAssessmentPercentage(record: RegistrationRecord): number {
     if (record.assessmentPercentage !== undefined) {
       return record.assessmentPercentage;
     }
-  
     if (
       record.assessmentScore !== undefined &&
       record.assessmentTotal &&
       record.assessmentTotal > 0
     ) {
-      return Math.round(
-        (record.assessmentScore / record.assessmentTotal) * 100
-      );
+      return Math.round((record.assessmentScore / record.assessmentTotal) * 100);
     }
-  
     return 0;
   }
+
   // ── Data ──────────────────────────────────────────────────────────────────
 
   loadAll(): void {
     this.loading = true;
-    this.http.get<RegistrationRecord[]>(`${this.api}/api/registrations`).subscribe({
+
+    // FIX: use AdminRegistrationService (correct URL + auth headers) instead of raw HttpClient
+    this.adminService.getAll().subscribe({
       next: data => {
-        this.registrations = data.sort(
+        this.registrations = (data as RegistrationRecord[]).sort(
           (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
         this.applyFilters();
         this.loading = false;
       },
-      error: () => {
-        this.toast('Failed to load registrations', 'error');
+      error: (err: Error) => {
+        this.toast(err.message || 'Failed to load registrations', 'error');
         this.loading = false;
       }
     });
   }
 
   private startPolling(): void {
+    // FIX: use AdminRegistrationService so polling also sends auth headers
     this.pollSub = interval(this.POLL_INTERVAL)
-      .pipe(switchMap(() => this.http.get<RegistrationRecord[]>(`${this.api}/api/registrations`)))
+      .pipe(
+        switchMap(() => this.adminService.getAll().pipe(
+          catchError(() => EMPTY) // silent failure on poll — don't break the interval
+        ))
+      )
       .subscribe({
         next: data => {
-          const updated = data.sort(
+          const updated = (data as RegistrationRecord[]).sort(
             (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
           );
           if (JSON.stringify(updated) !== JSON.stringify(this.registrations)) {
             this.registrations = updated;
-            // Update detailRecord if open
             if (this.detailRecord) {
               const fresh = updated.find(r => r.registrationId === this.detailRecord!.registrationId);
               if (fresh) this.detailRecord = fresh;
@@ -305,12 +298,14 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
       this.toast('Please provide a rejection reason.', 'error');
       return;
     }
+
     this.statusUpdating = true;
     const payload: any = { status: this.pendingStatus };
     if (this.pendingStatus === 'rejected') payload.rejectionReason = this.rejectionReason.trim();
 
-    this.http
-      .patch(`${this.api}/api/registrations/${this.statusModalRecord.registrationId}/status`, payload)
+    // FIX: use AdminRegistrationService (correct URL + auth headers)
+    this.adminService
+      .updateStatus(this.statusModalRecord.registrationId, payload)
       .subscribe({
         next: () => {
           const rec = this.registrations.find(r => r.registrationId === this.statusModalRecord!.registrationId);
@@ -321,14 +316,15 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
           if (this.detailRecord?.registrationId === this.statusModalRecord!.registrationId) {
             this.detailRecord!.status = this.pendingStatus!;
             if (this.pendingStatus === 'rejected') this.detailRecord!.rejectionReason = this.rejectionReason;
+            else delete this.detailRecord!.rejectionReason;
           }
           this.applyFilters();
           this.toast(`Marked ${this.pendingStatus}. Email sent to applicant.`, 'success');
           this.statusUpdating = false;
           this.closeStatusModal();
         },
-        error: () => {
-          this.toast('Status update failed.', 'error');
+        error: (err: Error) => {
+          this.toast(err.message || 'Status update failed.', 'error');
           this.statusUpdating = false;
         }
       });
@@ -341,22 +337,28 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     this.showDeleteModal = true;
   }
 
-  closeDeleteModal(): void { this.showDeleteModal = false; this.deleteTarget = null; }
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.deleteTarget = null;
+  }
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
     this.deleteLoading = true;
-    this.http.delete(`${this.api}/api/registrations/${this.deleteTarget.id}`).subscribe({
+    const targetId = this.deleteTarget.id;
+
+    // FIX: use AdminRegistrationService (correct URL + auth headers)
+    this.adminService.delete(targetId).subscribe({
       next: () => {
-        this.registrations = this.registrations.filter(r => r.registrationId !== this.deleteTarget!.id);
+        this.registrations = this.registrations.filter(r => r.registrationId !== targetId);
         this.applyFilters();
         this.toast('Record deleted.', 'success');
         this.deleteLoading = false;
+        if (this.detailRecord?.registrationId === targetId) this.goBack();
         this.closeDeleteModal();
-        if (this.detailRecord?.registrationId === this.deleteTarget?.id) this.goBack();
       },
-      error: () => {
-        this.toast('Delete failed.', 'error');
+      error: (err: Error) => {
+        this.toast(err.message || 'Delete failed.', 'error');
         this.deleteLoading = false;
       }
     });
@@ -364,9 +366,13 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  /**
+   * Build a file URL that goes through the authenticated backend route.
+   * Uses /api/registration/:id/file/:filename (served by registrationController.serveFile).
+   */
   fileUrl(registrationId: string, filename: string | null): string | null {
     if (!filename) return null;
-    return `${this.api}/api/registrations/${registrationId}/file/${filename}`;
+    return `${this.api}/api/registration/${registrationId}/file/${filename}`;
   }
 
   statusLabel(s: RegistrationStatus): string {
@@ -391,7 +397,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
       th{background:#f5f5f5;}.pending{color:#f59e0b;}.approved{color:#10b981;}.rejected{color:#ef4444;}</style></head>
       <body><h2>Work Readiness Registrations</h2><p>Generated: ${new Date().toLocaleString()}</p>
       <table><thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Category</th><th>Status</th><th>Submitted</th></tr></thead>
-      <tbody>${list.map((r, i) => `<tr><td>${i+1}</td><td>${r.fullName}</td><td>${r.email}</td><td>${r.phone}</td>
+      <tbody>${list.map((r, i) => `<tr><td>${i + 1}</td><td>${r.fullName}</td><td>${r.email}</td><td>${r.phone}</td>
         <td>${r.category === 'nysc' ? 'NYSC/Awaiting' : 'Graduate/Pro'}</td>
         <td class="${r.status}">${r.status.toUpperCase()}</td>
         <td>${new Date(r.submittedAt).toLocaleString()}</td></tr>`).join('')}
