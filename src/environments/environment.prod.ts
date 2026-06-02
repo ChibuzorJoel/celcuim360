@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://celcuim360.onrender.com'
+  apiUrl: 'https://celcuim360-7934.onrender.com'
 };
