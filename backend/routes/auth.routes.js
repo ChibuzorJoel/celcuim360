@@ -3,14 +3,16 @@
  * Student & Admin Authentication
  */
 
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+'use strict';
+
+const express      = require('express');
+const router       = express.Router();
+const bcrypt       = require('bcryptjs');
+const jwt          = require('jsonwebtoken');
 const Registration = require('../models/Registration');
 
 /* ==========================================================
-   ADMIN LOGIN
+   ADMIN LOGIN  —  POST /api/auth/admin-login
 ========================================================== */
 router.post('/admin-login', async (req, res) => {
   try {
@@ -24,35 +26,25 @@ router.post('/admin-login', async (req, res) => {
     }
 
     const adminEmail = process.env.ADMIN_EMAIL;
-    const adminHash = process.env.ADMIN_PASSWORD_HASH;
-    const jwtSecret = process.env.JWT_SECRET;
+    const adminHash  = process.env.ADMIN_PASSWORD_HASH;
+    const jwtSecret  = process.env.JWT_SECRET;
 
     if (!adminEmail || !adminHash || !jwtSecret) {
-      console.error(
-        '❌ Missing ADMIN_EMAIL, ADMIN_PASSWORD_HASH or JWT_SECRET'
-      );
-
+      console.error('❌ Missing ADMIN_EMAIL, ADMIN_PASSWORD_HASH or JWT_SECRET');
       return res.status(500).json({
         success: false,
         message: 'Server configuration error.'
       });
     }
 
-    if (
-      email.toLowerCase().trim() !==
-      adminEmail.toLowerCase().trim()
-    ) {
+    if (email.toLowerCase().trim() !== adminEmail.toLowerCase().trim()) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.'
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      adminHash
-    );
-
+    const isMatch = await bcrypt.compare(password, adminHash);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -61,37 +53,27 @@ router.post('/admin-login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      {
-        email: adminEmail,
-        role: 'admin'
-      },
+      { email: adminEmail, role: 'admin' },
       jwtSecret,
-      {
-        expiresIn: '8h'
-      }
+      { expiresIn: '8h' }
     );
 
     return res.json({
       success: true,
       message: 'Admin login successful.',
       token,
-      admin: {
-        email: adminEmail
-      }
+      admin: { email: adminEmail, role: 'admin' },
     });
 
   } catch (err) {
     console.error('Admin login error:', err);
-
-    return res.status(500).json({
-      success: false,
-      message: 'Login failed.'
-    });
+    return res.status(500).json({ success: false, message: 'Login failed.' });
   }
 });
 
 /* ==========================================================
    STUDENT LOGIN HANDLER
+   Mounted at both /login and /student-login
 ========================================================== */
 const studentLoginHandler = async (req, res) => {
   try {
@@ -105,7 +87,7 @@ const studentLoginHandler = async (req, res) => {
     }
 
     const registration = await Registration.findOne({
-      email: email.toLowerCase().trim()
+      email: email.toLowerCase().trim(),
     }).select('+password');
 
     if (!registration) {
@@ -115,22 +97,31 @@ const studentLoginHandler = async (req, res) => {
       });
     }
 
-    if (
-      registration.status !== 'approved' &&
-      registration.status !== 'verified'
-    ) {
+    // ── Status gate: only 'approved' may log in ───────────────────────────
+    if (registration.status === 'pending') {
       return res.status(403).json({
         success: false,
-        message:
-          'Your account is still under review. You will be notified once approved.'
+        message: 'Your application is under review. You will be notified by email once approved.'
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      registration.password
-    );
+    if (registration.status === 'rejected') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your application was not approved. Please contact support.'
+      });
+    }
 
+    // At this point status must be 'approved' (or 'verified' for legacy records)
+    if (registration.status !== 'approved' && registration.status !== 'verified') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Please contact support.'
+      });
+    }
+
+    // ── Password check ────────────────────────────────────────────────────
+    const isMatch = await bcrypt.compare(password, registration.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -138,17 +129,17 @@ const studentLoginHandler = async (req, res) => {
       });
     }
 
+    // ── Issue token ───────────────────────────────────────────────────────
     const token = jwt.sign(
       {
-        id: registration._id,
-        email: registration.email,
-        role: 'student',
-        category: registration.category
+        id:             registration._id,
+        registrationId: registration.registrationId,
+        email:          registration.email,
+        role:           'student',
+        category:       registration.category,
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: '7d'
-      }
+      { expiresIn: '7d' }
     );
 
     return res.json({
@@ -156,26 +147,23 @@ const studentLoginHandler = async (req, res) => {
       message: 'Login successful.',
       token,
       student: {
-        registrationId: registration._id,
-        fullName: registration.fullName,
-        email: registration.email,
-        phone: registration.phone,
-        category: registration.category,
-        status: registration.status,
-        assessmentScore:
-          registration.assessment?.score ?? null,
-        assessmentLevel:
-          registration.assessment?.level ?? null,
-        assessmentPercentage:
-          registration.assessment?.percentage ?? null,
-        photo:
-          registration.photo?.filename ?? null
-      }
+        id:                   registration._id,
+        registrationId:       registration.registrationId,
+        fullName:             registration.fullName,
+        email:                registration.email,
+        phone:                registration.phone,
+        category:             registration.category,
+        status:               registration.status,
+        assessmentScore:      registration.assessmentScore      ?? null,
+        assessmentTotal:      registration.assessmentTotal      ?? null,
+        assessmentPercentage: registration.assessmentPercentage ?? null,
+        assessmentLevel:      registration.assessmentLevel      ?? null,
+        submittedAt:          registration.submittedAt,
+      },
     });
 
   } catch (err) {
     console.error('Student login error:', err);
-
     return res.status(500).json({
       success: false,
       message: 'Login failed. Please try again.'
@@ -183,33 +171,17 @@ const studentLoginHandler = async (req, res) => {
   }
 };
 
-/* ==========================================================
-   SUPPORT BOTH ROUTES
-========================================================== */
-
-router.post('/login', studentLoginHandler);
-
-router.post(
-  '/student-login',
-  studentLoginHandler
-);
+router.post('/login',         studentLoginHandler);
+router.post('/student-login', studentLoginHandler);
 
 /* ==========================================================
-   CHANGE PASSWORD
+   CHANGE PASSWORD  —  POST /api/auth/change-password
 ========================================================== */
 router.post('/change-password', async (req, res) => {
   try {
-    const {
-      email,
-      currentPassword,
-      newPassword
-    } = req.body;
+    const { email, currentPassword, newPassword } = req.body;
 
-    if (
-      !email ||
-      !currentPassword ||
-      !newPassword
-    ) {
+    if (!email || !currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required.'
@@ -219,13 +191,12 @@ router.post('/change-password', async (req, res) => {
     if (newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message:
-          'New password must be at least 8 characters.'
+        message: 'New password must be at least 8 characters.'
       });
     }
 
     const registration = await Registration.findOne({
-      email: email.toLowerCase().trim()
+      email: email.toLowerCase().trim(),
     }).select('+password');
 
     if (!registration) {
@@ -235,11 +206,7 @@ router.post('/change-password', async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      currentPassword,
-      registration.password
-    );
-
+    const isMatch = await bcrypt.compare(currentPassword, registration.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -247,8 +214,8 @@ router.post('/change-password', async (req, res) => {
       });
     }
 
+    // Assign plain text — pre-save hook in Registration.js hashes it
     registration.password = newPassword;
-
     await registration.save();
 
     return res.json({
@@ -258,7 +225,6 @@ router.post('/change-password', async (req, res) => {
 
   } catch (err) {
     console.error('Change password error:', err);
-
     return res.status(500).json({
       success: false,
       message: 'Password change failed.'
