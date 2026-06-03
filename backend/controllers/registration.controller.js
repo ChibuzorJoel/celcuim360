@@ -440,7 +440,7 @@ module.exports.serveFile = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN — GET /api/admin/registrations
+//  ADMIN — GET /api/registrations
 //  Returns all registrations (password excluded). Admin only.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -459,7 +459,7 @@ module.exports.adminGetAll = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN — PATCH /api/admin/registrations/:id/status
+//  ADMIN — PATCH /api/registrations/:id/status
 //  Updates status (pending → approved | rejected). Admin only.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -506,7 +506,7 @@ module.exports.adminUpdateStatus = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN — DELETE /api/admin/registrations/:id
+//  ADMIN — DELETE /api/registrations/:id
 //  Deletes record + all associated files. Admin only.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -615,7 +615,7 @@ adminRouter.use(ctrl.requireAuth, ctrl.requireAdmin);
 adminRouter.get('/',              ctrl.adminGetAll);
 adminRouter.patch('/:id/status',  ctrl.adminUpdateStatus);
 adminRouter.delete('/:id',        ctrl.adminDelete);
-app.use('/api/admin/registrations', adminRouter);
+app.use('/api/registrations', adminRouter);
 
 */
 

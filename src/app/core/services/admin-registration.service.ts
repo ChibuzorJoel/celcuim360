@@ -5,7 +5,6 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Observable, throwError }                     from 'rxjs';
 import { map, catchError, tap }                       from 'rxjs/operators';
 import { environment }                                from '../../../environments/environment';
-import { AuthService }                                from '../auth/auth.service';
 
 export interface RegistrationRecord {
   registrationId:        string;
@@ -31,21 +30,38 @@ export interface RegistrationRecord {
 @Injectable({ providedIn: 'root' })
 export class AdminRegistrationService {
 
+  /**
+   * FIX: this must match your server.js mount point exactly.
+   * Your backend: app.use('/api/admin/registrations', adminRouter)
+   */
   private adminApi = `${environment.apiUrl}/api/admin/registrations`;
 
-  constructor(
-    private http: HttpClient,
-    private auth: AuthService          // ← injected: single source of truth for token
-  ) {}
+  constructor(private http: HttpClient) {}
 
-  // ── Auth headers — reads token via AuthService ───────────────────────────
+  // ── Token resolution ──────────────────────────────────────────────────────
+  /**
+   * FIX: reads 'celcium_admin_token' first (canonical key written by AuthService.loginAdmin).
+   * Falls back to legacy keys so existing sessions aren't broken.
+   */
+  private get adminToken(): string | null {
+    return (
+      localStorage.getItem('celcium_admin_token') || // canonical — set by AuthService.loginAdmin()
+      localStorage.getItem('adminToken')           ||
+      localStorage.getItem('admin_token')          ||
+      localStorage.getItem('celcium_token')        ||
+      localStorage.getItem('token')                ||
+      null
+    );
+  }
+
   private get authHeaders(): HttpHeaders {
-    const token = this.auth.getToken();   // always uses the same key as login
+    const token = this.adminToken;
 
     if (!token) {
-      console.warn('[AdminService] ⚠️  No token found — user is not logged in.');
-    } else {
-      console.log('[AdminService] ✅ Token found, length:', token.length);
+      console.warn(
+        '[AdminService] ⚠️ No admin token found in localStorage.\n' +
+        'Keys present:', Object.keys(localStorage)
+      );
     }
 
     return new HttpHeaders({
@@ -55,29 +71,23 @@ export class AdminRegistrationService {
     });
   }
 
-  // =========================================================
-  //  GET ALL REGISTRATIONS
-  // =========================================================
+  // ── GET ALL ───────────────────────────────────────────────────────────────
+
   getAll(): Observable<RegistrationRecord[]> {
     return this.http.get<any>(this.adminApi, { headers: this.authHeaders }).pipe(
-
       tap(res => console.log('[AdminService] RAW RESPONSE:', res)),
-
       map(res => {
-        const data = Array.isArray(res)
-          ? res
-          : res?.data ?? res?.registrations ?? [];
+        // Handle both array responses and wrapped { data: [...] } / { registrations: [...] }
+        const data = Array.isArray(res) ? res : (res?.data ?? res?.registrations ?? []);
         return Array.isArray(data) ? data : [];
       }),
-
       catchError(this.handleError)
     );
   }
 
-  // =========================================================
-  //  UPDATE STATUS
-  // =========================================================
-  updateStatus(id: string, payload: any): Observable<any> {
+  // ── UPDATE STATUS ─────────────────────────────────────────────────────────
+
+  updateStatus(id: string, payload: { status: string; rejectionReason?: string }): Observable<any> {
     return this.http.patch(
       `${this.adminApi}/${id}/status`,
       payload,
@@ -88,9 +98,8 @@ export class AdminRegistrationService {
     );
   }
 
-  // =========================================================
-  //  DELETE REGISTRATION
-  // =========================================================
+  // ── DELETE ────────────────────────────────────────────────────────────────
+
   delete(id: string): Observable<any> {
     return this.http.delete(
       `${this.adminApi}/${id}`,
@@ -101,9 +110,8 @@ export class AdminRegistrationService {
     );
   }
 
-  // =========================================================
-  //  ERROR HANDLER
-  // =========================================================
+  // ── ERROR HANDLER ─────────────────────────────────────────────────────────
+
   private handleError(err: HttpErrorResponse): Observable<never> {
     console.error('[AdminService ERROR]:', {
       status:  err.status,
@@ -113,11 +121,10 @@ export class AdminRegistrationService {
     });
 
     let message = 'Something went wrong.';
-
-    if      (err.status === 0)   message = 'Cannot connect to server. Is the backend running?';
-    else if (err.status === 401) message = 'Not authenticated. Please log in as admin first.';
-    else if (err.status === 403) message = 'Access denied. Token does not have admin role.';
-    else if (err.status === 404) message = 'API route not found. Check server routing.';
+    if      (err.status === 0)   message = 'Cannot connect to server.';
+    else if (err.status === 401) message = 'Not authenticated — please log in as admin.';
+    else if (err.status === 403) message = 'Access denied — token lacks admin role.';
+    else if (err.status === 404) message = 'API route not found.';
     else if (err.status === 500) message = err.error?.message || 'Internal server error.';
     else                         message = err.error?.message || message;
 

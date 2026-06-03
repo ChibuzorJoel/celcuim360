@@ -48,7 +48,7 @@ const ALLOWED_ORIGINS = [
   'https://celcium360solutions.com',
   'https://www.celcium360solutions.com',
   'https://api.celcium360solutions.com',
-  'https://celcuim360.onrender.com',
+  'https://celcuim360-7934.onrender.com',
   'https://celcuim.netlify.app',
 
   'http://localhost:4200',
