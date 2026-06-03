@@ -12,7 +12,7 @@ const Registration = require('../models/Registration');
 /* ==========================================================
    ADMIN LOGIN
 ========================================================== */
-router.post('/login', async (req, res) => {
+router.post('/admin-login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
