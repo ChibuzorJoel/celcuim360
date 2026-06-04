@@ -2,12 +2,13 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router }                        from '@angular/router';
-import { interval, Subscription }        from 'rxjs';
-import { switchMap, startWith }          from 'rxjs/operators';
+import { interval, Subscription, Subject } from 'rxjs';
+import { switchMap, startWith, takeUntil } from 'rxjs/operators';
 import {
   AdminRegistrationService,
   RegistrationRecord
 } from '../services/admin-registration.service';
+import { AdminSearchService } from '../services/admin-search.service';
 
 @Component({
   selector:    'app-admin-dashboard',
@@ -19,7 +20,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   loading = true;
   error   = '';
 
-  // ── Stats derived from /api/admin/registrations ───────────────────────
+  // ── Stats ─────────────────────────────────────────────────────────────
   stats = {
     totalRegistrations: 0,
     pendingApprovals:   0,
@@ -31,23 +32,51 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     avgScore:           0,
   };
 
-  // ── Table data ────────────────────────────────────────────────────────
-  recentRegistrations: RegistrationRecord[] = [];   // latest 5 by date
-  liveSubmissions:     RegistrationRecord[] = [];   // latest 5 with a score
-  topScorers:          RegistrationRecord[] = [];   // top 5 by percentage (perf bars)
+  // ── Raw slices (unfiltered) ───────────────────────────────────────────
+  private _recentRegistrations: RegistrationRecord[] = [];
+  private _liveSubmissions:     RegistrationRecord[] = [];
+  private _topScorers:          RegistrationRecord[] = [];
 
-  private pollSub?: Subscription;
+  // ── Filtered slices (bound in template) ──────────────────────────────
+  recentRegistrations: RegistrationRecord[] = [];
+  liveSubmissions:     RegistrationRecord[] = [];
+  topScorers:          RegistrationRecord[] = [];
+
+  // ── Local filter state ────────────────────────────────────────────────
+  localSearch      = '';
+  localStatus      = 'all';
+  localCategory    = 'all';
+  localDateFrom    = '';
+  localDateTo      = '';
+  filterPanelOpen  = false;
+
+  private allRecords:  RegistrationRecord[] = [];
+  private pollSub?:    Subscription;
+  private destroy$   = new Subject<void>();
   private readonly POLL_INTERVAL = 15_000;
 
   constructor(
-    private adminService: AdminRegistrationService,
-    private router:       Router,
+    private adminService:  AdminRegistrationService,
+    private searchService: AdminSearchService,
+    private router:        Router,
   ) {}
 
-  ngOnInit():    void { this.startPolling(); }
-  ngOnDestroy(): void { this.pollSub?.unsubscribe(); }
+  ngOnInit(): void {
+    this.startPolling();
 
-  // ── Poll /api/admin/registrations every 15 s ──────────────────────────
+    // Also react to global topbar search/filters
+    this.searchService.filters$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.applyFilters());
+  }
+
+  ngOnDestroy(): void {
+    this.pollSub?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // ── Poll ──────────────────────────────────────────────────────────────
   private startPolling(): void {
     this.pollSub = interval(this.POLL_INTERVAL)
       .pipe(
@@ -56,23 +85,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: data => {
+          this.allRecords = data;
           this.processData(data);
+          this.applyFilters();
           this.loading = false;
           this.error   = '';
         },
         error: err => {
-          console.error('[Dashboard]', err);
           this.error   = err.message || 'Could not load dashboard data.';
           this.loading = false;
         },
       });
   }
 
-  // ── Derive everything from the registrations array ────────────────────
+  // ── Compute stats + raw slices ────────────────────────────────────────
   private processData(records: RegistrationRecord[]): void {
     if (!Array.isArray(records)) return;
 
-    // Stats
     const withScore  = records.filter(r => r.assessmentPercentage != null);
     const totalScore = withScore.reduce((s, r) => s + (r.assessmentPercentage ?? 0), 0);
 
@@ -84,25 +113,76 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       nyscCount:          records.filter(r => r.category === 'nysc').length,
       graduateCount:      records.filter(r => r.category === 'graduate').length,
       assessmentCount:    withScore.length,
-      avgScore:           withScore.length
-                            ? Math.round(totalScore / withScore.length)
-                            : 0,
+      avgScore:           withScore.length ? Math.round(totalScore / withScore.length) : 0,
     };
 
-    // Sort newest first once — reuse for all slices
     const byDate = [...records].sort(
       (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
     );
 
-    this.recentRegistrations = byDate.slice(0, 5);
-
-    this.liveSubmissions = byDate
-      .filter(r => r.assessmentPercentage != null)
-      .slice(0, 5);
-
-    this.topScorers = [...withScore]
+    // Store raw (pre-filter) slices — show top 10 so filters have room to work
+    this._recentRegistrations = byDate.slice(0, 10);
+    this._liveSubmissions     = byDate.filter(r => r.assessmentPercentage != null).slice(0, 10);
+    this._topScorers          = [...withScore]
       .sort((a, b) => (b.assessmentPercentage ?? 0) - (a.assessmentPercentage ?? 0))
-      .slice(0, 5);
+      .slice(0, 10);
+  }
+
+  // ── Apply filters to all three tables ────────────────────────────────
+  applyFilters(): void {
+    // Merge global service filters with local dashboard filters
+    const global = this.searchService.snapshot;
+
+    // Combined search term: local takes priority if typed, else use global
+    const term = (this.localSearch || global.search || '').toLowerCase().trim();
+    const status   = this.localStatus   !== 'all' ? this.localStatus   : global.status;
+    const category = this.localCategory !== 'all' ? this.localCategory : global.cohort;
+    const dateFrom = this.localDateFrom || global.dateFrom;
+    const dateTo   = this.localDateTo   || global.dateTo;
+
+    const filter = (list: RegistrationRecord[]) =>
+      list.filter(r => {
+        if (term && ![r.fullName, r.email, r.phone, r.registrationId, r.category]
+              .join(' ').toLowerCase().includes(term)) return false;
+        if (status   !== 'all' && r.status   !== status)   return false;
+        if (category !== 'all' && r.category !== category) return false;
+        if (dateFrom && r.submittedAt?.slice(0, 10) < dateFrom) return false;
+        if (dateTo   && r.submittedAt?.slice(0, 10) > dateTo)   return false;
+        return true;
+      }).slice(0, 5); // show top 5 after filtering
+
+    this.recentRegistrations = filter(this._recentRegistrations);
+    this.liveSubmissions     = filter(this._liveSubmissions);
+    this.topScorers          = filter(this._topScorers);
+  }
+
+  // ── Local filter controls ─────────────────────────────────────────────
+  onLocalSearch(): void {
+    this.applyFilters();
+  }
+
+  toggleFilterPanel(): void {
+    this.filterPanelOpen = !this.filterPanelOpen;
+  }
+
+  applyLocalFilters(): void {
+    this.applyFilters();
+    this.filterPanelOpen = false;
+  }
+
+  resetLocalFilters(): void {
+    this.localSearch   = '';
+    this.localStatus   = 'all';
+    this.localCategory = 'all';
+    this.localDateFrom = '';
+    this.localDateTo   = '';
+    this.applyFilters();
+    this.filterPanelOpen = false;
+  }
+
+  get hasLocalFilters(): boolean {
+    return this.localSearch !== '' || this.localStatus !== 'all' ||
+           this.localCategory !== 'all' || this.localDateFrom !== '' || this.localDateTo !== '';
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────

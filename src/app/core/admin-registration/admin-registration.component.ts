@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { AdminRegistrationService, RegistrationRecord as ServiceRecord } from '../../core/services/admin-registration.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AdminSearchService } from '../../core/services/admin-search.service';
 import { interval, Subscription, Subject } from 'rxjs';
 import { switchMap, catchError, takeUntil } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
@@ -105,6 +106,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   constructor(
     private http:         HttpClient,
     private auth:         AuthService,
+    private searchService: AdminSearchService, 
     private adminService: AdminRegistrationService,
     private router:       Router
   ) {}
@@ -112,6 +114,13 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadAll();
     this.startPolling();
+
+    this.searchService.filters$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => {
+      this.currentPage = 1;
+      this.applyFilters();
+    });
   }
 
   ngOnDestroy(): void {
@@ -190,22 +199,42 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   // ── Filter & paginate ─────────────────────────────────────────────────────
 
   applyFilters(): void {
+    const global = this.searchService.snapshot;
+  
+    // Local search input takes priority; fall back to topbar search
+    const term     = (this.searchTerm.trim() || global.search || '').toLowerCase();
+    const status   = this.statusFilter !== 'all' ? this.statusFilter : global.status as RegistrationStatus | 'all';
+    const category = global.cohort;   // 'all' | 'nysc' | 'graduate'
+    const dateFrom = global.dateFrom;
+    const dateTo   = global.dateTo;
+  
     let list = [...this.registrations];
-
-    if (this.statusFilter !== 'all') {
-      list = list.filter(r => r.status === this.statusFilter);
+  
+    if (status !== 'all') {
+      list = list.filter(r => r.status === status);
     }
-
-    if (this.searchTerm.trim()) {
-      const q = this.searchTerm.toLowerCase();
+  
+    if (category !== 'all') {
+      list = list.filter(r => r.category === category);
+    }
+  
+    if (dateFrom) {
+      list = list.filter(r => r.submittedAt?.slice(0, 10) >= dateFrom);
+    }
+  
+    if (dateTo) {
+      list = list.filter(r => r.submittedAt?.slice(0, 10) <= dateTo);
+    }
+  
+    if (term) {
       list = list.filter(r =>
-        r.fullName.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q) ||
-        r.phone.includes(q) ||
-        r.registrationId.toLowerCase().includes(q)
+        (r.fullName        ?? '').toLowerCase().includes(term) ||
+        (r.email           ?? '').toLowerCase().includes(term) ||
+        (r.phone           ?? '').includes(term)               ||
+        (r.registrationId  ?? '').toLowerCase().includes(term)
       );
     }
-
+  
     this.filteredRegistrations = list;
     this.totalPages  = Math.ceil(list.length / this.itemsPerPage);
     this.currentPage = Math.min(this.currentPage, Math.max(1, this.totalPages));
