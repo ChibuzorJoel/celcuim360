@@ -1,31 +1,32 @@
-// controllers/registrationController.js
+// controllers/registration.controller.js
 // Handles all student registration, file serving, profile, and admin operations.
 // Stack: Express · Mongoose · Multer · bcryptjs · jsonwebtoken · nodemailer
 
 'use strict';
 
-const path      = require('path');
-const fs        = require('fs');
-const bcrypt    = require('bcryptjs');
-const jwt       = require('jsonwebtoken');
+const path       = require('path');
+const fs         = require('fs');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const Registration = require('../models/Registration'); // Mongoose model (see bottom of file)
+const multer     = require('multer');
+const Registration = require('../models/Registration');
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Multer — disk storage (files stored under uploads/<registrationId>/)
-//  The registrationId is not known yet at upload time, so we stage files
-//  into uploads/staging/ and move them after the record is saved.
+//  JWT SECRET — consistent fallback so sign & verify always match
 // ─────────────────────────────────────────────────────────────────────────────
 
-const multer  = require('multer');
-const { v4: uuidv4 } = require('uuid');
+const JWT_SECRET = process.env.JWT_SECRET || 'celcium360_strong_secret_2026';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Multer — disk storage
+// ─────────────────────────────────────────────────────────────────────────────
 
 const UPLOAD_ROOT  = path.join(__dirname, '..', 'uploads');
 const STAGING_DIR  = path.join(UPLOAD_ROOT, 'staging');
 const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-// Ensure staging directory exists at startup
 fs.mkdirSync(STAGING_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -53,51 +54,54 @@ const upload = multer({
   { name: 'paymentProof', maxCount: 1 },
 ]);
 
-// Export the multer middleware so routes can apply it before the controller
 module.exports.uploadMiddleware = upload;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Generate a human-readable registration ID: REG-YYYYMMDD-XXXXX */
 function generateRegistrationId() {
-  const date  = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const rand  = Math.random().toString(36).toUpperCase().slice(2, 7);
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const rand = Math.random().toString(36).toUpperCase().slice(2, 7);
   return `REG-${date}-${rand}`;
 }
 
-/** Move a staged file to its permanent home under uploads/<registrationId>/ */
 function stageToFinal(stagingPath, registrationId, filename) {
   const dir  = path.join(UPLOAD_ROOT, registrationId);
   fs.mkdirSync(dir, { recursive: true });
   const dest = path.join(dir, filename);
-  fs.renameSync(stagingPath, dest); // atomic on same filesystem
+  fs.renameSync(stagingPath, dest);
   return filename;
 }
 
-/** Delete a file silently (no throw) */
 function unlinkSilent(filePath) {
   try { fs.unlinkSync(filePath); } catch (_) {}
 }
 
-/** Sign a JWT */
+/** Sign a long-lived session JWT (7d) */
 function signToken(payload, expiresIn = '7d') {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
-/** Verify a JWT — returns payload or null */
+/** Verify any JWT — returns payload or null */
 function verifyToken(token) {
-  try { return jwt.verify(token, process.env.JWT_SECRET); }
+  try { return jwt.verify(token, JWT_SECRET); }
   catch (_) { return null; }
 }
 
-/** Standard JSON error response */
+/** Issue a short-lived (5 min) token for direct file access via query param */
+function generateFileToken(registrationId, filename) {
+  return jwt.sign(
+    { registrationId, filename, purpose: 'file-access' },
+    JWT_SECRET,
+    { expiresIn: '5m' }
+  );
+}
+
 function sendError(res, status, message, details) {
   return res.status(status).json({ success: false, message, ...(details ? { details } : {}) });
 }
 
-/** Nodemailer transporter (configure via env) */
 function getMailer() {
   return nodemailer.createTransport({
     host:   process.env.SMTP_HOST   || 'smtp.gmail.com',
@@ -111,10 +115,9 @@ function getMailer() {
 }
 
 async function sendConfirmationEmail(record) {
-  if (!process.env.SMTP_USER) return; // skip if not configured
+  if (!process.env.SMTP_USER) return;
   try {
-    const mailer = getMailer();
-    await mailer.sendMail({
+    await getMailer().sendMail({
       from:    `"Celcium360" <${process.env.SMTP_USER}>`,
       to:      record.email,
       subject: `Registration Received — ${record.registrationId}`,
@@ -134,9 +137,8 @@ async function sendConfirmationEmail(record) {
 async function sendStatusEmail(record) {
   if (!process.env.SMTP_USER) return;
   try {
-    const mailer   = getMailer();
     const approved = record.status === 'approved';
-    await mailer.sendMail({
+    await getMailer().sendMail({
       from:    `"Celcium360" <${process.env.SMTP_USER}>`,
       to:      record.email,
       subject: `Application ${approved ? 'Approved' : 'Update'} — ${record.registrationId}`,
@@ -154,7 +156,7 @@ async function sendStatusEmail(record) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  AUTH MIDDLEWARE (used by protected routes)
+//  AUTH MIDDLEWARE
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.requireAuth = (req, res, next) => {
@@ -174,14 +176,12 @@ module.exports.requireAdmin = (req, res, next) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/registration/submit
-//  Multipart form. Multer runs before this via uploadMiddleware.
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.submitRegistration = async (req, res) => {
-  const staged = []; // track staged file paths for cleanup on error
+  const staged = [];
 
   try {
-    // ── 1. Validate required text fields ──────────────────────────────────
     const { fullName, email, phone, category, password } = req.body;
 
     if (!fullName?.trim())   return sendError(res, 400, 'Full name is required.');
@@ -192,29 +192,20 @@ module.exports.submitRegistration = async (req, res) => {
     if (!password || password.length < 8)
       return sendError(res, 400, 'Password must be at least 8 characters.');
 
-    // ── 2. Duplicate check ────────────────────────────────────────────────
     const existing = await Registration.findOne({ email: email.trim().toLowerCase() });
     if (existing)
       return sendError(res, 409, 'An account with this email already exists.');
 
-    // ── 3. Collect staged files ───────────────────────────────────────────
     const files = req.files || {};
     if (files.photo)        staged.push(files.photo[0].path);
     if (files.statement)    staged.push(files.statement[0].path);
     if (files.callUpLetter) staged.push(files.callUpLetter[0].path);
     if (files.paymentProof) staged.push(files.paymentProof[0].path);
 
-    // ── 4. Build record ───────────────────────────────────────────────────
     const registrationId = generateRegistrationId();
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Move staged files to permanent location
-    const fileRecord = {
-      photo:        null,
-      statement:    null,
-      callUpLetter: null,
-      paymentProof: null,
-    };
+    const fileRecord = { photo: null, statement: null, callUpLetter: null, paymentProof: null };
 
     if (files.photo) {
       const f = files.photo[0];
@@ -233,32 +224,29 @@ module.exports.submitRegistration = async (req, res) => {
       fileRecord.paymentProof = stageToFinal(f.path, registrationId, `paymentProof${path.extname(f.originalname)}`);
     }
 
-    // ── 5. Parse assessment answers (optional) ────────────────────────────
     let assessmentAnswers = [];
     try {
       const raw = req.body.assessmentAnswers;
       if (raw) assessmentAnswers = JSON.parse(raw);
-    } catch (_) { /* ignore parse errors */ }
+    } catch (_) {}
 
-    // ── 6. Save to MongoDB ────────────────────────────────────────────────
     const record = await Registration.create({
       registrationId,
-      fullName:              fullName.trim(),
-      email:                 email.trim().toLowerCase(),
-      phone:                 phone.trim(),
-      category:              category.toLowerCase(),
-      password:              hashedPassword,
-      status:                'pending',
-      submittedAt:           new Date(),
-      assessmentScore:       req.body.assessmentScore      ? Number(req.body.assessmentScore)      : undefined,
-      assessmentTotal:       req.body.assessmentTotal      ? Number(req.body.assessmentTotal)      : undefined,
-      assessmentPercentage:  req.body.assessmentPercentage ? Number(req.body.assessmentPercentage) : undefined,
-      assessmentLevel:       req.body.assessmentLevel      || undefined,
+      fullName:             fullName.trim(),
+      email:                email.trim().toLowerCase(),
+      phone:                phone.trim(),
+      category:             category.toLowerCase(),
+      password:             hashedPassword,
+      status:               'pending',
+      submittedAt:          new Date(),
+      assessmentScore:      req.body.assessmentScore      ? Number(req.body.assessmentScore)      : undefined,
+      assessmentTotal:      req.body.assessmentTotal      ? Number(req.body.assessmentTotal)      : undefined,
+      assessmentPercentage: req.body.assessmentPercentage ? Number(req.body.assessmentPercentage) : undefined,
+      assessmentLevel:      req.body.assessmentLevel      || undefined,
       assessmentAnswers,
-      files:                 fileRecord,
+      files:                fileRecord,
     });
 
-    // ── 7. Send confirmation email (non-blocking) ─────────────────────────
     sendConfirmationEmail(record);
 
     return res.status(201).json({
@@ -273,13 +261,10 @@ module.exports.submitRegistration = async (req, res) => {
     });
 
   } catch (err) {
-    // Clean up any staged files that weren't moved
     staged.forEach(p => unlinkSilent(p));
     console.error('[submitRegistration]', err);
-
     if (err.code === 11000)
       return sendError(res, 409, 'An account with this email already exists.');
-
     return sendError(res, 500, 'Registration failed. Please try again.');
   }
 };
@@ -296,7 +281,7 @@ module.exports.studentLogin = async (req, res) => {
       return sendError(res, 400, 'Email and password are required.');
 
     const student = await Registration.findOne({ email: email.trim().toLowerCase() })
-      .select('+password'); // password is select:false in schema
+      .select('+password');
 
     if (!student)
       return sendError(res, 401, 'Invalid email or password.');
@@ -305,8 +290,6 @@ module.exports.studentLogin = async (req, res) => {
     if (!match)
       return sendError(res, 401, 'Invalid email or password.');
 
-    // Only approved students may log in
-    // Remove this block if you want pending students to access a limited portal
     if (student.status === 'rejected')
       return sendError(res, 403, 'Your application was not approved. Please contact support.');
 
@@ -343,7 +326,6 @@ module.exports.studentLogin = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  GET /api/registration/:id
-//  Public — returns safe (no password) student profile
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.getStudent = async (req, res) => {
@@ -353,9 +335,7 @@ module.exports.getStudent = async (req, res) => {
       $or: [{ registrationId: id }, { _id: id.match(/^[a-f\d]{24}$/i) ? id : undefined }],
     });
 
-    if (!student)
-      return sendError(res, 404, 'Registration not found.');
-
+    if (!student) return sendError(res, 404, 'Registration not found.');
     return res.json({ success: true, data: student });
 
   } catch (err) {
@@ -366,18 +346,15 @@ module.exports.getStudent = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  PUT /api/registration/update/:id
-//  Protected — student can update their own profile (non-sensitive fields only)
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.updateProfile = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Guard: students may only update their own record
     if (req.user?.role === 'student' && req.user.registrationId !== id)
       return sendError(res, 403, 'You can only update your own profile.');
 
-    // Whitelist updatable fields (no status, password, or files here)
     const allowed = ['fullName', 'phone'];
     const update  = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
@@ -392,7 +369,6 @@ module.exports.updateProfile = async (req, res) => {
     );
 
     if (!student) return sendError(res, 404, 'Registration not found.');
-
     return res.json({ success: true, message: 'Profile updated.', data: student });
 
   } catch (err) {
@@ -403,33 +379,28 @@ module.exports.updateProfile = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  GET /api/registration/:id/file/:filename
-//  Serves uploaded files — admin or the owning student only.
+//  Protected — requires Bearer token in Authorization header.
+//  Used for in-app <img> tags via Angular HttpClient.
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.serveFile = async (req, res) => {
   try {
     const { id, filename } = req.params;
 
-    // Security: prevent path traversal
     const safeName = path.basename(filename);
-    if (safeName !== filename)
-      return sendError(res, 400, 'Invalid filename.');
+    if (safeName !== filename) return sendError(res, 400, 'Invalid filename.');
 
-    // Verify the registration exists and the file belongs to it
     const student = await Registration.findOne({ registrationId: id });
     if (!student) return sendError(res, 404, 'Registration not found.');
 
     const registeredFiles = Object.values(student.files || {});
-    if (!registeredFiles.includes(safeName))
-      return sendError(res, 404, 'File not found.');
+    if (!registeredFiles.includes(safeName)) return sendError(res, 404, 'File not found.');
 
-    // Guard: admin or owner
     if (req.user?.role !== 'admin' && req.user?.registrationId !== id)
       return sendError(res, 403, 'Access denied.');
 
     const filePath = path.join(UPLOAD_ROOT, id, safeName);
-    if (!fs.existsSync(filePath))
-      return sendError(res, 404, 'File not found on disk.');
+    if (!fs.existsSync(filePath)) return sendError(res, 404, 'File not found on disk.');
 
     return res.sendFile(filePath);
 
@@ -440,13 +411,79 @@ module.exports.serveFile = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN — GET /api/registrations
-//  Returns all registrations (password excluded). Admin only.
+//  GET /api/registration/:id/file-token/:filename   (requires Bearer auth)
+//  Returns a signed 5-minute URL the browser can open directly —
+//  no Authorization header needed (works for new tabs & downloads).
+// ─────────────────────────────────────────────────────────────────────────────
+
+module.exports.getFileToken = async (req, res) => {
+  try {
+    const { id, filename } = req.params;
+    const safeName = path.basename(filename);
+
+    const student = await Registration.findOne({ registrationId: id });
+    if (!student) return sendError(res, 404, 'Registration not found.');
+
+    const registeredFiles = Object.values(student.files || {});
+    if (!registeredFiles.includes(safeName)) return sendError(res, 404, 'File not found.');
+
+    if (req.user?.role !== 'admin' && req.user?.registrationId !== id)
+      return sendError(res, 403, 'Access denied.');
+
+    const fileToken = generateFileToken(id, safeName);
+    const base = (process.env.API_BASE_URL || '').replace(/\/$/, '');
+    const url  = `${base}/api/registration/file?token=${fileToken}`;
+
+    return res.json({ success: true, url });
+
+  } catch (err) {
+    console.error('[getFileToken]', err);
+    return sendError(res, 500, 'Could not generate file token.');
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  GET /api/registration/file?token=<signed-token>   (PUBLIC — token is the auth)
+//  Used by "Open in New Tab" and "Download" — no Bearer header required.
+// ─────────────────────────────────────────────────────────────────────────────
+
+module.exports.serveFileByToken = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return sendError(res, 401, 'No token provided.');
+
+    const payload = verifyToken(token);
+    if (!payload || payload.purpose !== 'file-access')
+      return sendError(res, 401, 'Invalid or expired file token.');
+
+    const { registrationId, filename } = payload;
+    const safeName = path.basename(filename);
+
+    const student = await Registration.findOne({ registrationId });
+    if (!student) return sendError(res, 404, 'Registration not found.');
+
+    const registeredFiles = Object.values(student.files || {});
+    if (!registeredFiles.includes(safeName)) return sendError(res, 404, 'File not found.');
+
+    const filePath = path.join(UPLOAD_ROOT, registrationId, safeName);
+    if (!fs.existsSync(filePath)) return sendError(res, 404, 'File not found on disk.');
+
+    return res.sendFile(filePath);
+
+  } catch (err) {
+    console.error('[serveFileByToken]', err);
+    return sendError(res, 500, 'Could not serve file.');
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ADMIN — GET /api/admin/registrations
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.adminGetAll = async (req, res) => {
   try {
     const registrations = await Registration.find()
+      .select('-password')
       .sort({ submittedAt: -1 })
       .lean();
 
@@ -459,13 +496,12 @@ module.exports.adminGetAll = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN — PATCH /api/registrations/:id/status
-//  Updates status (pending → approved | rejected). Admin only.
+//  ADMIN — PATCH /api/admin/registrations/:id/status
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.adminUpdateStatus = async (req, res) => {
   try {
-    const { id }  = req.params;
+    const { id } = req.params;
     const { status, rejectionReason } = req.body;
 
     if (!['pending', 'approved', 'rejected'].includes(status))
@@ -476,25 +512,24 @@ module.exports.adminUpdateStatus = async (req, res) => {
 
     const update = { status };
     if (status === 'rejected') update.rejectionReason = rejectionReason.trim();
-    else update.rejectionReason = undefined; // clear if re-approving
+    else update.rejectionReason = null;
 
     const student = await Registration.findOneAndUpdate(
       { registrationId: id },
       { $set: update },
       { new: true }
-    );
+    ).select('-password');
 
     if (!student) return sendError(res, 404, 'Registration not found.');
 
-    // Non-blocking email
     sendStatusEmail(student);
 
     return res.json({
       success: true,
       message: `Status updated to '${status}'.`,
       data: {
-        registrationId: student.registrationId,
-        status:         student.status,
+        registrationId:  student.registrationId,
+        status:          student.status,
         rejectionReason: student.rejectionReason,
       },
     });
@@ -506,8 +541,7 @@ module.exports.adminUpdateStatus = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ADMIN — DELETE /api/registrations/:id
-//  Deletes record + all associated files. Admin only.
+//  ADMIN — DELETE /api/admin/registrations/:id
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports.adminDelete = async (req, res) => {
@@ -517,11 +551,8 @@ module.exports.adminDelete = async (req, res) => {
     const student = await Registration.findOneAndDelete({ registrationId: id });
     if (!student) return sendError(res, 404, 'Registration not found.');
 
-    // Remove the file directory
     const dir = path.join(UPLOAD_ROOT, id);
-    if (fs.existsSync(dir)) {
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
+    if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
 
     return res.json({ success: true, message: 'Registration deleted.' });
 
@@ -530,96 +561,3 @@ module.exports.adminDelete = async (req, res) => {
     return sendError(res, 500, 'Delete failed.');
   }
 };
-
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  EXPRESS ROUTER wiring — paste into routes/registration.js
-// ─────────────────────────────────────────────────────────────────────────────
-/*
-
-const express  = require('express');
-const router   = express.Router();
-const ctrl     = require('../controllers/registrationController');
-
-// ── Public ──────────────────────────────────────────────────────────────────
-router.post(
-  '/submit',
-  ctrl.uploadMiddleware,                       // multer processes files first
-  ctrl.submitRegistration
-);
-
-// ── Auth ─────────────────────────────────────────────────────────────────────
-// (mounted under /api/auth in server.js)
-// router.post('/student-login', ctrl.studentLogin);
-
-// ── Protected — student ───────────────────────────────────────────────────────
-router.get(
-  '/:id',
-  ctrl.requireAuth,
-  ctrl.getStudent
-);
-
-router.put(
-  '/update/:id',
-  ctrl.requireAuth,
-  ctrl.updateProfile
-);
-
-router.get(
-  '/:id/file/:filename',
-  ctrl.requireAuth,
-  ctrl.serveFile
-);
-
-// ── Protected — admin ─────────────────────────────────────────────────────────
-router.get(
-  '/',
-  ctrl.requireAuth,
-  ctrl.requireAdmin,
-  ctrl.adminGetAll
-);
-
-router.patch(
-  '/:id/status',
-  ctrl.requireAuth,
-  ctrl.requireAdmin,
-  ctrl.adminUpdateStatus
-);
-
-router.delete(
-  '/:id',
-  ctrl.requireAuth,
-  ctrl.requireAdmin,
-  ctrl.adminDelete
-);
-
-module.exports = router;
-
-*/
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  server.js wiring snippet
-// ─────────────────────────────────────────────────────────────────────────────
-/*
-
-const registrationRoutes = require('./routes/registration');
-const ctrl               = require('./controllers/registrationController');
-
-app.use('/api/registration',    registrationRoutes);
-app.post('/api/auth/student-login', ctrl.studentLogin);
-
-// Admin routes (separate mount keeps auth concerns clear)
-const adminRouter = require('express').Router();
-adminRouter.use(ctrl.requireAuth, ctrl.requireAdmin);
-adminRouter.get('/',              ctrl.adminGetAll);
-adminRouter.patch('/:id/status',  ctrl.adminUpdateStatus);
-adminRouter.delete('/:id',        ctrl.adminDelete);
-app.use('/api/registrations', adminRouter);
-
-*/
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Required npm packages
-//  npm install bcryptjs jsonwebtoken multer nodemailer uuid
-// ─────────────────────────────────────────────────────────────────────────────

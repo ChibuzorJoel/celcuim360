@@ -24,7 +24,6 @@ export class AdminCohortsComponent implements OnInit {
   cohorts: Cohort[] = [];
   filteredCohorts: Cohort[] = [];
 
-
   showCreateModal = false;
   showDeleteModal = false;
   selectedCohort: Cohort | null = null;
@@ -36,19 +35,24 @@ export class AdminCohortsComponent implements OnInit {
   ngOnInit(): void {
     this.cohorts = [
       {
-        id: 'c7', name: 'Cohort 7', startDate: 'Jun 2, 2025', endDate: 'Jul 11, 2025',
+        id: 'c7', name: 'Cohort 7', startDate: 'Jun 2, 2026', endDate: 'Jul 11, 2026',
         status: 'active', enrolled: 24, approved: 20, pending: 4, avgScore: 76,
-        weeks: this.generateWeeks('2025-06-02'),
+        weeks: this.generateWeeks('2026-06-02'),
       },
       {
-        id: 'c8', name: 'Cohort 8', startDate: 'Jul 21, 2025', endDate: 'Aug 29, 2025',
+        id: 'c8', name: 'Cohort 8', startDate: 'Jul 21, 2026', endDate: 'Aug 29, 2026',
         status: 'forming', enrolled: 8, approved: 6, pending: 2, avgScore: 0,
-        weeks: this.generateWeeks('2025-07-21'),
+        weeks: this.generateWeeks('2026-07-21'),
       },
       {
-        id: 'c6', name: 'Cohort 6', startDate: 'Apr 7, 2025', endDate: 'May 16, 2025',
+        id: 'c6', name: 'Cohort 6', startDate: 'Apr 7, 2026', endDate: 'May 16, 2026',
         status: 'closed', enrolled: 22, approved: 22, pending: 0, avgScore: 81,
-        weeks: this.generateWeeks('2025-04-07', true),
+        weeks: this.generateWeeks('2026-04-07', true),
+      },
+      {
+        id: 'c5', name: 'Cohort 5', startDate: 'Feb 9, 2026', endDate: 'Mar 21, 2026',
+        status: 'closed', enrolled: 20, approved: 20, pending: 0, avgScore: 78,
+        weeks: this.generateWeeks('2026-02-09', true),
       },
     ];
     this.applyFilter();
@@ -72,12 +76,11 @@ export class AdminCohortsComponent implements OnInit {
     });
   }
 
-  
-  
-
   setFilter(f: 'all' | 'active' | 'forming' | 'closed' = 'all'): void {
     this.activeFilter = f;
+    this.applyFilter();
   }
+
   applyFilter(): void {
     this.filteredCohorts = this.activeFilter === 'all'
       ? this.cohorts

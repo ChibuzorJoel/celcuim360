@@ -274,14 +274,14 @@
               <img *ngIf="fileUrl(detailRecord.registrationId, detailRecord.files.photo)"
                    [src]="fileUrl(detailRecord.registrationId, detailRecord.files.photo)!"
                    alt="headshot" class="profile-photo"
-                   (click)="openLightbox(fileUrl(detailRecord.registrationId, detailRecord.files.photo)!, 'Live Headshot')">
+                   (click)="openLightboxForFile(detailRecord.registrationId, detailRecord.files.photo, 'Live Headshot')">
               <div *ngIf="!fileUrl(detailRecord.registrationId, detailRecord.files.photo)"
                    class="profile-initials">
                 {{ detailRecord.fullName.charAt(0).toUpperCase() }}
               </div>
               <!-- Camera icon badge -->
               <div class="photo-badge" *ngIf="fileUrl(detailRecord.registrationId, detailRecord.files.photo)"
-                   (click)="openLightbox(fileUrl(detailRecord.registrationId, detailRecord.files.photo)!, 'Live Headshot')"
+                   (click)="openLightboxForFile(detailRecord.registrationId, detailRecord.files.photo, 'Live Headshot')"
                    title="View full headshot">
                 <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
                   <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -329,62 +329,46 @@
             </div>
           </div>
 
+          <!-- Assessment Results Card -->
+          <div class="info-card" *ngIf="detailRecord.assessmentPercentage !== undefined">
+            <div class="info-card-title">
+              <svg viewBox="0 0 24 24" fill="none" width="13" height="13" style="display:inline;margin-right:5px;">
+                <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Self-Assessment Results
+            </div>
+            <div class="assessment-score-block">
+              <div class="assessment-score-num">{{ detailRecord.assessmentPercentage }}%</div>
+              <div class="assessment-score-fraction">
+                {{ detailRecord.assessmentScore }}/{{ detailRecord.assessmentTotal }} correct
+              </div>
+            </div>
+            <div class="assessment-level-row">
+              <span class="info-label">Level</span>
+              <span class="assessment-level-pill"
+                    [class.level-below]="detailRecord.assessmentLevel === 'below-expectation'"
+                    [class.level-found]="detailRecord.assessmentLevel === 'foundational'"
+                    [class.level-strong]="detailRecord.assessmentLevel === 'strong'">
+                {{ assessmentLevelLabel(detailRecord.assessmentLevel) }}
+              </span>
+            </div>
+            <div class="assessment-bar-wrap">
+              <div class="assessment-bar-track">
+                <div class="assessment-bar-fill"
+                     [style.width.%]="detailRecord.assessmentPercentage"
+                     [class.bar-below]="detailRecord.assessmentLevel === 'below-expectation'"
+                     [class.bar-found]="detailRecord.assessmentLevel === 'foundational'"
+                     [class.bar-strong]="detailRecord.assessmentLevel === 'strong'">
+                </div>
+              </div>
+            </div>
+          </div>
 
-<!-- ══════════════════════════════════════════════════════════════════════
-     INSERT THIS BLOCK in admin-registration.component.html
-     Location: Inside the DETAIL VIEW, in .detail-left column,
-               BETWEEN the info-card and the status action card.
-════════════════════════════════════════════════════════════════════════ -->
-
-<!-- Assessment Results Card -->
-<div class="info-card" *ngIf="detailRecord.assessmentPercentage !== undefined">
-  <div class="info-card-title">
-    <svg viewBox="0 0 24 24" fill="none" width="13" height="13" style="display:inline;margin-right:5px;">
-      <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-    Self-Assessment Results
-  </div>
-
-  <!-- Score display -->
-  <div class="assessment-score-block">
-    <div class="assessment-score-num">{{ detailRecord.assessmentPercentage }}%</div>
-    <div class="assessment-score-fraction">
-      {{ detailRecord.assessmentScore }}/{{ detailRecord.assessmentTotal }} correct
-    </div>
-  </div>
-
-  <!-- Level badge -->
-  <div class="assessment-level-row">
-    <span class="info-label">Level</span>
-    <span class="assessment-level-pill"
-          [class.level-below]="detailRecord.assessmentLevel === 'below-expectation'"
-          [class.level-found]="detailRecord.assessmentLevel === 'foundational'"
-          [class.level-strong]="detailRecord.assessmentLevel === 'strong'">
-      {{ assessmentLevelLabel(detailRecord.assessmentLevel) }}
-    </span>
-  </div>
-
-  <!-- Score bar -->
-  <div class="assessment-bar-wrap">
-    <div class="assessment-bar-track">
-      <div class="assessment-bar-fill"
-           [style.width.%]="detailRecord.assessmentPercentage"
-           [class.bar-below]="detailRecord.assessmentLevel === 'below-expectation'"
-           [class.bar-found]="detailRecord.assessmentLevel === 'foundational'"
-           [class.bar-strong]="detailRecord.assessmentLevel === 'strong'">
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- If no assessment data yet -->
-<div class="info-card" *ngIf="detailRecord.assessmentPercentage === undefined">
-  <div class="info-card-title">Self-Assessment Results</div>
-  <div style="padding:14px 16px;color:#444;font-size:.82rem;">No assessment data submitted.</div>
-</div>
-
-
+          <div class="info-card" *ngIf="detailRecord.assessmentPercentage === undefined">
+            <div class="info-card-title">Self-Assessment Results</div>
+            <div style="padding:14px 16px;color:#444;font-size:.82rem;">No assessment data submitted.</div>
+          </div>
 
           <!-- Status action card -->
           <div class="info-card">
@@ -440,11 +424,11 @@
               Uploaded Documents & Files
             </div>
 
-            <!-- Live Headshot -->
+            <!-- ── Live Headshot ──────────────────────────────────── -->
             <div class="doc-section-label">📷 Live Headshot</div>
             <div class="doc-block" *ngIf="detailRecord.files.photo">
               <div class="doc-preview-img-wrap"
-                   (click)="openLightbox(fileUrl(detailRecord.registrationId, detailRecord.files.photo)!, 'Live Headshot')">
+                   (click)="openLightboxForFile(detailRecord.registrationId, detailRecord.files.photo, 'Live Headshot')">
                 <img [src]="fileUrl(detailRecord.registrationId, detailRecord.files.photo)!"
                      alt="Headshot" class="doc-preview-img">
                 <div class="doc-preview-overlay">
@@ -456,16 +440,16 @@
                 </div>
               </div>
               <div class="doc-actions">
-                <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.photo)!"
-                   target="_blank" class="doc-btn-view">
+                <button class="doc-btn-view"
+                        (click)="openFile(detailRecord.registrationId, detailRecord.files.photo)">
                   <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                   Open in New Tab
-                </a>
-                <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.photo)!"
-                   download class="doc-btn-dl">
+                </button>
+                <button class="doc-btn-dl"
+                        (click)="downloadFile(detailRecord.registrationId, detailRecord.files.photo)">
                   <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   Download
-                </a>
+                </button>
               </div>
             </div>
             <div class="doc-missing-badge" *ngIf="!detailRecord.files.photo">
@@ -475,12 +459,11 @@
 
             <div class="doc-divider"></div>
 
-            <!-- Payment Proof -->
+            <!-- ── Payment Proof ─────────────────────────────────── -->
             <div class="doc-section-label">🧾 Payment Proof</div>
             <div class="doc-block" *ngIf="detailRecord.files.paymentProof">
-              <!-- Image preview if it's an image -->
               <div class="doc-preview-img-wrap" *ngIf="isImage(detailRecord.files.paymentProof)"
-                   (click)="openLightbox(fileUrl(detailRecord.registrationId, detailRecord.files.paymentProof)!, 'Payment Proof')">
+                   (click)="openLightboxForFile(detailRecord.registrationId, detailRecord.files.paymentProof, 'Payment Proof')">
                 <img [src]="fileUrl(detailRecord.registrationId, detailRecord.files.paymentProof)!"
                      alt="Payment Proof" class="doc-preview-img">
                 <div class="doc-preview-overlay">
@@ -491,7 +474,6 @@
                   <span>View Full Image</span>
                 </div>
               </div>
-              <!-- PDF icon if PDF -->
               <div class="doc-file-icon-block" *ngIf="!isImage(detailRecord.files.paymentProof)">
                 <div class="pdf-icon-wrap">
                   <svg viewBox="0 0 24 24" fill="none" width="40" height="40"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#B88D2A" stroke-width="1.5"/><polyline points="14 2 14 8 20 8" stroke="#B88D2A" stroke-width="1.5"/><line x1="16" y1="13" x2="8" y2="13" stroke="#B88D2A" stroke-width="1.5" stroke-linecap="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="#B88D2A" stroke-width="1.5" stroke-linecap="round"/><polyline points="10 9 9 9 8 9" stroke="#B88D2A" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -499,16 +481,16 @@
                 </div>
               </div>
               <div class="doc-actions">
-                <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.paymentProof)!"
-                   target="_blank" class="doc-btn-view">
+                <button class="doc-btn-view"
+                        (click)="openFile(detailRecord.registrationId, detailRecord.files.paymentProof)">
                   <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                   Open in New Tab
-                </a>
-                <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.paymentProof)!"
-                   download class="doc-btn-dl">
+                </button>
+                <button class="doc-btn-dl"
+                        (click)="downloadFile(detailRecord.registrationId, detailRecord.files.paymentProof)">
                   <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   Download
-                </a>
+                </button>
               </div>
             </div>
             <div class="doc-missing-badge" *ngIf="!detailRecord.files.paymentProof">
@@ -516,7 +498,7 @@
               No payment proof uploaded
             </div>
 
-            <!-- NYSC documents (conditional) -->
+            <!-- ── NYSC documents ─────────────────────────────────── -->
             <ng-container *ngIf="detailRecord.category === 'nysc'">
               <div class="doc-divider"></div>
 
@@ -524,7 +506,7 @@
               <div class="doc-section-label">📄 Statement of Result / Certificate</div>
               <div class="doc-block" *ngIf="detailRecord.files.statement">
                 <div class="doc-preview-img-wrap" *ngIf="isImage(detailRecord.files.statement)"
-                     (click)="openLightbox(fileUrl(detailRecord.registrationId, detailRecord.files.statement)!, 'Statement of Result')">
+                     (click)="openLightboxForFile(detailRecord.registrationId, detailRecord.files.statement, 'Statement of Result')">
                   <img [src]="fileUrl(detailRecord.registrationId, detailRecord.files.statement)!"
                        alt="Statement" class="doc-preview-img">
                   <div class="doc-preview-overlay">
@@ -539,14 +521,16 @@
                   </div>
                 </div>
                 <div class="doc-actions">
-                  <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.statement)!" target="_blank" class="doc-btn-view">
+                  <button class="doc-btn-view"
+                          (click)="openFile(detailRecord.registrationId, detailRecord.files.statement)">
                     <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     Open in New Tab
-                  </a>
-                  <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.statement)!" download class="doc-btn-dl">
+                  </button>
+                  <button class="doc-btn-dl"
+                          (click)="downloadFile(detailRecord.registrationId, detailRecord.files.statement)">
                     <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Download
-                  </a>
+                  </button>
                 </div>
               </div>
               <div class="doc-missing-badge" *ngIf="!detailRecord.files.statement">
@@ -560,7 +544,7 @@
               <div class="doc-section-label">📋 NYSC Call-Up Letter</div>
               <div class="doc-block" *ngIf="detailRecord.files.callUpLetter">
                 <div class="doc-preview-img-wrap" *ngIf="isImage(detailRecord.files.callUpLetter)"
-                     (click)="openLightbox(fileUrl(detailRecord.registrationId, detailRecord.files.callUpLetter)!, 'NYSC Call-Up Letter')">
+                     (click)="openLightboxForFile(detailRecord.registrationId, detailRecord.files.callUpLetter, 'NYSC Call-Up Letter')">
                   <img [src]="fileUrl(detailRecord.registrationId, detailRecord.files.callUpLetter)!"
                        alt="Call-Up" class="doc-preview-img">
                   <div class="doc-preview-overlay">
@@ -575,14 +559,16 @@
                   </div>
                 </div>
                 <div class="doc-actions">
-                  <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.callUpLetter)!" target="_blank" class="doc-btn-view">
+                  <button class="doc-btn-view"
+                          (click)="openFile(detailRecord.registrationId, detailRecord.files.callUpLetter)">
                     <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     Open in New Tab
-                  </a>
-                  <a [href]="fileUrl(detailRecord.registrationId, detailRecord.files.callUpLetter)!" download class="doc-btn-dl">
+                  </button>
+                  <button class="doc-btn-dl"
+                          (click)="downloadFile(detailRecord.registrationId, detailRecord.files.callUpLetter)">
                     <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     Download
-                  </a>
+                  </button>
                 </div>
               </div>
               <div class="doc-missing-badge" *ngIf="!detailRecord.files.callUpLetter">
@@ -607,12 +593,13 @@
     <div class="lightbox-header">
       <span class="lightbox-title">{{ lightboxTitle }}</span>
       <div class="lightbox-actions">
-        <a [href]="lightboxSrc" target="_blank" class="lightbox-btn" title="Open in new tab">
+        <!-- Lightbox open/download also use signed URL stored in lightboxSrc -->
+        <button class="lightbox-btn" title="Open in new tab" (click)="lightboxSrc && openTabUrl(lightboxSrc)">
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </a>
-        <a [href]="lightboxSrc" download class="lightbox-btn" title="Download">
+        </button>
+        <button class="lightbox-btn" title="Download" (click)="lightboxSrc && downloadUrl(lightboxSrc, lightboxTitle)">
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
+        </button>
         <button class="lightbox-close" (click)="closeLightbox()">
           <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
         </button>

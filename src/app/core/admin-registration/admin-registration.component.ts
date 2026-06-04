@@ -1,13 +1,13 @@
 // src/app/admin/admin-registration/admin-registration.component.ts
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/auth/auth.service';
 import { AdminRegistrationService, RegistrationRecord as ServiceRecord } from '../../core/services/admin-registration.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { interval, Subscription } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
+import { interval, Subscription, Subject } from 'rxjs';
+import { switchMap, catchError, takeUntil } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
 
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
@@ -22,14 +22,11 @@ export interface RegistrationRecord {
   category: 'nysc' | 'graduate';
   status: RegistrationStatus;
   submittedAt: string;
-
   rejectionReason?: string;
-
   assessmentScore?: number;
   assessmentTotal?: number;
   assessmentPercentage?: number;
   assessmentLevel?: 'below-expectation' | 'foundational' | 'strong';
-
   files: {
     photo: string | null;
     statement: string | null;
@@ -70,46 +67,46 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   registrations: RegistrationRecord[] = [];
   filteredRegistrations: RegistrationRecord[] = [];
   paginatedRegistrations: RegistrationRecord[] = [];
-
   contacts: ContactRecord[] = [];
 
   // ── Filters ───────────────────────────────────────────────────────────────
-  searchTerm = '';
+  searchTerm   = '';
   statusFilter: RegistrationStatus | 'all' = 'all';
 
   // ── Pagination ────────────────────────────────────────────────────────────
-  currentPage = 1;
+  currentPage  = 1;
   itemsPerPage = 10;
-  totalPages = 0;
+  totalPages   = 0;
 
   // ── UI ────────────────────────────────────────────────────────────────────
-  loading = false;
+  loading      = false;
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' = 'success';
-  showToast = false;
+  showToast    = false;
 
   // ── Status modal ──────────────────────────────────────────────────────────
-  showStatusModal = false;
+  showStatusModal    = false;
   statusModalRecord: RegistrationRecord | null = null;
   pendingStatus: RegistrationStatus | null = null;
-  rejectionReason = '';
-  statusUpdating = false;
+  rejectionReason    = '';
+  statusUpdating     = false;
 
   // ── Delete modal ──────────────────────────────────────────────────────────
   showDeleteModal = false;
   deleteTarget: { id: string; name: string } | null = null;
-  deleteLoading = false;
+  deleteLoading   = false;
 
   // ── Polling ───────────────────────────────────────────────────────────────
   private pollSub?: Subscription;
+  private destroy$ = new Subject<void>();
   private readonly POLL_INTERVAL = 15_000;
   private api = environment.apiUrl;
 
   constructor(
-    private http: HttpClient,
-    private auth: AuthService,
-    private adminService: AdminRegistrationService, // ← injected; handles auth headers & correct URL
-    private router: Router
+    private http:         HttpClient,
+    private auth:         AuthService,
+    private adminService: AdminRegistrationService,
+    private router:       Router
   ) {}
 
   ngOnInit(): void {
@@ -119,13 +116,13 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pollSub?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ── Assessment helpers ────────────────────────────────────────────────────
 
-  assessmentLevelLabel(
-    level?: 'below-expectation' | 'foundational' | 'strong'
-  ): string {
+  assessmentLevelLabel(level?: 'below-expectation' | 'foundational' | 'strong'): string {
     switch (level) {
       case 'below-expectation': return 'Below Expectation';
       case 'foundational':      return 'Foundational';
@@ -134,9 +131,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     }
   }
 
-  getAssessmentColor(
-    level?: 'below-expectation' | 'foundational' | 'strong'
-  ): string {
+  getAssessmentColor(level?: 'below-expectation' | 'foundational' | 'strong'): string {
     switch (level) {
       case 'below-expectation': return '#dc2626';
       case 'foundational':      return '#f59e0b';
@@ -146,14 +141,8 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   }
 
   getAssessmentPercentage(record: RegistrationRecord): number {
-    if (record.assessmentPercentage !== undefined) {
-      return record.assessmentPercentage;
-    }
-    if (
-      record.assessmentScore !== undefined &&
-      record.assessmentTotal &&
-      record.assessmentTotal > 0
-    ) {
+    if (record.assessmentPercentage !== undefined) return record.assessmentPercentage;
+    if (record.assessmentScore !== undefined && record.assessmentTotal && record.assessmentTotal > 0) {
       return Math.round((record.assessmentScore / record.assessmentTotal) * 100);
     }
     return 0;
@@ -163,8 +152,6 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   loadAll(): void {
     this.loading = true;
-
-    // FIX: use AdminRegistrationService (correct URL + auth headers) instead of raw HttpClient
     this.adminService.getAll().subscribe({
       next: data => {
         this.registrations = (data as RegistrationRecord[]).sort(
@@ -181,13 +168,8 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   }
 
   private startPolling(): void {
-    // FIX: use AdminRegistrationService so polling also sends auth headers
     this.pollSub = interval(this.POLL_INTERVAL)
-      .pipe(
-        switchMap(() => this.adminService.getAll().pipe(
-          catchError(() => EMPTY) // silent failure on poll — don't break the interval
-        ))
-      )
+      .pipe(switchMap(() => this.adminService.getAll().pipe(catchError(() => EMPTY))))
       .subscribe({
         next: data => {
           const updated = (data as RegistrationRecord[]).sort(
@@ -209,7 +191,11 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   applyFilters(): void {
     let list = [...this.registrations];
-    if (this.statusFilter !== 'all') list = list.filter(r => r.status === this.statusFilter);
+
+    if (this.statusFilter !== 'all') {
+      list = list.filter(r => r.status === this.statusFilter);
+    }
+
     if (this.searchTerm.trim()) {
       const q = this.searchTerm.toLowerCase();
       list = list.filter(r =>
@@ -219,8 +205,9 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
         r.registrationId.toLowerCase().includes(q)
       );
     }
+
     this.filteredRegistrations = list;
-    this.totalPages = Math.ceil(list.length / this.itemsPerPage);
+    this.totalPages  = Math.ceil(list.length / this.itemsPerPage);
     this.currentPage = Math.min(this.currentPage, Math.max(1, this.totalPages));
     this.paginate();
   }
@@ -231,15 +218,21 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   }
 
   onSearch(): void { this.currentPage = 1; this.applyFilters(); }
-  setStatusFilter(f: RegistrationStatus | 'all'): void { this.statusFilter = f; this.currentPage = 1; this.applyFilters(); }
+
+  setStatusFilter(f: RegistrationStatus | 'all'): void {
+    this.statusFilter = f;
+    this.currentPage  = 1;
+    this.applyFilters();
+  }
+
   nextPage(): void { if (this.currentPage < this.totalPages) { this.currentPage++; this.paginate(); } }
-  prevPage(): void { if (this.currentPage > 1) { this.currentPage--; this.paginate(); } }
+  prevPage(): void { if (this.currentPage > 1)               { this.currentPage--; this.paginate(); } }
   goToPage(p: number): void { this.currentPage = p; this.paginate(); }
   get pages(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  get totalCount(): number    { return this.registrations.length; }
-  get pendingCount(): number  { return this.registrations.filter(r => r.status === 'pending').length; }
+  get totalCount():    number { return this.registrations.length; }
+  get pendingCount():  number { return this.registrations.filter(r => r.status === 'pending').length; }
   get approvedCount(): number { return this.registrations.filter(r => r.status === 'approved').length; }
   get rejectedCount(): number { return this.registrations.filter(r => r.status === 'rejected').length; }
 
@@ -247,12 +240,12 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   openDetail(record: RegistrationRecord): void {
     this.detailRecord = record;
-    this.viewMode = 'detail';
+    this.viewMode     = 'detail';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   goBack(): void {
-    this.viewMode = 'table';
+    this.viewMode     = 'table';
     this.detailRecord = null;
     this.closeLightbox();
   }
@@ -260,15 +253,26 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   // ── Lightbox ──────────────────────────────────────────────────────────────
 
   openLightbox(src: string, title: string): void {
-    this.lightboxSrc = src;
+    this.lightboxSrc   = src;
     this.lightboxTitle = title;
     document.body.style.overflow = 'hidden';
   }
 
   closeLightbox(): void {
-    this.lightboxSrc = null;
+    this.lightboxSrc   = null;
     this.lightboxTitle = '';
     document.body.style.overflow = '';
+  }
+
+  /**
+   * Fetches file as Blob (with auth token) then opens in lightbox.
+   */
+  openLightboxForFile(registrationId: string, filename: string | null, title: string): void {
+    if (!filename) return;
+    this.fetchBlob(registrationId, filename).subscribe({
+      next: blob => this.openLightbox(URL.createObjectURL(blob), title),
+      error: () => this.toast('Could not load file preview.', 'error'),
+    });
   }
 
   isImage(filename: string | null): boolean {
@@ -276,20 +280,80 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
   }
 
+  // ── File open / download ──────────────────────────────────────────────────
+
+  /**
+   * Fetches the file as a Blob (sending auth token), creates an object URL,
+   * then opens it in a new tab. Fixes the "File wasn't available" error caused
+   * by the browser not being able to send auth headers on a plain <a href>.
+   */
+  openFile(registrationId: string, filename: string | null): void {
+    if (!filename) return;
+    this.fetchBlob(registrationId, filename).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      },
+      error: () => this.toast('Could not open file.', 'error'),
+    });
+  }
+
+  /**
+   * Fetches file as Blob then triggers a browser download.
+   */
+  downloadFile(registrationId: string, filename: string | null): void {
+    if (!filename) return;
+    this.fetchBlob(registrationId, filename).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5_000);
+      },
+      error: () => this.toast('Could not download file.', 'error'),
+    });
+  }
+
+  /** Internal — GET the protected file with auth header, return as Blob */
+  private fetchBlob(registrationId: string, filename: string) {
+    const token = localStorage.getItem('celcium_admin_token')
+               ?? localStorage.getItem('adminToken')
+               ?? localStorage.getItem('admin_token')
+               ?? localStorage.getItem('token')
+               ?? '';
+    const headers = new HttpHeaders({
+      'Authorization':              `Bearer ${token}`,
+      'ngrok-skip-browser-warning': 'true',
+    });
+    return this.http.get(
+      `${this.api}/api/registration/${registrationId}/file/${filename}`,
+      { headers, responseType: 'blob' }
+    );
+  }
+
+  // ── fileUrl (kept for backward compat if used elsewhere in template) ──────
+  fileUrl(registrationId: string, filename: string | null): string | null {
+    if (!filename) return null;
+    return `${this.api}/api/registration/${registrationId}/file/${filename}`;
+  }
+
   // ── Status update ─────────────────────────────────────────────────────────
 
   promptStatusChange(record: RegistrationRecord, newStatus: RegistrationStatus): void {
     this.statusModalRecord = record;
-    this.pendingStatus = newStatus;
-    this.rejectionReason = '';
-    this.showStatusModal = true;
+    this.pendingStatus     = newStatus;
+    this.rejectionReason   = '';
+    this.showStatusModal   = true;
   }
 
   closeStatusModal(): void {
-    this.showStatusModal = false;
+    this.showStatusModal   = false;
     this.statusModalRecord = null;
-    this.pendingStatus = null;
-    this.rejectionReason = '';
+    this.pendingStatus     = null;
+    this.rejectionReason   = '';
   }
 
   confirmStatusChange(): void {
@@ -300,54 +364,50 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     }
 
     this.statusUpdating = true;
-    const payload: any = { status: this.pendingStatus };
+    const payload: any  = { status: this.pendingStatus };
     if (this.pendingStatus === 'rejected') payload.rejectionReason = this.rejectionReason.trim();
 
-    // FIX: use AdminRegistrationService (correct URL + auth headers)
-    this.adminService
-      .updateStatus(this.statusModalRecord.registrationId, payload)
-      .subscribe({
-        next: () => {
-          const rec = this.registrations.find(r => r.registrationId === this.statusModalRecord!.registrationId);
-          if (rec) {
-            rec.status = this.pendingStatus!;
-            rec.rejectionReason = this.pendingStatus === 'rejected' ? this.rejectionReason : undefined;
-          }
-          if (this.detailRecord?.registrationId === this.statusModalRecord!.registrationId) {
-            this.detailRecord!.status = this.pendingStatus!;
-            if (this.pendingStatus === 'rejected') this.detailRecord!.rejectionReason = this.rejectionReason;
-            else delete this.detailRecord!.rejectionReason;
-          }
-          this.applyFilters();
-          this.toast(`Marked ${this.pendingStatus}. Email sent to applicant.`, 'success');
-          this.statusUpdating = false;
-          this.closeStatusModal();
-        },
-        error: (err: Error) => {
-          this.toast(err.message || 'Status update failed.', 'error');
-          this.statusUpdating = false;
+    this.adminService.updateStatus(this.statusModalRecord.registrationId, payload).subscribe({
+      next: () => {
+        const rec = this.registrations.find(r => r.registrationId === this.statusModalRecord!.registrationId);
+        if (rec) {
+          rec.status          = this.pendingStatus!;
+          rec.rejectionReason = this.pendingStatus === 'rejected' ? this.rejectionReason : undefined;
         }
-      });
+        if (this.detailRecord?.registrationId === this.statusModalRecord!.registrationId) {
+          this.detailRecord!.status = this.pendingStatus!;
+          if (this.pendingStatus === 'rejected') this.detailRecord!.rejectionReason = this.rejectionReason;
+          else delete this.detailRecord!.rejectionReason;
+        }
+        this.applyFilters();
+        this.toast(`Marked ${this.pendingStatus}. Email sent to applicant.`, 'success');
+        this.statusUpdating = false;
+        this.closeStatusModal();
+      },
+      error: (err: Error) => {
+        this.toast(err.message || 'Status update failed.', 'error');
+        this.statusUpdating = false;
+      }
+    });
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────
 
   openDeleteModal(id: string, name: string): void {
-    this.deleteTarget = { id, name };
+    this.deleteTarget    = { id, name };
     this.showDeleteModal = true;
   }
 
   closeDeleteModal(): void {
     this.showDeleteModal = false;
-    this.deleteTarget = null;
+    this.deleteTarget    = null;
   }
 
   confirmDelete(): void {
     if (!this.deleteTarget) return;
     this.deleteLoading = true;
-    const targetId = this.deleteTarget.id;
+    const targetId     = this.deleteTarget.id;
 
-    // FIX: use AdminRegistrationService (correct URL + auth headers)
     this.adminService.delete(targetId).subscribe({
       next: () => {
         this.registrations = this.registrations.filter(r => r.registrationId !== targetId);
@@ -366,15 +426,6 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  /**
-   * Build a file URL that goes through the authenticated backend route.
-   * Uses /api/registration/:id/file/:filename (served by registrationController.serveFile).
-   */
-  fileUrl(registrationId: string, filename: string | null): string | null {
-    if (!filename) return null;
-    return `${this.api}/api/registration/${registrationId}/file/${filename}`;
-  }
-
   statusLabel(s: RegistrationStatus): string {
     return { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' }[s];
   }
@@ -384,7 +435,7 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
   }
 
   downloadPDF(): void {
-    const list = this.filteredRegistrations;
+    const list   = this.filteredRegistrations;
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
@@ -406,10 +457,21 @@ export class AdminRegistrationComponent implements OnInit, OnDestroy {
     setTimeout(() => { iframe.contentWindow?.print(); document.body.removeChild(iframe); }, 400);
   }
 
+  openTabUrl(url: string): void {
+    window.open(url, '_blank');
+  }
+
+  downloadUrl(url: string, filename: string = 'download'): void {
+    const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   toast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
     this.toastMessage = message;
-    this.toastType = type;
-    this.showToast = true;
+    this.toastType    = type;
+    this.showToast    = true;
     setTimeout(() => { this.showToast = false; }, 4000);
   }
 
