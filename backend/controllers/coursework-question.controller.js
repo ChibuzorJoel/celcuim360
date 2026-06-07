@@ -12,10 +12,20 @@
  *   PATCH  /api/coursework-questions/:week
  *   PATCH  /api/coursework-questions/:week/publish
  *   DELETE /api/coursework-questions/:week
+ *
+ * Wired via routes/student.routes.js:
+ *   GET    /api/student/:registrationId/progress
+ *
+ * Wired via routes/coursework.routes.js:
+ *   POST   /api/coursework
+ *
+ * Wired via routes/finalexam.routes.js:
+ *   POST   /api/final-exam
  */
 
-const CourseworkQuestion = require('../models/CourseworkQuestion');
+const CourseworkQuestion = require('../models/Courseworkquestion.model');
 const Registration       = require('../models/Registration');
+const StudentProgress    = require('../models/StudentProgress.model');
 const nodemailer         = require('nodemailer');
 
 // ── Email helper ──────────────────────────────────────────────────────────
@@ -43,7 +53,6 @@ async function sendEmail(to, subject, html) {
 }
 
 // ── Default questions for each week ──────────────────────────────────────
-// Used as seed data when a week has not yet been set by admin.
 const DEFAULT_QUESTIONS = {
   1: {
     weekTitle:   'Foundation for Workplace',
@@ -167,10 +176,8 @@ function validate10Questions(questions) {
 
 exports.getAllWeeks = async (req, res) => {
   try {
-    // Fetch what exists in DB
     const dbWeeks = await CourseworkQuestion.find({}).sort({ weekNumber: 1 }).lean();
 
-    // Build full 6-week array, filling gaps with defaults
     const weeks = [];
     for (let w = 1; w <= 6; w++) {
       const found = dbWeeks.find(d => d.weekNumber === w);
@@ -179,14 +186,14 @@ exports.getAllWeeks = async (req, res) => {
       } else {
         const def = DEFAULT_QUESTIONS[w];
         weeks.push({
-          weekNumber:  w,
-          weekTitle:   def.weekTitle,
-          instruction: def.instruction,
-          questions:   def.questions,
-          isPublished: false,
-          publishedAt: null,
-          updatedAt:   null,
-          _fromDefault: true,    // flag so frontend knows it's not saved yet
+          weekNumber:   w,
+          weekTitle:    def.weekTitle,
+          instruction:  def.instruction,
+          questions:    def.questions,
+          isPublished:  false,
+          publishedAt:  null,
+          updatedAt:    null,
+          _fromDefault: true,
         });
       }
     }
@@ -210,7 +217,6 @@ exports.getWeek = async (req, res) => {
     let week = await CourseworkQuestion.findOne({ weekNumber }).lean();
 
     if (!week) {
-      // Return default data (not yet saved to DB)
       const def = DEFAULT_QUESTIONS[weekNumber];
       week = { weekNumber, ...def, isPublished: false, publishedAt: null, updatedAt: null, _fromDefault: true };
     }
@@ -237,7 +243,6 @@ exports.getWeekForStudent = async (req, res) => {
       return res.status(403).json({ message: 'This week has not been published yet' });
     }
 
-    // Strip admin-only fields before sending to student
     const { weekNumber: wn, weekTitle, instruction, questions, publishedAt } = week;
     res.json({ week: { weekNumber: wn, weekTitle, instruction, questions, publishedAt } });
   } catch (err) {
@@ -257,7 +262,6 @@ exports.upsertWeek = async (req, res) => {
 
     const { weekTitle, instruction, questions, updatedBy } = req.body;
 
-    // Validate
     if (!weekTitle || !String(weekTitle).trim()) {
       return res.status(400).json({ message: 'weekTitle is required' });
     }
@@ -281,10 +285,7 @@ exports.upsertWeek = async (req, res) => {
     );
 
     console.log(`[CourseworkQ] Week ${weekNumber} saved by ${updatedBy || 'admin'}`);
-    res.json({
-      message: `Week ${weekNumber} questions saved successfully`,
-      week,
-    });
+    res.json({ message: `Week ${weekNumber} questions saved successfully`, week });
   } catch (err) {
     console.error('[upsertWeek]', err.message);
     res.status(500).json({ message: err.message || 'Failed to save week' });
@@ -302,13 +303,11 @@ exports.patchWeek = async (req, res) => {
 
     const { weekTitle, instruction, questionIndex, questionText, updatedBy } = req.body;
 
-    // Build update object
     const upd = { updatedAt: new Date(), updatedBy: updatedBy || 'admin' };
 
     if (weekTitle?.trim())   upd.weekTitle   = weekTitle.trim();
     if (instruction?.trim()) upd.instruction = instruction.trim();
 
-    // Patch a single question by index
     if (questionIndex !== undefined && questionText !== undefined) {
       const idx = parseInt(questionIndex, 10);
       if (isNaN(idx) || idx < 0 || idx > 9) {
@@ -317,7 +316,6 @@ exports.patchWeek = async (req, res) => {
       if (!String(questionText).trim()) {
         return res.status(400).json({ message: 'questionText cannot be empty' });
       }
-      // Use positional $set on array element
       upd[`questions.${idx}`] = String(questionText).trim();
     }
 
@@ -328,7 +326,6 @@ exports.patchWeek = async (req, res) => {
     );
 
     if (!week) {
-      // Week not in DB yet — create from defaults first then patch
       const def = DEFAULT_QUESTIONS[weekNumber];
       const newWeek = new CourseworkQuestion({
         weekNumber,
@@ -369,15 +366,12 @@ exports.setPublishStatus = async (req, res) => {
       return res.status(400).json({ message: '"publish" must be true or false' });
     }
 
-    // Ensure the week exists in DB before publishing
     let week = await CourseworkQuestion.findOne({ weekNumber });
 
     if (!week) {
       if (!publish) {
-        // Nothing to unpublish
         return res.status(404).json({ message: `Week ${weekNumber} has no questions set yet` });
       }
-      // Auto-create from defaults so admin can publish immediately
       const def = DEFAULT_QUESTIONS[weekNumber];
       week = new CourseworkQuestion({
         weekNumber,
@@ -391,7 +385,6 @@ exports.setPublishStatus = async (req, res) => {
       await week.save();
     }
 
-    // Validate questions before publishing
     if (publish) {
       const qErr = validate10Questions(week.questions);
       if (qErr) {
@@ -409,12 +402,9 @@ exports.setPublishStatus = async (req, res) => {
 
     console.log(`[Publish] Week ${weekNumber} → ${publish ? 'PUBLISHED' : 'UNPUBLISHED'} by ${publishedBy || 'admin'}`);
 
-    // ── Notify all approved students when publishing ────────────────────────
     if (publish) {
       try {
-        // Lazy-require Registration to avoid circular deps in some setups
-        const RegistrationModel = require('../models/Registration');
-        const students = await RegistrationModel.find({ status: 'approved' }, 'email fullName').lean();
+        const students = await Registration.find({ status: 'approved' }, 'email fullName').lean();
 
         const dueDateStr = dueDate
           ? new Date(dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -448,7 +438,6 @@ exports.setPublishStatus = async (req, res) => {
         console.log(`[Publish] Emails sent to ${students.length} students`);
       } catch (emailErr) {
         console.error('[Publish email error]', emailErr.message);
-        // Don't fail the request if email sending fails
       }
     }
 
@@ -486,5 +475,116 @@ exports.deleteWeek = async (req, res) => {
   } catch (err) {
     console.error('[deleteWeek]', err.message);
     res.status(500).json({ message: 'Failed to reset week' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  GET STUDENT PROGRESS — called by student dashboard on every load
+// ══════════════════════════════════════════════════════════════════════════
+
+exports.getStudentProgress = async (req, res) => {
+  try {
+    const { registrationId } = req.params;
+
+    // All weeks admin has published
+    const publishedWeeks = await CourseworkQuestion
+      .find({ isPublished: true })
+      .select('weekNumber publishedAt')
+      .lean();
+
+    // This student's progress record
+    const progressDoc = await StudentProgress.findOne({ registrationId }).lean();
+
+    // Convert Mongoose Map → plain object { "1": {...}, "2": {...} }
+    const weekProgress = {};
+    if (progressDoc?.weekProgress) {
+      for (const [key, val] of Object.entries(progressDoc.weekProgress)) {
+        weekProgress[key] = val;
+      }
+    }
+
+    res.json({
+      publishedWeeks: publishedWeeks.map(w => ({
+        weekId:  w.weekNumber,
+        dueDate: w.publishedAt || null,
+      })),
+      weekProgress,
+      finalExam: progressDoc?.finalExam || {
+        submitted: false, score: null, feedback: null, graded: false,
+      },
+    });
+  } catch (err) {
+    console.error('[getStudentProgress]', err.message);
+    res.status(500).json({ message: 'Failed to load progress.' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  SUBMIT COURSEWORK — student submits answers for a week
+// ══════════════════════════════════════════════════════════════════════════
+
+exports.submitCoursework = async (req, res) => {
+  const { registrationId, weekId, answers } = req.body;
+
+  if (!registrationId || !weekId || !answers?.length) {
+    return res.status(400).json({ message: 'Missing required fields.' });
+  }
+
+  try {
+    await StudentProgress.findOneAndUpdate(
+      { registrationId },
+      {
+        $set: {
+          [`weekProgress.${weekId}`]: {
+            submitted:   true,
+            score:       null,
+            feedback:    null,
+            graded:      false,
+            submittedAt: new Date(),
+          },
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, message: `Week ${weekId} submitted.` });
+  } catch (err) {
+    console.error('[submitCoursework]', err.message);
+    res.status(500).json({ message: 'Failed to submit coursework.' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  SUBMIT FINAL EXAM — student submits final exam answers
+// ══════════════════════════════════════════════════════════════════════════
+
+exports.submitFinalExam = async (req, res) => {
+  const { registrationId, answers } = req.body;
+
+  if (!registrationId || !answers?.length) {
+    return res.status(400).json({ message: 'Missing required fields.' });
+  }
+
+  try {
+    await StudentProgress.findOneAndUpdate(
+      { registrationId },
+      {
+        $set: {
+          finalExam: {
+            submitted:   true,
+            score:       null,
+            feedback:    null,
+            graded:      false,
+            submittedAt: new Date(),
+          },
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, message: 'Final exam submitted.' });
+  } catch (err) {
+    console.error('[submitFinalExam]', err.message);
+    res.status(500).json({ message: 'Failed to submit final exam.' });
   }
 };

@@ -5,7 +5,7 @@
 
 const express    = require('express');
 const router     = express.Router();
-const controller = require('../controllers/coursework-questions.controller');
+const controller = require('../controllers/coursework-question.controller');
 
 // ── Admin routes ───────────────────────────────────────────────────────────
 

@@ -237,7 +237,10 @@ mongooseConnect();
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/registration', require('./routes/registration.routes'));
 app.use('/api/admin/registrations', require('./routes/admin.routes'));
-
+app.use('/api/coursework-questions', require('./routes/courseworkquestions.routes'));
+app.use('/api/student', require('./routes/student.routes'));
+app.use('/api', require('./routes/student.routes'));
+app.use('/api/final-exam',           require('./routes/finalexam.routes'));
 // -----------------------------------------------------------------------------
 // ERROR HANDLER
 // -----------------------------------------------------------------------------
