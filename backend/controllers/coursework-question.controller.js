@@ -21,6 +21,11 @@
  *
  * Wired via routes/finalexam.routes.js:
  *   POST   /api/final-exam
+ *
+ * NEW — Wired via routes/admin.routes.js (or append to coursework-questions.routes.js):
+ *   GET    /api/admin/submissions           → all student submissions (all weeks)
+ *   GET    /api/admin/submissions?week=N    → filtered by week number
+ *   PATCH  /api/admin/submissions/grade     → admin grades a submission
  */
 
 const CourseworkQuestion = require('../models/Courseworkquestion.model');
@@ -524,7 +529,7 @@ exports.getStudentProgress = async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 
 exports.submitCoursework = async (req, res) => {
-  const { registrationId, weekId, answers } = req.body;
+  const { registrationId, weekId, answers, studentName, studentEmail } = req.body;
 
   if (!registrationId || !weekId || !answers?.length) {
     return res.status(400).json({ message: 'Missing required fields.' });
@@ -535,12 +540,15 @@ exports.submitCoursework = async (req, res) => {
       { registrationId },
       {
         $set: {
+          studentName:  studentName  || '',
+          studentEmail: studentEmail || '',
           [`weekProgress.${weekId}`]: {
             submitted:   true,
             score:       null,
             feedback:    null,
             graded:      false,
             submittedAt: new Date(),
+            answers:     answers,          // ← store answers so admin can read them
           },
         },
       },
@@ -559,7 +567,7 @@ exports.submitCoursework = async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 
 exports.submitFinalExam = async (req, res) => {
-  const { registrationId, answers } = req.body;
+  const { registrationId, answers, studentName, studentEmail } = req.body;
 
   if (!registrationId || !answers?.length) {
     return res.status(400).json({ message: 'Missing required fields.' });
@@ -570,12 +578,15 @@ exports.submitFinalExam = async (req, res) => {
       { registrationId },
       {
         $set: {
+          studentName:  studentName  || '',
+          studentEmail: studentEmail || '',
           finalExam: {
             submitted:   true,
             score:       null,
             feedback:    null,
             graded:      false,
             submittedAt: new Date(),
+            answers:     answers,          // ← store answers so admin can read them
           },
         },
       },
@@ -586,5 +597,241 @@ exports.submitFinalExam = async (req, res) => {
   } catch (err) {
     console.error('[submitFinalExam]', err.message);
     res.status(500).json({ message: 'Failed to submit final exam.' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  GET ALL SUBMISSIONS — admin fetches real student submissions
+//
+//  Query params:
+//    ?week=N   → filter to a specific week (1-6). Omit for all weeks.
+//    ?type=final → return final exam submissions instead
+// ══════════════════════════════════════════════════════════════════════════
+
+exports.getAllSubmissions = async (req, res) => {
+  try {
+    const { week, type } = req.query;
+
+    // Fetch all StudentProgress documents
+    const allProgress = await StudentProgress.find({}).lean();
+
+    if (!allProgress.length) {
+      return res.json({ submissions: [] });
+    }
+
+    // Build a map of registrationId → student info from Registration collection
+    const regIds   = allProgress.map(p => p.registrationId);
+    const students = await Registration.find(
+      { registrationId: { $in: regIds } },
+      'registrationId fullName email category'
+    ).lean();
+
+    const studentMap = {};
+    students.forEach(s => { studentMap[s.registrationId] = s; });
+
+    const submissions = [];
+
+    // ── Final exam submissions ──────────────────────────────────────────
+    if (type === 'final') {
+      allProgress.forEach(progress => {
+        const student     = studentMap[progress.registrationId] || {};
+        const studentName = student.fullName || progress.studentName || progress.registrationId;
+        const fe          = progress.finalExam || {};
+
+        submissions.push({
+          registrationId: progress.registrationId,
+          student:        studentName,
+          email:          student.email || progress.studentEmail || '',
+          category:       student.category || '',
+          type:           'final',
+          weekId:         null,
+          weekLabel:      'Final Exam',
+          submitted:      fe.submitted  ?? false,
+          score:          fe.score      ?? null,
+          feedback:       fe.feedback   ?? null,
+          graded:         fe.graded     ?? false,
+          submittedAt:    fe.submittedAt ?? null,
+          answers:        fe.answers    ?? [],
+        });
+      });
+
+      return res.json({ submissions });
+    }
+
+    // ── Weekly coursework submissions ───────────────────────────────────
+    const weeksToReturn = week ? [parseInt(week, 10)] : [1, 2, 3, 4, 5, 6];
+
+    // Get published week info so we can show week title
+    const publishedWeeks = await CourseworkQuestion
+      .find({})
+      .select('weekNumber weekTitle isPublished')
+      .lean();
+    const weekTitleMap = {};
+    publishedWeeks.forEach(w => { weekTitleMap[w.weekNumber] = w.weekTitle; });
+
+    const weekTitleFallback = {
+      1: 'Foundation for Workplace',
+      2: 'Communication & Professional Presence',
+      3: 'Career Positioning & Job Readiness',
+      4: 'Productivity & Workplace Performance',
+      5: 'Workplace Excellence & Growth',
+      6: 'Career Direction & Real-World Application',
+    };
+
+    allProgress.forEach(progress => {
+      const student     = studentMap[progress.registrationId] || {};
+      const studentName = student.fullName || progress.studentName || progress.registrationId;
+
+      weeksToReturn.forEach(w => {
+        // weekProgress may be a Mongoose Map (has .get()) or plain object after .lean()
+        // .lean() should convert Maps to plain objects, but key may be stored as string
+        let weekData = null;
+        if (progress.weekProgress) {
+          if (typeof progress.weekProgress.get === 'function') {
+            // Mongoose Map instance (shouldn't happen after .lean() but just in case)
+            weekData = progress.weekProgress.get(String(w)) || null;
+          } else {
+            // Plain object — key could be number or string depending on Mongoose version
+            weekData = progress.weekProgress[w] || progress.weekProgress[String(w)] || null;
+          }
+        }
+        console.log(`[Submissions] regId=${progress.registrationId} week=${w} found=${!!weekData}`);
+
+        submissions.push({
+          registrationId: progress.registrationId,
+          student:        studentName,
+          email:          student.email || progress.studentEmail || '',
+          category:       student.category || '',
+          type:           'weekly',
+          weekId:         w,
+          weekLabel:      `Week ${w}: ${weekTitleMap[w] || weekTitleFallback[w] || ''}`,
+          submitted:      weekData?.submitted  ?? false,
+          score:          weekData?.score      ?? null,
+          feedback:       weekData?.feedback   ?? null,
+          graded:         weekData?.graded     ?? false,
+          submittedAt:    weekData?.submittedAt ?? null,
+          answers:        weekData?.answers    ?? [],
+        });
+      });
+    });
+
+    res.json({ submissions });
+  } catch (err) {
+    console.error('[getAllSubmissions]', err.message);
+    res.status(500).json({ message: 'Failed to fetch submissions.' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  GRADE SUBMISSION — admin scores a student's weekly or final submission
+//
+//  Body: { registrationId, weekId, score, feedback, gradedBy }
+//        weekId: 1-6 for weekly, or "final" for final exam
+// ══════════════════════════════════════════════════════════════════════════
+
+exports.gradeSubmission = async (req, res) => {
+  try {
+    const { registrationId, weekId, score, feedback, gradedBy } = req.body;
+
+    if (!registrationId) {
+      return res.status(400).json({ message: 'registrationId is required.' });
+    }
+    if (score === undefined || score === null) {
+      return res.status(400).json({ message: 'score is required.' });
+    }
+
+    const progress = await StudentProgress.findOne({ registrationId });
+    if (!progress) {
+      return res.status(404).json({ message: 'Student progress record not found.' });
+    }
+
+    if (weekId === 'final') {
+      // Grade final exam
+      if (!progress.finalExam) {
+        return res.status(400).json({ message: 'Student has not submitted the final exam.' });
+      }
+      progress.finalExam.score    = Number(score);
+      progress.finalExam.feedback = feedback || '';
+      progress.finalExam.graded   = true;
+      progress.finalExam.gradedAt = new Date();
+      progress.finalExam.gradedBy = gradedBy || 'admin';
+    } else {
+      // Grade a weekly submission
+      const wid = parseInt(weekId, 10);
+      if (isNaN(wid) || wid < 1 || wid > 6) {
+        return res.status(400).json({ message: 'Invalid weekId. Must be 1-6 or "final".' });
+      }
+
+      const key      = String(wid);
+      const existing = progress.weekProgress?.get
+        ? progress.weekProgress.get(key)        // Mongoose Map
+        : progress.weekProgress?.[key];         // plain object
+
+      if (!existing || !existing.submitted) {
+        return res.status(400).json({ message: `Student has not submitted Week ${wid}.` });
+      }
+
+      const updatedWeek = {
+        ...existing,
+        score:    Number(score),
+        feedback: feedback || '',
+        graded:   true,
+        gradedAt: new Date(),
+        gradedBy: gradedBy || 'admin',
+      };
+
+      // Handle both Mongoose Map and plain object storage
+      if (progress.weekProgress?.set) {
+        progress.weekProgress.set(key, updatedWeek);
+      } else {
+        progress.weekProgress[key] = updatedWeek;
+      }
+    }
+
+    progress.markModified('weekProgress');
+    progress.markModified('finalExam');
+    await progress.save();
+
+    // Send grade notification email to student
+    try {
+      const student = await Registration.findOne({ registrationId }, 'email fullName').lean();
+      if (student?.email) {
+        const label    = weekId === 'final' ? 'Final Exam' : `Week ${weekId}`;
+        const scoreVal = weekId === 'final' ? `${score}/40` : `${score}/10`;
+        await sendEmail(
+          student.email,
+          `📊 Your ${label} Has Been Graded — Celcium360`,
+          `<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto;padding:28px;background:#111;color:#e0e0e0;border-radius:12px;border:1px solid #B88D2A;">
+            <h2 style="color:#B88D2A;margin-top:0;">Your ${label} Results 📊</h2>
+            <p>Hi <strong>${student.fullName}</strong>,</p>
+            <p>Your <strong>${label}</strong> submission has been reviewed and graded.</p>
+            <div style="background:#1a1a1a;border:1px solid #2e2e2e;border-radius:8px;padding:16px;margin:16px 0;">
+              <div style="font-size:11px;color:#888;margin-bottom:4px;">Your Score</div>
+              <div style="font-size:28px;font-weight:700;color:#B88D2A;">${scoreVal}</div>
+              ${feedback ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #2e2e2e;">
+                <div style="font-size:11px;color:#888;margin-bottom:4px;">Feedback</div>
+                <div style="font-size:13px;color:#ccc;">${feedback}</div>
+              </div>` : ''}
+            </div>
+            <p>Log in to your student portal to view your full results.</p>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/portal"
+               style="display:inline-block;padding:13px 26px;background:#B88D2A;color:#000;text-decoration:none;border-radius:8px;font-weight:700;">
+              View My Results →
+            </a>
+            <hr style="border-color:#2e2e2e;margin:24px 0;">
+            <p style="color:#555;font-size:11px;margin:0;">Celcium360 Solutions Limited</p>
+          </div>`
+        );
+      }
+    } catch (emailErr) {
+      console.error('[Grade email error]', emailErr.message);
+      // Don't fail the request if email fails
+    }
+
+    console.log(`[Grade] ${registrationId} Week/Final=${weekId} Score=${score} by ${gradedBy || 'admin'}`);
+    res.json({ success: true, message: 'Submission graded successfully.' });
+  } catch (err) {
+    console.error('[gradeSubmission]', err.message);
+    res.status(500).json({ message: err.message || 'Failed to grade submission.' });
   }
 };
