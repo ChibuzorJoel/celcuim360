@@ -2,59 +2,37 @@
 
 <div class="page-wrap">
 
-  <!-- ── TAB SWITCHER ───────────────────────────────────────────── -->
+  <!-- ── TAB SWITCHER ──────────────────────────────────────────────────── -->
   <div class="tab-bar">
 
-    <button
-      class="tab-btn"
-      [class.active]="activeTab === 'questions'"
+    <button class="tab-btn" [class.active]="activeTab === 'questions'"
       (click)="activeTab = 'questions'">
-
       <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
-        <path
-          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round">
-        </path>
-
-        <path
-          d="M15.5 3.5a2.121 2.121 0 013 3L12 13l-4 1 1-4 6.5-6.5z"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round">
-        </path>
+        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M15.5 3.5a2.121 2.121 0 013 3L12 13l-4 1 1-4 6.5-6.5z"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
       </svg>
-
       Manage Questions
     </button>
 
-    <button
-      class="tab-btn"
-      [class.active]="activeTab === 'scores'"
-      (click)="activeTab = 'scores'">
-
+    <button class="tab-btn" [class.active]="activeTab === 'scores'"
+      (click)="activeTab = 'scores'; loadSubmissions()">
       <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
-        <polyline
-          points="22 12 18 12 15 21 9 3 6 12 2 12"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round">
-        </polyline>
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round"></polyline>
       </svg>
-
       Submission Scores
     </button>
 
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════ -->
-  <!-- QUESTIONS TAB -->
-  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- QUESTIONS TAB                                                     -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
 
   <div *ngIf="activeTab === 'questions'">
 
-    <!-- Loading -->
     <div class="loading-row" *ngIf="weeksLoading">
       <div class="spinner-gold"></div>
       <span>Loading questions…</span>
@@ -62,445 +40,440 @@
 
     <div *ngIf="!weeksLoading" class="questions-layout">
 
-      <!-- Sidebar -->
+      <!-- ── SIDEBAR ────────────────────────────────────────────────── -->
       <div class="week-sidebar">
 
-        <div class="ws-title">
-          Weeks
-        </div>
+        <div class="ws-title">Weeks</div>
 
-        <button
-          class="ws-item"
+        <button class="ws-item"
           *ngFor="let w of [1,2,3,4,5,6]"
           [class.active]="activeWeekNum === w"
           (click)="selectWeek(w)">
-
           <div class="ws-item-left">
-
-            <span class="ws-num">
-              W{{ w }}
-            </span>
-
-            <span class="ws-label">
-              {{ weekTitles[w] }}
-            </span>
-
+            <span class="ws-num">W{{ w }}</span>
+            <span class="ws-label">{{ weekTitles[w] }}</span>
           </div>
-
-          <span
-            class="ws-status"
-            [class]="'ws-' + getWeekStatus(w)">
-
-            <span *ngIf="getWeekStatus(w) === 'published'">
-              ● Live
-            </span>
-
-            <span *ngIf="getWeekStatus(w) === 'draft'">
-              ○ Draft
-            </span>
-
-            <span *ngIf="getWeekStatus(w) === 'empty'">
-              + New
-            </span>
-
+          <span class="ws-status" [class]="'ws-' + getWeekStatus(w)">
+            <span *ngIf="getWeekStatus(w) === 'published'">● Live</span>
+            <span *ngIf="getWeekStatus(w) === 'draft'">○ Draft</span>
+            <span *ngIf="getWeekStatus(w) === 'empty'">+ New</span>
           </span>
-
         </button>
 
       </div>
 
-      <!-- Main panel -->
+      <!-- ── MAIN PANEL ─────────────────────────────────────────────── -->
       <div class="question-panel">
 
-        <!-- VIEW MODE -->
+        <!-- ══ VIEW MODE ══ -->
         <ng-container *ngIf="!editMode">
 
           <!-- Empty state -->
           <div class="empty-week" *ngIf="!activeWeekData">
-
-            <div class="ew-icon">
-              📝
+            <div class="ew-icon">📝</div>
+            <h3>Week {{ activeWeekNum }} — No Questions Yet</h3>
+            <p>{{ weekTitles[activeWeekNum] }}</p>
+            <div class="empty-actions">
+              <button class="btn-add-questions" (click)="startEdit()">
+                ✏️ Add 10 Questions for Week {{ activeWeekNum }}
+              </button>
+              <button class="btn-publish-default" [disabled]="publishLoading"
+                (click)="saveDefaultsAndPublish()">
+                <span *ngIf="!publishLoading">🚀 Use Default Questions &amp; Publish</span>
+                <span *ngIf="publishLoading">Publishing…</span>
+              </button>
             </div>
-
-            <h3>
-              Week {{ activeWeekNum }} — No Questions Yet
-            </h3>
-
-            <p>
-              {{ weekTitles[activeWeekNum] }}
+            <p class="empty-hint">
+              "Use Default Questions &amp; Publish" will instantly unlock this week for students
+              using the pre-built scenario questions. You can still edit them later.
             </p>
-
-            <button
-              class="btn-add-questions"
-              (click)="startEdit()">
-
-              + Add 10 Questions for Week {{ activeWeekNum }}
-            </button>
-
           </div>
 
           <!-- Existing week -->
           <div *ngIf="activeWeekData">
 
-            <!-- Header -->
             <div class="qp-header">
-
               <div class="qp-header-left">
-
-                <div class="qp-week-tag">
-                  Week {{ activeWeekNum }}
-                </div>
-
-                <h2 class="qp-title">
-                  {{ activeWeekData.weekTitle }}
-                </h2>
-
-                <div class="qp-meta">
-                  Last updated:
-                  {{ formatDate(activeWeekData.updatedAt) }}
-                </div>
-
+                <div class="qp-week-tag">Week {{ activeWeekNum }}</div>
+                <h2 class="qp-title">{{ activeWeekData.weekTitle }}</h2>
+                <div class="qp-meta">Last updated: {{ formatDate(activeWeekData.updatedAt) }}</div>
               </div>
-
               <div class="qp-header-actions">
-
-                <!-- Publish -->
-                <button
-                  class="btn-publish"
+                <button class="btn-publish"
                   [class.btn-unpublish]="activeWeekData.isPublished"
-                  [disabled]="publishLoading"
-                  (click)="togglePublish()">
-
+                  [disabled]="publishLoading" (click)="togglePublish()">
                   <span *ngIf="!publishLoading">
-
-                    {{
-                      activeWeekData.isPublished
-                        ? '⏸ Unpublish'
-                        : '▶ Publish to Students'
-                    }}
-
+                    {{ activeWeekData.isPublished ? '⏸ Unpublish' : '🚀 Publish to Students' }}
                   </span>
-
                   <span *ngIf="publishLoading" class="loading-btn">
-                    <span class="spin-sm"></span>
+                    <span class="spin-sm"></span> Updating…
                   </span>
-
                 </button>
-
-                <!-- Edit -->
-                <button
-                  class="btn-edit-q"
-                  (click)="startEdit()">
-
-                  ✏ Edit Questions
-                </button>
-
+                <button class="btn-edit-q" (click)="startEdit()">✏ Edit Questions</button>
               </div>
-
             </div>
 
-            <!-- Publish status -->
-            <div
-              class="publish-bar"
+            <div class="publish-bar"
               [class.pub-live]="activeWeekData.isPublished"
               [class.pub-draft]="!activeWeekData.isPublished">
-
               <div class="pb-dot"></div>
-
               <span *ngIf="activeWeekData.isPublished">
-
-                ✓ Published — Students can see and answer these questions.
-
-                Published:
-                {{ formatDate(activeWeekData.publishedAt) }}
-
+                ✓ <strong>LIVE</strong> — Students can now see and submit Week {{ activeWeekNum }} coursework.
+                Published: {{ formatDate(activeWeekData.publishedAt) }}
               </span>
-
               <span *ngIf="!activeWeekData.isPublished">
-
-                ○ Draft — Not visible to students yet.
-
-                Click "Publish" when ready.
-
+                🔒 <strong>Draft</strong> — Students cannot see this yet.
+                Click <strong>"🚀 Publish to Students"</strong> when ready.
               </span>
-
             </div>
 
-            <!-- Messages -->
-            <div class="save-success" *ngIf="saveSuccess">
-              ✓ {{ saveSuccess }}
-            </div>
+            <div class="save-success" *ngIf="saveSuccess">✓ {{ saveSuccess }}</div>
+            <div class="save-error"   *ngIf="publishError">⚠ {{ publishError }}</div>
 
-            <div class="save-error" *ngIf="publishError">
-              ⚠ {{ publishError }}
-            </div>
-
-            <!-- Instruction -->
             <div class="instruction-box">
-
-              <div class="ib-label">
-                Instruction to Students
-              </div>
-
-              <p class="ib-text">
-                {{ activeWeekData.instruction }}
-              </p>
-
+              <div class="ib-label">Instruction to Students</div>
+              <p class="ib-text">{{ activeWeekData.instruction }}</p>
             </div>
 
-            <!-- Questions -->
             <div class="q-view-list">
-
-              <div
-                class="qv-item"
-                *ngFor="let q of activeWeekData.questions; let i = index">
-
-                <span class="qv-num">
-                  {{ i + 1 }}
-                </span>
-
-                <p class="qv-text">
-                  {{ q }}
-                </p>
-
+              <div class="qv-item" *ngFor="let q of activeWeekData.questions; let i = index">
+                <span class="qv-num">{{ i + 1 }}</span>
+                <p class="qv-text">{{ q }}</p>
               </div>
-
             </div>
 
           </div>
 
         </ng-container>
 
-        <!-- EDIT MODE -->
+        <!-- ══ EDIT MODE ══ -->
         <ng-container *ngIf="editMode">
 
-          <!-- Header -->
           <div class="edit-header">
-
             <div>
-
-              <div class="qp-week-tag">
-                Week {{ activeWeekNum }} — Edit Mode
-              </div>
-
-              <h2 class="qp-title">
-                {{ editTitle || weekTitles[activeWeekNum] }}
-              </h2>
-
+              <div class="qp-week-tag">Week {{ activeWeekNum }} — Edit Mode</div>
+              <h2 class="qp-title">{{ editTitle || weekTitles[activeWeekNum] }}</h2>
             </div>
-
             <div class="edit-header-actions">
-
-              <button
-                class="btn-cancel-edit"
-                (click)="cancelEdit()">
-
-                Cancel
+              <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
+              <button class="btn-save-q" [disabled]="saveLoading" (click)="saveQuestions()">
+                <span *ngIf="!saveLoading">💾 Save Questions</span>
+                <span *ngIf="saveLoading" class="loading-btn"><span class="spin-sm"></span> Saving…</span>
               </button>
-
-              <button
-                class="btn-save-q"
-                [disabled]="saveLoading"
-                (click)="saveQuestions()">
-
-                <span *ngIf="!saveLoading">
-                  💾 Save Questions
-                </span>
-
-                <span *ngIf="saveLoading" class="loading-btn">
-                  <span class="spin-sm"></span>
-                  Saving…
-                </span>
-
-              </button>
-
             </div>
-
           </div>
 
-          <!-- Error -->
-          <div class="save-error" *ngIf="saveError">
-            ⚠ {{ saveError }}
-          </div>
+          <div class="save-error" *ngIf="saveError">⚠ {{ saveError }}</div>
 
-          <!-- Week title -->
           <div class="edit-field">
-
-            <label>
-              Week Title
-            </label>
-
-            <input
-              type="text"
-              class="edit-input"
-              [(ngModel)]="editTitle"
+            <label>Week Title</label>
+            <input type="text" class="edit-input" [(ngModel)]="editTitle"
               placeholder="e.g. Foundation for Workplace">
-
           </div>
 
-          <!-- Instruction -->
           <div class="edit-field">
-
-            <label>
-              Instruction to Students
-            </label>
-
-            <textarea
-              class="edit-textarea"
-              rows="3"
-              [(ngModel)]="editInstruction"
-              placeholder="Instructions shown above the questions…">
-            </textarea>
-
+            <label>Instruction to Students</label>
+            <textarea class="edit-textarea" rows="3" [(ngModel)]="editInstruction"
+              placeholder="Instructions shown above the questions…"></textarea>
           </div>
 
-          <!-- Question label -->
           <div class="edit-questions-label">
-
             Questions
-
-            <!-- FIXED -->
-            <span class="eq-count">
-              {{ getFilledQuestionsCount() }} / 10 filled
-            </span>
-
+            <span class="eq-count">{{ getFilledQuestionsCount() }} / 10 filled</span>
           </div>
 
-          <!-- Questions -->
           <div class="edit-q-list">
-
-            <div
-              class="eq-item"
-              *ngFor="
-                let q of editQuestions;
-                let i = index;
-                trackBy: trackByIndex
-              ">
-
-              <span class="eq-num">
-                {{ i + 1 }}
-              </span>
-
-              <textarea
-                class="eq-input"
-                rows="2"
+            <div class="eq-item"
+              *ngFor="let q of editQuestions; let i = index; trackBy: trackByIndex">
+              <span class="eq-num">{{ i + 1 }}</span>
+              <textarea class="eq-input" rows="2"
                 [(ngModel)]="editQuestions[i]"
                 [placeholder]="'Enter scenario question ' + (i + 1) + '…'"
                 [class.eq-filled]="editQuestions[i]?.trim()">
               </textarea>
-
             </div>
-
           </div>
 
-          <!-- Bottom -->
           <div class="edit-bottom-bar">
-
-            <span class="edit-hint">
-              All 10 questions must be filled before saving.
-            </span>
-
+            <span class="edit-hint">All 10 questions must be filled before saving.</span>
             <div class="edit-bottom-actions">
-
-              <button
-                class="btn-cancel-edit"
-                (click)="cancelEdit()">
-
-                Cancel
+              <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
+              <button class="btn-save-q" [disabled]="saveLoading" (click)="saveQuestions()">
+                <span *ngIf="!saveLoading">💾 Save Questions</span>
+                <span *ngIf="saveLoading" class="loading-btn"><span class="spin-sm"></span> Saving…</span>
               </button>
-
-              <button
-                class="btn-save-q"
-                [disabled]="saveLoading"
-                (click)="saveQuestions()">
-
-                <span *ngIf="!saveLoading">
-                  💾 Save Questions
-                </span>
-
-                <span *ngIf="saveLoading" class="loading-btn">
-                  <span class="spin-sm"></span>
-                  Saving…
-                </span>
-
-              </button>
-
             </div>
-
           </div>
 
         </ng-container>
 
       </div>
+    </div>
 
+  </div>
+  <!-- end questions tab -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- SCORES TAB                                                        -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+
+  <div *ngIf="activeTab === 'scores'">
+
+    <!-- ── Week filter pills ────────────────────────────────────────── -->
+    <div class="controls-bar">
+
+      <div class="filter-row">
+        <button class="filter-chip"
+          *ngFor="let opt of scoreWeekOptions"
+          [class.active]="activeScoreWeek === opt.value"
+          (click)="setScoreWeek(opt.value)">
+          {{ opt.label }}
+        </button>
+      </div>
+
+      <div class="ctrl-right">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"></circle>
+            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          <input type="text" placeholder="Search students…"
+            [(ngModel)]="searchTerm" (input)="applyFilters()">
+        </div>
+        <button class="act-btn" (click)="exportPDF()">↓ Export Scores</button>
+      </div>
+
+    </div>
+
+    <!-- ── Summary stats ─────────────────────────────────────────────── -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="sc-val">{{ summaryStats.submitted }}<span class="sc-of">/{{ summaryStats.total }}</span></div>
+        <div class="sc-label">Submitted</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-val">{{ summaryStats.pending }}</div>
+        <div class="sc-label">Pending Grade</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-val">{{ summaryStats.avgScore }}</div>
+        <div class="sc-label">Avg Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-val sc-risk">{{ summaryStats.atRisk }}</div>
+        <div class="sc-label">At Risk (&lt;60%)</div>
+      </div>
+      <div class="stat-card stat-card--wide">
+        <div class="sc-val sc-top">{{ summaryStats.topScore }}</div>
+        <div class="sc-label">Top Score — {{ summaryStats.topStudent }}</div>
+      </div>
+    </div>
+
+    <!-- ── Loading / error states ────────────────────────────────────── -->
+    <div class="loading-row" *ngIf="submissionsLoading">
+      <div class="spinner-gold"></div>
+      <span>Loading submissions…</span>
+    </div>
+
+    <div class="sub-error" *ngIf="!submissionsLoading && submissionsError">
+      ⚠ {{ submissionsError }}
+      <button class="retry-btn" (click)="loadSubmissions()">Retry</button>
+    </div>
+
+    <!-- ── Empty state ───────────────────────────────────────────────── -->
+    <div class="empty-submissions"
+      *ngIf="!submissionsLoading && !submissionsError && filteredSubmissions.length === 0">
+      <div class="es-icon">📭</div>
+      <p>No submissions found for
+        {{ activeScoreWeek === 0 ? 'Final Exam' : 'Week ' + activeScoreWeek }}.
+      </p>
+      <p class="es-sub" *ngIf="searchTerm">Try clearing the search.</p>
+    </div>
+
+    <!-- ── Submissions table ─────────────────────────────────────────── -->
+    <div class="submissions-table-wrap"
+      *ngIf="!submissionsLoading && !submissionsError && filteredSubmissions.length > 0">
+
+      <table class="submissions-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student</th>
+            <th>Email</th>
+            <th>Submitted</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sub of filteredSubmissions; let i = index; trackBy: trackByRegId"
+            [class.row-unsubmitted]="!sub.submitted"
+            [class.row-pending]="sub.submitted && !sub.graded"
+            [class.row-graded]="sub.graded">
+
+            <td class="td-num">{{ i + 1 }}</td>
+
+            <td class="td-student">
+              <div class="student-name">{{ sub.student }}</div>
+              <div class="student-cat" *ngIf="sub.category">{{ sub.category }}</div>
+            </td>
+
+            <td class="td-email">{{ sub.email || '—' }}</td>
+
+            <td class="td-date">
+              <span *ngIf="sub.submitted">{{ formatDate(sub.submittedAt) }}</span>
+              <span class="not-submitted" *ngIf="!sub.submitted">Not submitted</span>
+            </td>
+
+            <td class="td-score">
+              <span *ngIf="sub.graded && sub.score !== null"
+                [class]="scoreClass(sub.score, activeScoreWeek === 0)">
+                {{ scoreDisplay(sub.score, activeScoreWeek === 0) }}
+                <span class="score-pct">({{ scorePct(sub.score, activeScoreWeek === 0) }}%)</span>
+              </span>
+              <span class="score-dash" *ngIf="!sub.graded || sub.score === null">—</span>
+            </td>
+
+            <td class="td-status">
+              <span class="badge badge-unsubmitted" *ngIf="!sub.submitted">Not Submitted</span>
+              <span class="badge badge-pending"     *ngIf="sub.submitted && !sub.graded">Pending Grade</span>
+              <span class="badge badge-graded"      *ngIf="sub.graded">Graded</span>
+            </td>
+
+            <td class="td-actions">
+              <!-- View answers (only if student submitted) -->
+              <button class="action-btn action-btn--view"
+                *ngIf="sub.submitted && sub.answers?.length"
+                title="View Answers"
+                (click)="openAnswersModal(sub)">
+                👁 View
+              </button>
+
+              <!-- Grade button (only if submitted) -->
+              <button class="action-btn action-btn--grade"
+                *ngIf="sub.submitted"
+                [class.action-btn--regrading]="sub.graded"
+                title="{{ sub.graded ? 'Update Grade' : 'Grade Submission' }}"
+                (click)="openGradeModal(sub)">
+                {{ sub.graded ? '✏ Edit Grade' : '✔ Grade' }}
+              </button>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+    <!-- end submissions-table-wrap -->
+
+  </div>
+  <!-- end scores tab -->
+
+</div>
+<!-- end page-wrap -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- GRADE MODAL                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+
+<div class="modal-backdrop" *ngIf="showGradeModal" (click)="closeGradeModal()"></div>
+
+<div class="modal grade-modal" *ngIf="showGradeModal && gradingSubmission">
+
+  <div class="modal-header">
+    <div>
+      <div class="modal-tag">{{ gradingSubmission.weekLabel }}</div>
+      <h3 class="modal-title">Grade — {{ gradingSubmission.student }}</h3>
+      <div class="modal-sub">{{ gradingSubmission.email }}</div>
+    </div>
+    <button class="modal-close" (click)="closeGradeModal()">✕</button>
+  </div>
+
+  <div class="modal-body">
+
+    <div class="grade-success" *ngIf="gradeSuccess">✓ {{ gradeSuccess }}</div>
+    <div class="grade-error"   *ngIf="gradeError">⚠ {{ gradeError }}</div>
+
+    <div class="grade-field">
+      <label>Score <span class="grade-max">(out of {{ maxGradeScore }})</span></label>
+      <input type="number" class="grade-input"
+        [(ngModel)]="gradeScoreInput"
+        [min]="0" [max]="maxGradeScore"
+        placeholder="e.g. {{ maxGradeScore === 40 ? '32' : '8' }}">
+    </div>
+
+    <div class="grade-field">
+      <label>Feedback <span class="grade-opt">(optional)</span></label>
+      <textarea class="grade-textarea" rows="4"
+        [(ngModel)]="gradeFeedbackInput"
+        placeholder="Write feedback for the student — this will be emailed to them…">
+      </textarea>
+    </div>
+
+    <div class="grade-actions">
+      <button class="btn-cancel-edit" (click)="closeGradeModal()">Cancel</button>
+      <button class="btn-save-grade" [disabled]="gradeLoading" (click)="submitGrade()">
+        <span *ngIf="!gradeLoading">💾 Save Grade</span>
+        <span *ngIf="gradeLoading" class="loading-btn"><span class="spin-sm"></span> Saving…</span>
+      </button>
     </div>
 
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════ -->
-  <!-- SCORES TAB -->
-  <!-- ════════════════════════════════════════════════════════════ -->
+</div>
 
-  <div *ngIf="activeTab === 'scores'">
 
-    <!-- Controls -->
-    <div class="controls-bar">
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- ANSWERS PREVIEW MODAL                                              -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
 
-      <div class="filter-row">
+<div class="modal-backdrop" *ngIf="showAnswersModal" (click)="closeAnswersModal()"></div>
 
-        <button
-          class="filter-chip"
-          *ngFor="let c of cohortOptions"
-          [class.active]="activeCohort === c"
-          (click)="setCohort(c)">
+<div class="modal answers-modal" *ngIf="showAnswersModal && viewingSubmission">
 
-          {{ c }}
-
-        </button>
-
+  <div class="modal-header">
+    <div>
+      <div class="modal-tag">{{ viewingSubmission.weekLabel }}</div>
+      <h3 class="modal-title">Answers — {{ viewingSubmission.student }}</h3>
+      <div class="modal-sub">
+        Submitted: {{ formatDate(viewingSubmission.submittedAt) }}
+        <span *ngIf="viewingSubmission.graded && viewingSubmission.score !== null">
+          · Score: {{ scoreDisplay(viewingSubmission.score, activeScoreWeek === 0) }}
+          ({{ scorePct(viewingSubmission.score, activeScoreWeek === 0) }}%)
+        </span>
       </div>
+    </div>
+    <button class="modal-close" (click)="closeAnswersModal()">✕</button>
+  </div>
 
-      <div class="ctrl-right">
+  <div class="modal-body answers-body">
 
-        <!-- Search -->
-        <div class="search-wrap">
-
-          <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
-
-            <circle
-              cx="11"
-              cy="11"
-              r="8"
-              stroke="currentColor"
-              stroke-width="2">
-            </circle>
-
-            <path
-              d="M21 21l-4.35-4.35"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round">
-            </path>
-
-          </svg>
-
-          <input
-            type="text"
-            placeholder="Search students…"
-            [(ngModel)]="searchTerm"
-            (input)="applyFilters()">
-
-        </div>
-
-        <button
-          class="act-btn"
-          (click)="exportPDF()">
-
-          ↓ Export Scores
-        </button>
-
+    <div class="answer-item"
+      *ngFor="let a of viewingSubmission.answers; let i = index">
+      <div class="ai-q">
+        <span class="ai-num">Q{{ i + 1 }}</span>
+        {{ a.questionText }}
       </div>
+      <div class="ai-a">{{ a.answer || '(No answer provided)' }}</div>
+    </div>
 
+    <!-- No answers stored (older submissions before answers were persisted) -->
+    <div class="no-answers" *ngIf="!viewingSubmission.answers?.length">
+      <p>No answer data available for this submission.</p>
+      <p class="no-answers-sub">
+        Answers are stored for all new submissions.
+        Older submissions recorded before this update will not have stored answers.
+      </p>
+    </div>
+
+    <div class="answers-footer">
+      <button class="btn-grade-from-answers"
+        (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)">
+        ✔ Grade This Submission
+      </button>
     </div>
 
   </div>

@@ -1,6 +1,7 @@
 // src/app/program/program.component.ts
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
 
 interface ScheduleSession {
   day: string;
@@ -123,7 +124,7 @@ export class ProgramComponent implements OnInit, OnDestroy {
     { label: 'Program guidelines',         icon: 'fa-solid fa-clipboard-list' }
   ];
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   ngOnInit(): void {
     this.detectTimezone();
@@ -246,7 +247,9 @@ export class ProgramComponent implements OnInit, OnDestroy {
   viewProgramDetails():void { this.scrollToSection('coverage'); }
 
   handleEnroll(tier: string): void {
-    console.log(`Enrolling: ${tier}`);
-    // TODO: integrate Flutterwave / Paystack
+    // Navigate to /register and pass the chosen tier as a query param
+    this.router.navigate(['/registration'], {
+      queryParams: { tier }
+    });
   }
 }

@@ -1,13 +1,4 @@
 // src/app/pages/student-dashboard/student-dashboard.component.ts
-// ═══════════════════════════════════════════════════════════════════════════
-//  Changes from original:
-//  1. Welcome popup shown once on first login (localStorage flag)
-//  2. ALL weeks start as 'locked' — unlocked only when admin publishes
-//  3. loadStudentProgress() fetches real unlock status from backend
-//  4. submitCoursework() posts to real API instead of setTimeout
-//  5. submitFinalExam() posts to real API
-//  6. loadProgressFromServer() syncs server grades back to student UI
-// ═══════════════════════════════════════════════════════════════════════════
 
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { HttpClient }                            from '@angular/common/http';
@@ -17,18 +8,18 @@ export type WeekStatus = 'completed' | 'pending' | 'overdue' | 'locked';
 export type ActiveTab  = 'dashboard' | 'coursework' | 'assignments' | 'grades';
 
 export interface CourseWeek {
-  id:           number;
-  title:        string;
-  description:  string;
-  topics:       string[];
-  status:       WeekStatus;
-  cwSubmitted:  boolean;
-  cwScore:      number | null;
-  cwFeedback:   string | null;
-  cwGraded:     boolean;
-  dueDate:      string;
-  cwQuestions:  string[];
-  publishedByAdmin: boolean;   // ← NEW: only true when admin publishes this week
+  id:               number;
+  title:            string;
+  description:      string;
+  topics:           string[];
+  status:           WeekStatus;
+  cwSubmitted:      boolean;
+  cwScore:          number | null;
+  cwFeedback:       string | null;
+  cwGraded:         boolean;
+  dueDate:          string;
+  cwQuestions:      string[];
+  publishedByAdmin: boolean;
 }
 
 export interface FinalExamSection {
@@ -49,6 +40,27 @@ export interface StudentProfile {
   enrolledAt:      string;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ADMIN PUBLISH CONFIG
+// ─────────────────────────────────────────────────────────────────
+// To unlock a week for students: set its value to TRUE here.
+// Set to FALSE to keep it locked.
+//
+// Example: unlock weeks 1 and 2:
+//   1: true,
+//   2: true,
+//   3: false,  ← still locked
+//   ...
+// ═══════════════════════════════════════════════════════════════════
+const PUBLISHED_WEEKS: Record<number, boolean> = {
+  1: true,   // ← UNLOCKED
+  2: true,   // ← UNLOCKED
+  3: true,   // ← UNLOCKED
+  4: true,   // ← UNLOCKED
+  5: false,
+  6: false,
+};
+
 @Component({
   selector:    'app-student-dashboard',
   templateUrl: './student-dashboard.component.html',
@@ -58,37 +70,29 @@ export class StudentDashboardComponent implements OnInit {
 
   private api = environment.apiUrl;
 
-  // ── UI state ──────────────────────────────────────────────────────────────
   loading   = true;
   activeTab: ActiveTab = 'dashboard';
   student:  StudentProfile | null = null;
 
-  // ── Welcome popup ─────────────────────────────────────────────────────────
   showWelcomePopup = false;
 
-  // ── Alerts ────────────────────────────────────────────────────────────────
   alerts: { type: 'warning' | 'danger' | 'info'; message: string }[] = [];
 
-  // ── Coursework modal ──────────────────────────────────────────────────────
-  showCwModal:    boolean       = false;
-  activeCwWeek:   CourseWeek | null = null;
-  cwModalAnswers: { [idx: number]: string } = {};
-  cwSubmitting  = false;
-  showCwResult  = false;
+  showCwModal:       boolean           = false;
+  activeCwWeek:      CourseWeek | null = null;
+  cwModalAnswers:    { [idx: number]: string } = {};
+  cwSubmitting     = false;
+  showCwResult     = false;
   lastSubmittedWeek: CourseWeek | null = null;
 
-  // ── Final exam modal ──────────────────────────────────────────────────────
-  showFinalExam:       boolean = false;
+  showFinalExam:       boolean      = false;
   finalAnswers:        { [idx: number]: string } = {};
-  finalExamSubmitting: boolean = false;
-  finalExamSubmitted:  boolean = false;
+  finalExamSubmitting: boolean      = false;
+  finalExamSubmitted:  boolean      = false;
   finalExamScore:      number | null = null;
   finalExamFeedback:   string | null = null;
-  finalExamGraded:     boolean = false;
+  finalExamGraded:     boolean      = false;
 
-  // ── Course weeks — ALL start LOCKED ──────────────────────────────────────
-  // publishedByAdmin = false means the week is locked regardless of progress.
-  // Admin sets this to true by publishing through admin panel.
   courseWeeks: CourseWeek[] = [
     {
       id: 1, title: 'Foundation for Workplace',
@@ -206,7 +210,6 @@ export class StudentDashboardComponent implements OnInit {
     },
   ];
 
-  // ── Final exam sections ───────────────────────────────────────────────────
   finalExamSections: FinalExamSection[] = [
     {
       title: 'Section A: LinkedIn, Personal Brand & Professional Identity',
@@ -290,25 +293,29 @@ export class StudentDashboardComponent implements OnInit {
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // LIFECYCLE
-  // ─────────────────────────────────────────────────────────────────────────
-
   ngOnInit(): void {
     this.buildSectionStarts();
     this.setWeekDates();
+    // Apply the hardcoded publish config FIRST so weeks are visible immediately
+    this.applyHardcodedPublishConfig();
     this.loadStudentData();
     this.checkWelcomePopup();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // WELCOME POPUP
+  // HARDCODED PUBLISH CONFIG
+  // Sets publishedByAdmin from the PUBLISHED_WEEKS constant at the top.
+  // This runs before any API call so students see unlocked weeks immediately.
   // ─────────────────────────────────────────────────────────────────────────
+  private applyHardcodedPublishConfig(): void {
+    this.courseWeeks.forEach(week => {
+      week.publishedByAdmin = PUBLISHED_WEEKS[week.id] === true;
+    });
+  }
 
   private checkWelcomePopup(): void {
     const seen = localStorage.getItem('c360_welcome_seen');
     if (!seen) {
-      // Show after a short delay so the dashboard renders first
       setTimeout(() => {
         this.showWelcomePopup = true;
         this.cdr.detectChanges();
@@ -321,10 +328,6 @@ export class StudentDashboardComponent implements OnInit {
     localStorage.setItem('c360_welcome_seen', 'true');
     document.body.style.overflow = '';
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // INIT HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
 
   private buildSectionStarts(): void {
     let count = 0;
@@ -374,24 +377,32 @@ export class StudentDashboardComponent implements OnInit {
     }
   }
 
-  // Fetch server-side progress: which weeks are published + student grades
+  // ─────────────────────────────────────────────────────────────────────────
+  // PROGRESS FROM SERVER
+  // If the API works → it can also publish/unpublish weeks dynamically.
+  // If the API fails → the hardcoded PUBLISHED_WEEKS config still works.
+  // ─────────────────────────────────────────────────────────────────────────
+
   private loadProgressFromServer(registrationId: string): void {
     this.http.get<any>(`${this.api}/api/student/${registrationId}/progress`).subscribe({
       next: data => {
-        // Apply published weeks from admin
-        if (data.publishedWeeks && Array.isArray(data.publishedWeeks)) {
+
+        // API-published weeks OVERRIDE the hardcoded config when the API works.
+        // This means: once backend is fixed, admin panel publish button takes over.
+        if (data.publishedWeeks && Array.isArray(data.publishedWeeks) && data.publishedWeeks.length > 0) {
+          // Reset all to false first, then apply what the server says
+          this.courseWeeks.forEach(w => w.publishedByAdmin = false);
           data.publishedWeeks.forEach((pw: any) => {
             const week = this.courseWeeks.find(w => w.id === pw.weekId);
             if (week) {
               week.publishedByAdmin = true;
-              week.dueDate         = pw.dueDate || week.dueDate;
-              // Unlock first published week
-              if (week.status === 'locked') week.status = 'pending';
+              if (pw.dueDate) week.dueDate = pw.dueDate;
             }
           });
         }
+        // If API returns empty publishedWeeks, keep the hardcoded config as-is.
 
-        // Apply student's submission + grading data
+        // Apply student submission & grading data
         if (data.weekProgress) {
           Object.keys(data.weekProgress).forEach(wid => {
             const progress = data.weekProgress[wid];
@@ -401,19 +412,11 @@ export class StudentDashboardComponent implements OnInit {
               week.cwScore     = progress.score      ?? week.cwScore;
               week.cwFeedback  = progress.feedback   ?? null;
               week.cwGraded    = progress.graded     ?? false;
-              if (progress.submitted) {
-                week.status = 'completed';
-                // Unlock next week if admin has published it
-                const next = this.courseWeeks.find(w => w.id === week.id + 1);
-                if (next && next.publishedByAdmin && next.status === 'locked') {
-                  next.status = 'pending';
-                }
-              }
+              if (progress.submitted) week.status = 'completed';
             }
           });
         }
 
-        // Apply final exam data
         if (data.finalExam) {
           this.finalExamSubmitted = data.finalExam.submitted ?? false;
           this.finalExamScore     = data.finalExam.score     ?? null;
@@ -421,12 +424,14 @@ export class StudentDashboardComponent implements OnInit {
           this.finalExamGraded    = data.finalExam.graded    ?? false;
         }
 
+        this.applyUnlockChain();
         this.loading = false;
         this.generateAlerts();
         this.cdr.detectChanges();
       },
+
       error: () => {
-        // Fallback: restore from localStorage if server is unreachable
+        // API failed — restore from localStorage, keep hardcoded publish config
         const weeksSt = localStorage.getItem('c360_weeks');
         const finalSt = localStorage.getItem('c360_final');
         if (weeksSt) {
@@ -436,6 +441,11 @@ export class StudentDashboardComponent implements OnInit {
               this.courseWeeks[i].cwSubmitted = s.cwSubmitted;
               this.courseWeeks[i].cwScore     = s.cwScore;
               this.courseWeeks[i].status      = s.status;
+              // Only restore publishedByAdmin from cache if hardcoded says false
+              // (hardcoded true always wins)
+              if (!this.courseWeeks[i].publishedByAdmin && s.publishedByAdmin) {
+                this.courseWeeks[i].publishedByAdmin = s.publishedByAdmin;
+              }
             }
           });
         }
@@ -444,6 +454,7 @@ export class StudentDashboardComponent implements OnInit {
           this.finalExamSubmitted = f.submitted;
           this.finalExamScore     = f.score;
         }
+        this.applyUnlockChain();
         this.loading = false;
         this.generateAlerts();
         this.cdr.detectChanges();
@@ -451,14 +462,42 @@ export class StudentDashboardComponent implements OnInit {
     });
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // UNLOCK CHAIN
+  // Week opens when: publishedByAdmin=true AND (week1 OR prev completed)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private applyUnlockChain(): void {
+    this.courseWeeks.forEach((week, index) => {
+      if (week.status === 'completed') return;
+
+      const adminPublished = week.publishedByAdmin;
+      const isFirstWeek   = index === 0;
+      const prevCompleted = index > 0 && this.courseWeeks[index - 1].cwSubmitted;
+
+      if (adminPublished && (isFirstWeek || prevCompleted)) {
+        if (week.status === 'locked') {
+          week.status = this.isOverdue(week.dueDate) ? 'overdue' : 'pending';
+        }
+      } else {
+        week.status = 'locked';
+      }
+    });
+  }
+
+  private isOverdue(dueDate: string): boolean {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
+  }
+
   private mapStudentData(data: any): StudentProfile {
     return {
-      registrationId: data.registrationId || data._id,
-      fullName:       data.fullName,
-      email:          data.email,
-      phone:          data.phone,
-      category:       data.category,
-      photo:          data.files?.photo
+      registrationId:  data.registrationId || data._id,
+      fullName:        data.fullName,
+      email:           data.email,
+      phone:           data.phone,
+      category:        data.category,
+      photo:           data.files?.photo
         ? `${this.api}/api/registrations/${data.registrationId}/file/${data.files.photo}`
         : null,
       assessmentScore: data.assessmentScore ?? null,
@@ -476,19 +515,14 @@ export class StudentDashboardComponent implements OnInit {
     };
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // COMPUTED GETTERS
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── COMPUTED GETTERS ─────────────────────────────────────────────────────
 
-  get completionRate():  number  { return Math.round((this.completedCount / this.courseWeeks.length) * 100); }
-  get completedCount():  number  { return this.courseWeeks.filter(w => w.status === 'completed').length; }
-  get pendingCount():    number  { return this.courseWeeks.filter(w => w.status === 'pending').length; }
-  get overdueCount():    number  { return this.courseWeeks.filter(w => w.status === 'overdue').length; }
-  get enrolledWeeksLabel(): string { return `${this.completedCount} of 6 weeks complete`; }
-
-  get canTakeFinalExam(): boolean {
-    return this.courseWeeks.every(w => w.status === 'completed');
-  }
+  get completionRate():     number  { return Math.round((this.completedCount / this.courseWeeks.length) * 100); }
+  get completedCount():     number  { return this.courseWeeks.filter(w => w.status === 'completed').length; }
+  get pendingCount():       number  { return this.courseWeeks.filter(w => w.status === 'pending').length; }
+  get overdueCount():       number  { return this.courseWeeks.filter(w => w.status === 'overdue').length; }
+  get enrolledWeeksLabel(): string  { return `${this.completedCount} of 6 weeks complete`; }
+  get canTakeFinalExam():   boolean { return this.courseWeeks.every(w => w.status === 'completed'); }
 
   get averageScoreLabel(): string {
     const scored = this.courseWeeks.filter(w => w.cwScore !== null && w.cwGraded);
@@ -510,21 +544,16 @@ export class StudentDashboardComponent implements OnInit {
     return Object.values(this.finalAnswers).filter(v => v.trim().length >= 10).length;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ALERTS
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── ALERTS ───────────────────────────────────────────────────────────────
 
   generateAlerts(): void {
     this.alerts = [];
-    const overdue = this.courseWeeks.filter(w => w.status === 'overdue');
-    const pending = this.courseWeeks.filter(w => w.status === 'pending' && !w.cwSubmitted);
+    const overdue   = this.courseWeeks.filter(w => w.status === 'overdue');
+    const pending   = this.courseWeeks.filter(w => w.status === 'pending' && !w.cwSubmitted);
     const allLocked = this.courseWeeks.every(w => !w.publishedByAdmin);
 
     if (allLocked) {
-      this.alerts.push({
-        type: 'info',
-        message: 'Your coursework will be available no later than June 7th. Check your email for updates.',
-      });
+      this.alerts.push({ type: 'info', message: 'Your coursework will be available soon. Check your email for updates.' });
     }
     if (overdue.length) {
       this.alerts.push({ type: 'danger', message: `${overdue.length} week(s) are overdue. Please complete immediately.` });
@@ -539,12 +568,10 @@ export class StudentDashboardComponent implements OnInit {
 
   dismissAlert(i: number): void { this.alerts.splice(i, 1); }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // COURSEWORK MODAL
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── COURSEWORK MODAL ─────────────────────────────────────────────────────
 
   openCwModal(week: CourseWeek): void {
-    if (week.status === 'locked' || !week.publishedByAdmin) return;
+    if (!week.publishedByAdmin || week.status === 'locked') return;
     this.activeCwWeek   = week;
     this.cwModalAnswers = {};
     this.cwSubmitting   = false;
@@ -586,10 +613,7 @@ export class StudentDashboardComponent implements OnInit {
       next: () => {
         week.cwSubmitted = true;
         week.status      = 'completed';
-        // Unlock next week if admin published it
-        const next = this.courseWeeks.find(w => w.id === week.id + 1);
-        if (next && next.publishedByAdmin && next.status === 'locked') next.status = 'pending';
-
+        this.applyUnlockChain();
         this.lastSubmittedWeek = week;
         this.saveLocalState();
         this.cwSubmitting  = false;
@@ -609,9 +633,7 @@ export class StudentDashboardComponent implements OnInit {
 
   closeCwResult(): void { this.showCwResult = false; document.body.style.overflow = ''; }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FINAL EXAM
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── FINAL EXAM ───────────────────────────────────────────────────────────
 
   openFinalExam(): void {
     if (!this.canTakeFinalExam) return;
@@ -632,7 +654,6 @@ export class StudentDashboardComponent implements OnInit {
     if (this.finalAnsweredCount < 40) return;
     this.finalExamSubmitting = true;
 
-    // Build full answer list with section metadata
     const answers: any[] = [];
     let globalIdx = 0;
     this.finalExamSections.forEach(sec => {
@@ -647,17 +668,15 @@ export class StudentDashboardComponent implements OnInit {
       });
     });
 
-    const payload = {
+    this.http.post(`${this.api}/api/final-exam`, {
       registrationId: this.student?.registrationId,
       studentName:    this.student?.fullName,
       studentEmail:   this.student?.email,
       answers,
-    };
-
-    this.http.post(`${this.api}/api/final-exam`, payload).subscribe({
+    }).subscribe({
       next: () => {
-        this.finalExamScore     = 40;
-        this.finalExamSubmitted = true;
+        this.finalExamScore      = 40;
+        this.finalExamSubmitted  = true;
         this.finalExamSubmitting = false;
         localStorage.setItem('c360_final', JSON.stringify({ submitted: true, score: 40 }));
         this.generateAlerts();
@@ -671,19 +690,20 @@ export class StudentDashboardComponent implements OnInit {
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PERSISTENCE
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── PERSISTENCE ──────────────────────────────────────────────────────────
 
   private saveLocalState(): void {
     localStorage.setItem('c360_weeks', JSON.stringify(
-      this.courseWeeks.map(w => ({ cwSubmitted: w.cwSubmitted, cwScore: w.cwScore, status: w.status }))
+      this.courseWeeks.map(w => ({
+        cwSubmitted:      w.cwSubmitted,
+        cwScore:          w.cwScore,
+        status:           w.status,
+        publishedByAdmin: w.publishedByAdmin,
+      }))
     ));
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── HELPERS ──────────────────────────────────────────────────────────────
 
   setTab(tab: ActiveTab): void { this.activeTab = tab; }
 
