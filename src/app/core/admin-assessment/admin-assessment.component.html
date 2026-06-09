@@ -2,29 +2,22 @@
 
 <div class="page-wrap">
 
-  <!-- ── TAB SWITCHER ──────────────────────────────────────────────────── -->
+  <!-- ── TAB SWITCHER ───────────────────────────────────────────────── -->
   <div class="tab-bar">
-
-    <button class="tab-btn" [class.active]="activeTab === 'questions'"
-      (click)="activeTab = 'questions'">
+    <button class="tab-btn" [class.active]="activeTab === 'questions'" (click)="activeTab = 'questions'">
       <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
-        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-        <path d="M15.5 3.5a2.121 2.121 0 013 3L12 13l-4 1 1-4 6.5-6.5z"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M15.5 3.5a2.121 2.121 0 013 3L12 13l-4 1 1-4 6.5-6.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
       </svg>
       Manage Questions
     </button>
-
     <button class="tab-btn" [class.active]="activeTab === 'scores'"
       (click)="activeTab = 'scores'; loadSubmissions()">
       <svg viewBox="0 0 24 24" fill="none" width="15" height="15">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round"></polyline>
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></polyline>
       </svg>
       Submission Scores
     </button>
-
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════ -->
@@ -40,15 +33,11 @@
 
     <div *ngIf="!weeksLoading" class="questions-layout">
 
-      <!-- ── SIDEBAR ────────────────────────────────────────────────── -->
+      <!-- Sidebar -->
       <div class="week-sidebar">
-
         <div class="ws-title">Weeks</div>
-
-        <button class="ws-item"
-          *ngFor="let w of [1,2,3,4,5,6]"
-          [class.active]="activeWeekNum === w"
-          (click)="selectWeek(w)">
+        <button class="ws-item" *ngFor="let w of [1,2,3,4,5,6]"
+          [class.active]="activeWeekNum === w" (click)="selectWeek(w)">
           <div class="ws-item-left">
             <span class="ws-num">W{{ w }}</span>
             <span class="ws-label">{{ weekTitles[w] }}</span>
@@ -59,13 +48,12 @@
             <span *ngIf="getWeekStatus(w) === 'empty'">+ New</span>
           </span>
         </button>
-
       </div>
 
-      <!-- ── MAIN PANEL ─────────────────────────────────────────────── -->
+      <!-- Main panel -->
       <div class="question-panel">
 
-        <!-- ══ VIEW MODE ══ -->
+        <!-- VIEW MODE -->
         <ng-container *ngIf="!editMode">
 
           <!-- Empty state -->
@@ -77,14 +65,13 @@
               <button class="btn-add-questions" (click)="startEdit()">
                 ✏️ Add 10 Questions for Week {{ activeWeekNum }}
               </button>
-              <button class="btn-publish-default" [disabled]="publishLoading"
-                (click)="saveDefaultsAndPublish()">
+              <button class="btn-publish-default" [disabled]="publishLoading" (click)="saveDefaultsAndPublish()">
                 <span *ngIf="!publishLoading">🚀 Use Default Questions &amp; Publish</span>
                 <span *ngIf="publishLoading">Publishing…</span>
               </button>
             </div>
             <p class="empty-hint">
-              "Use Default Questions &amp; Publish" will instantly unlock this week for students
+              "Use Default Questions &amp; Publish" instantly unlocks this week for students
               using the pre-built scenario questions. You can still edit them later.
             </p>
           </div>
@@ -99,15 +86,12 @@
                 <div class="qp-meta">Last updated: {{ formatDate(activeWeekData.updatedAt) }}</div>
               </div>
               <div class="qp-header-actions">
-                <button class="btn-publish"
-                  [class.btn-unpublish]="activeWeekData.isPublished"
+                <button class="btn-publish" [class.btn-unpublish]="activeWeekData.isPublished"
                   [disabled]="publishLoading" (click)="togglePublish()">
                   <span *ngIf="!publishLoading">
                     {{ activeWeekData.isPublished ? '⏸ Unpublish' : '🚀 Publish to Students' }}
                   </span>
-                  <span *ngIf="publishLoading" class="loading-btn">
-                    <span class="spin-sm"></span> Updating…
-                  </span>
+                  <span *ngIf="publishLoading">Updating…</span>
                 </button>
                 <button class="btn-edit-q" (click)="startEdit()">✏ Edit Questions</button>
               </div>
@@ -146,7 +130,7 @@
 
         </ng-container>
 
-        <!-- ══ EDIT MODE ══ -->
+        <!-- EDIT MODE -->
         <ng-container *ngIf="editMode">
 
           <div class="edit-header">
@@ -158,7 +142,7 @@
               <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
               <button class="btn-save-q" [disabled]="saveLoading" (click)="saveQuestions()">
                 <span *ngIf="!saveLoading">💾 Save Questions</span>
-                <span *ngIf="saveLoading" class="loading-btn"><span class="spin-sm"></span> Saving…</span>
+                <span *ngIf="saveLoading">Saving…</span>
               </button>
             </div>
           </div>
@@ -200,7 +184,7 @@
               <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
               <button class="btn-save-q" [disabled]="saveLoading" (click)="saveQuestions()">
                 <span *ngIf="!saveLoading">💾 Save Questions</span>
-                <span *ngIf="saveLoading" class="loading-btn"><span class="spin-sm"></span> Saving…</span>
+                <span *ngIf="saveLoading">Saving…</span>
               </button>
             </div>
           </div>
@@ -211,18 +195,15 @@
     </div>
 
   </div>
-  <!-- end questions tab -->
-
 
   <!-- ══════════════════════════════════════════════════════════════════ -->
-  <!-- SCORES TAB                                                        -->
+  <!-- SCORES TAB — Real student submissions                            -->
   <!-- ══════════════════════════════════════════════════════════════════ -->
 
   <div *ngIf="activeTab === 'scores'">
 
-    <!-- ── Week filter pills ────────────────────────────────────────── -->
+    <!-- Week / Final filter -->
     <div class="controls-bar">
-
       <div class="filter-row">
         <button class="filter-chip"
           *ngFor="let opt of scoreWeekOptions"
@@ -241,61 +222,63 @@
           <input type="text" placeholder="Search students…"
             [(ngModel)]="searchTerm" (input)="applyFilters()">
         </div>
-        <button class="act-btn" (click)="exportPDF()">↓ Export Scores</button>
-      </div>
-
-    </div>
-
-    <!-- ── Summary stats ─────────────────────────────────────────────── -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="sc-val">{{ summaryStats.submitted }}<span class="sc-of">/{{ summaryStats.total }}</span></div>
-        <div class="sc-label">Submitted</div>
-      </div>
-      <div class="stat-card">
-        <div class="sc-val">{{ summaryStats.pending }}</div>
-        <div class="sc-label">Pending Grade</div>
-      </div>
-      <div class="stat-card">
-        <div class="sc-val">{{ summaryStats.avgScore }}</div>
-        <div class="sc-label">Avg Score</div>
-      </div>
-      <div class="stat-card">
-        <div class="sc-val sc-risk">{{ summaryStats.atRisk }}</div>
-        <div class="sc-label">At Risk (&lt;60%)</div>
-      </div>
-      <div class="stat-card stat-card--wide">
-        <div class="sc-val sc-top">{{ summaryStats.topScore }}</div>
-        <div class="sc-label">Top Score — {{ summaryStats.topStudent }}</div>
+        <button class="act-btn" (click)="exportPDF()">↓ Export</button>
       </div>
     </div>
 
-    <!-- ── Loading / error states ────────────────────────────────────── -->
+    <!-- Summary stats -->
+    <div class="stats-strip" *ngIf="!submissionsLoading">
+      <div class="stat-pill">
+        <span class="sp-val">{{ summaryStats.submitted }}</span>
+        <span class="sp-lbl">Submitted</span>
+      </div>
+      <div class="stat-pill">
+        <span class="sp-val">{{ filteredSubmissions.length - summaryStats.submitted }}</span>
+        <span class="sp-lbl">Not Submitted</span>
+      </div>
+      <div class="stat-pill">
+        <span class="sp-val">{{ summaryStats.pending }}</span>
+        <span class="sp-lbl">Pending Grade</span>
+      </div>
+      <div class="stat-pill">
+        <span class="sp-val">{{ summaryStats.avgScore }}</span>
+        <span class="sp-lbl">Avg Score</span>
+      </div>
+      <div class="stat-pill">
+        <span class="sp-val">{{ summaryStats.topScore }}</span>
+        <span class="sp-lbl">Top Score</span>
+      </div>
+      <div class="stat-pill">
+        <span class="sp-val" style="font-size:0.8rem;">{{ summaryStats.topStudent }}</span>
+        <span class="sp-lbl">Top Student</span>
+      </div>
+      <div class="stat-pill warn">
+        <span class="sp-val">{{ summaryStats.atRisk }}</span>
+        <span class="sp-lbl">At Risk (&lt;60%)</span>
+      </div>
+    </div>
+
+    <!-- Loading / error -->
     <div class="loading-row" *ngIf="submissionsLoading">
       <div class="spinner-gold"></div>
       <span>Loading submissions…</span>
     </div>
-
-    <div class="sub-error" *ngIf="!submissionsLoading && submissionsError">
+    <div class="save-error" *ngIf="submissionsError && !submissionsLoading">
       ⚠ {{ submissionsError }}
-      <button class="retry-btn" (click)="loadSubmissions()">Retry</button>
     </div>
 
-    <!-- ── Empty state ───────────────────────────────────────────────── -->
-    <div class="empty-submissions"
+    <!-- Empty state -->
+    <div class="empty-week"
       *ngIf="!submissionsLoading && !submissionsError && filteredSubmissions.length === 0">
-      <div class="es-icon">📭</div>
-      <p>No submissions found for
-        {{ activeScoreWeek === 0 ? 'Final Exam' : 'Week ' + activeScoreWeek }}.
-      </p>
-      <p class="es-sub" *ngIf="searchTerm">Try clearing the search.</p>
+      <div class="ew-icon">📭</div>
+      <h3>No submissions yet</h3>
+      <p>Students who submit will appear here.</p>
     </div>
 
-    <!-- ── Submissions table ─────────────────────────────────────────── -->
-    <div class="submissions-table-wrap"
-      *ngIf="!submissionsLoading && !submissionsError && filteredSubmissions.length > 0">
-
-      <table class="submissions-table">
+    <!-- Submissions table -->
+    <div class="submissions-wrap"
+      *ngIf="!submissionsLoading && filteredSubmissions.length > 0">
+      <table class="sub-table">
         <thead>
           <tr>
             <th>#</th>
@@ -303,179 +286,197 @@
             <th>Email</th>
             <th>Submitted</th>
             <th>Score</th>
+            <th>%</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let sub of filteredSubmissions; let i = index; trackBy: trackByRegId"
-            [class.row-unsubmitted]="!sub.submitted"
-            [class.row-pending]="sub.submitted && !sub.graded"
-            [class.row-graded]="sub.graded">
-
-            <td class="td-num">{{ i + 1 }}</td>
-
-            <td class="td-student">
-              <div class="student-name">{{ sub.student }}</div>
-              <div class="student-cat" *ngIf="sub.category">{{ sub.category }}</div>
+          <tr *ngFor="let sub of filteredSubmissions; let i = index; trackBy: trackByRegId">
+            <td>{{ i + 1 }}</td>
+            <td><strong>{{ sub.student }}</strong></td>
+            <td style="font-size:0.8rem;color:#888;">{{ sub.email }}</td>
+            <td style="font-size:0.8rem;">
+              {{ sub.submittedAt ? formatDate(sub.submittedAt) : '—' }}
             </td>
-
-            <td class="td-email">{{ sub.email || '—' }}</td>
-
-            <td class="td-date">
-              <span *ngIf="sub.submitted">{{ formatDate(sub.submittedAt) }}</span>
-              <span class="not-submitted" *ngIf="!sub.submitted">Not submitted</span>
-            </td>
-
-            <td class="td-score">
-              <span *ngIf="sub.graded && sub.score !== null"
-                [class]="scoreClass(sub.score, activeScoreWeek === 0)">
-                {{ scoreDisplay(sub.score, activeScoreWeek === 0) }}
-                <span class="score-pct">({{ scorePct(sub.score, activeScoreWeek === 0) }}%)</span>
+            <td>
+              <span [class]="scoreClass(sub.score, sub.type === 'final')">
+                {{ scoreDisplay(sub.score, sub.type === 'final') }}
               </span>
-              <span class="score-dash" *ngIf="!sub.graded || sub.score === null">—</span>
             </td>
-
-            <td class="td-status">
-              <span class="badge badge-unsubmitted" *ngIf="!sub.submitted">Not Submitted</span>
-              <span class="badge badge-pending"     *ngIf="sub.submitted && !sub.graded">Pending Grade</span>
-              <span class="badge badge-graded"      *ngIf="sub.graded">Graded</span>
+            <td>
+              <span [class]="scoreClass(sub.score, sub.type === 'final')" *ngIf="sub.score !== null">
+                {{ scorePct(sub.score, sub.type === 'final') }}%
+              </span>
+              <span *ngIf="sub.score === null" style="color:#666;">—</span>
             </td>
-
-            <td class="td-actions">
-              <!-- View answers (only if student submitted) -->
-              <button class="action-btn action-btn--view"
-                *ngIf="sub.submitted && sub.answers?.length"
-                title="View Answers"
-                (click)="openAnswersModal(sub)">
-                👁 View
-              </button>
-
-              <!-- Grade button (only if submitted) -->
-              <button class="action-btn action-btn--grade"
-                *ngIf="sub.submitted"
-                [class.action-btn--regrading]="sub.graded"
-                title="{{ sub.graded ? 'Update Grade' : 'Grade Submission' }}"
-                (click)="openGradeModal(sub)">
-                {{ sub.graded ? '✏ Edit Grade' : '✔ Grade' }}
-              </button>
+            <td>
+              <span *ngIf="!sub.submitted" class="badge badge-notsubmitted">Not Submitted</span>
+              <span *ngIf="sub.submitted && !sub.graded"  class="badge badge-pending">⏳ Pending</span>
+              <span *ngIf="sub.submitted && sub.graded"   class="badge badge-graded">✓ Graded</span>
             </td>
-
+            <td>
+              <div class="action-btns">
+                <!-- View answers — only if student submitted -->
+                <button class="btn-view"
+                  *ngIf="sub.submitted"
+                  (click)="openAnswersModal(sub)"
+                  title="View answers">
+                  👁 Answers
+                </button>
+                <!-- Grade button -->
+                <button class="btn-grade"
+                  *ngIf="sub.submitted"
+                  (click)="openGradeModal(sub)"
+                  title="{{ sub.graded ? 'Edit grade' : 'Grade this submission' }}">
+                  {{ sub.graded ? '✏ Edit Grade' : '🎯 Grade' }}
+                </button>
+                <span *ngIf="!sub.submitted" style="color:#555;font-size:0.8rem;">—</span>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
-
     </div>
-    <!-- end submissions-table-wrap -->
 
   </div>
-  <!-- end scores tab -->
-
 </div>
-<!-- end page-wrap -->
 
 
-<!-- ════════════════════════════════════════════════════════════════════ -->
-<!-- GRADE MODAL                                                        -->
-<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- ANSWERS MODAL — read student's full responses                        -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
 
-<div class="modal-backdrop" *ngIf="showGradeModal" (click)="closeGradeModal()"></div>
+<div class="modal-overlay" *ngIf="showAnswersModal" (click)="closeAnswersModal()">
+  <div class="modal-box modal-answers-box" (click)="$event.stopPropagation()">
 
-<div class="modal grade-modal" *ngIf="showGradeModal && gradingSubmission">
-
-  <div class="modal-header">
-    <div>
-      <div class="modal-tag">{{ gradingSubmission.weekLabel }}</div>
-      <h3 class="modal-title">Grade — {{ gradingSubmission.student }}</h3>
-      <div class="modal-sub">{{ gradingSubmission.email }}</div>
+    <div class="modal-header">
+      <div>
+        <h2 style="margin:0;">{{ viewingSubmission?.student }}</h2>
+        <p style="margin:4px 0 0;color:#888;font-size:0.85rem;">
+          {{ viewingSubmission?.weekLabel }} &nbsp;·&nbsp;
+          Submitted: {{ formatDate(viewingSubmission?.submittedAt || null) }}
+        </p>
+      </div>
+      <button class="modal-close" (click)="closeAnswersModal()">✕</button>
     </div>
-    <button class="modal-close" (click)="closeGradeModal()">✕</button>
+
+    <!-- Grade badge if already graded -->
+    <div class="grade-badge-row" *ngIf="viewingSubmission?.graded">
+      <span class="grade-badge">
+        Score: {{ scoreDisplay(viewingSubmission!.score, viewingSubmission!.type === 'final') }}
+        ({{ scorePct(viewingSubmission!.score, viewingSubmission!.type === 'final') }}%)
+      </span>
+      <span class="feedback-inline" *ngIf="viewingSubmission?.feedback">
+        Feedback: {{ viewingSubmission?.feedback }}
+      </span>
+    </div>
+
+    <!-- Q&A list -->
+    <div class="answers-list">
+      <div class="answer-card"
+        *ngFor="let a of viewingSubmission?.answers; let i = index">
+        <div class="answer-q">
+          <span class="answer-num">Q{{ i + 1 }}</span>
+          {{ a.questionText }}
+        </div>
+        <div class="answer-a">
+          {{ a.answer || '(No answer provided)' }}
+        </div>
+      </div>
+
+      <div *ngIf="!viewingSubmission?.answers?.length"
+        style="text-align:center;padding:32px 20px;background:#1a1a0e;border-radius:8px;border:1px solid #2e2e1a;">
+        <div style="font-size:2rem;margin-bottom:12px;">📭</div>
+        <p style="color:#c8b46a;font-weight:600;margin:0 0 8px;">No answers stored for this submission</p>
+        <p style="color:#888;font-size:0.85rem;margin:0 0 16px;">
+          This submission was made before answer storage was enabled.<br>
+          Ask the student to resubmit, or grade based on other records.
+        </p>
+        <button
+          style="padding:8px 20px;background:#c8b46a;color:#1a1a0e;border:none;border-radius:6px;font-weight:700;cursor:pointer;"
+          (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)">
+          Grade Without Answers
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-edit" (click)="closeAnswersModal()">Close</button>
+      <button class="btn-save-q" (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)"
+        *ngIf="viewingSubmission?.submitted">
+        🎯 {{ viewingSubmission?.graded ? 'Edit Grade' : 'Grade This Submission' }}
+      </button>
+    </div>
+
   </div>
+</div>
 
-  <div class="modal-body">
 
-    <div class="grade-success" *ngIf="gradeSuccess">✓ {{ gradeSuccess }}</div>
-    <div class="grade-error"   *ngIf="gradeError">⚠ {{ gradeError }}</div>
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- GRADE MODAL — admin enters score and feedback                        -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
 
-    <div class="grade-field">
-      <label>Score <span class="grade-max">(out of {{ maxGradeScore }})</span></label>
-      <input type="number" class="grade-input"
-        [(ngModel)]="gradeScoreInput"
-        [min]="0" [max]="maxGradeScore"
-        placeholder="e.g. {{ maxGradeScore === 40 ? '32' : '8' }}">
+<div class="modal-overlay" *ngIf="showGradeModal" (click)="closeGradeModal()">
+  <div class="modal-box modal-grade-box" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div>
+        <h2 style="margin:0;">Grade Submission</h2>
+        <p style="margin:4px 0 0;color:#888;font-size:0.85rem;">
+          {{ gradingSubmission?.student }} &nbsp;·&nbsp; {{ gradingSubmission?.weekLabel }}
+        </p>
+      </div>
+      <button class="modal-close" (click)="closeGradeModal()">✕</button>
     </div>
 
-    <div class="grade-field">
-      <label>Feedback <span class="grade-opt">(optional)</span></label>
-      <textarea class="grade-textarea" rows="4"
-        [(ngModel)]="gradeFeedbackInput"
-        placeholder="Write feedback for the student — this will be emailed to them…">
-      </textarea>
+    <div class="grade-form">
+
+      <div class="grade-field">
+        <label>
+          Score
+          <span style="color:#888;font-weight:400;font-size:0.8rem;">
+            (out of {{ maxGradeScore }})
+          </span>
+        </label>
+        <input
+          type="number"
+          class="grade-input"
+          [(ngModel)]="gradeScoreInput"
+          [min]="0"
+          [max]="maxGradeScore"
+          placeholder="e.g. {{ maxGradeScore === 40 ? '32' : '8' }}">
+        <div class="grade-hint">
+          Max: {{ maxGradeScore }} &nbsp;·&nbsp;
+          <span *ngIf="gradeScoreInput">
+            {{ gradeScoreInput }}/{{ maxGradeScore }}
+            = {{ (+gradeScoreInput / maxGradeScore * 100).toFixed(0) }}%
+          </span>
+        </div>
+      </div>
+
+      <div class="grade-field">
+        <label>Feedback to Student <span style="color:#888;font-weight:400;font-size:0.8rem;">(optional)</span></label>
+        <textarea class="grade-textarea" rows="4"
+          [(ngModel)]="gradeFeedbackInput"
+          placeholder="Write constructive feedback the student will see on their dashboard…">
+        </textarea>
+      </div>
+
+      <div class="save-error"   *ngIf="gradeError">⚠ {{ gradeError }}</div>
+      <div class="save-success" *ngIf="gradeSuccess">✓ {{ gradeSuccess }}</div>
+
     </div>
 
-    <div class="grade-actions">
-      <button class="btn-cancel-edit" (click)="closeGradeModal()">Cancel</button>
-      <button class="btn-save-grade" [disabled]="gradeLoading" (click)="submitGrade()">
+    <div class="modal-footer">
+      <button class="btn-cancel-edit" (click)="closeGradeModal()" [disabled]="gradeLoading">
+        Cancel
+      </button>
+      <button class="btn-save-q" (click)="submitGrade()" [disabled]="gradeLoading">
         <span *ngIf="!gradeLoading">💾 Save Grade</span>
-        <span *ngIf="gradeLoading" class="loading-btn"><span class="spin-sm"></span> Saving…</span>
+        <span *ngIf="gradeLoading">Saving…</span>
       </button>
     </div>
 
   </div>
-
-</div>
-
-
-<!-- ════════════════════════════════════════════════════════════════════ -->
-<!-- ANSWERS PREVIEW MODAL                                              -->
-<!-- ════════════════════════════════════════════════════════════════════ -->
-
-<div class="modal-backdrop" *ngIf="showAnswersModal" (click)="closeAnswersModal()"></div>
-
-<div class="modal answers-modal" *ngIf="showAnswersModal && viewingSubmission">
-
-  <div class="modal-header">
-    <div>
-      <div class="modal-tag">{{ viewingSubmission.weekLabel }}</div>
-      <h3 class="modal-title">Answers — {{ viewingSubmission.student }}</h3>
-      <div class="modal-sub">
-        Submitted: {{ formatDate(viewingSubmission.submittedAt) }}
-        <span *ngIf="viewingSubmission.graded && viewingSubmission.score !== null">
-          · Score: {{ scoreDisplay(viewingSubmission.score, activeScoreWeek === 0) }}
-          ({{ scorePct(viewingSubmission.score, activeScoreWeek === 0) }}%)
-        </span>
-      </div>
-    </div>
-    <button class="modal-close" (click)="closeAnswersModal()">✕</button>
-  </div>
-
-  <div class="modal-body answers-body">
-
-    <div class="answer-item"
-      *ngFor="let a of viewingSubmission.answers; let i = index">
-      <div class="ai-q">
-        <span class="ai-num">Q{{ i + 1 }}</span>
-        {{ a.questionText }}
-      </div>
-      <div class="ai-a">{{ a.answer || '(No answer provided)' }}</div>
-    </div>
-
-    <!-- No answers stored (older submissions before answers were persisted) -->
-    <div class="no-answers" *ngIf="!viewingSubmission.answers?.length">
-      <p>No answer data available for this submission.</p>
-      <p class="no-answers-sub">
-        Answers are stored for all new submissions.
-        Older submissions recorded before this update will not have stored answers.
-      </p>
-    </div>
-
-    <div class="answers-footer">
-      <button class="btn-grade-from-answers"
-        (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)">
-        ✔ Grade This Submission
-      </button>
-    </div>
-
-  </div>
-
 </div>

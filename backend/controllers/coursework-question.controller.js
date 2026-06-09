@@ -1,31 +1,5 @@
 /**
- * controllers/coursework-questions.controller.js
- *
- * Handles all CRUD for CourseworkQuestion — the 10 scenario questions
- * admin sets per week. Students fetch published weeks only.
- *
- * Wired via routes/coursework-questions.routes.js:
- *   GET    /api/coursework-questions
- *   GET    /api/coursework-questions/:week
- *   GET    /api/coursework-questions/:week/student
- *   PUT    /api/coursework-questions/:week
- *   PATCH  /api/coursework-questions/:week
- *   PATCH  /api/coursework-questions/:week/publish
- *   DELETE /api/coursework-questions/:week
- *
- * Wired via routes/student.routes.js:
- *   GET    /api/student/:registrationId/progress
- *
- * Wired via routes/coursework.routes.js:
- *   POST   /api/coursework
- *
- * Wired via routes/finalexam.routes.js:
- *   POST   /api/final-exam
- *
- * NEW — Wired via routes/admin.routes.js (or append to coursework-questions.routes.js):
- *   GET    /api/admin/submissions           → all student submissions (all weeks)
- *   GET    /api/admin/submissions?week=N    → filtered by week number
- *   PATCH  /api/admin/submissions/grade     → admin grades a submission
+ * controllers/coursework-question.controller.js
  */
 
 const CourseworkQuestion = require('../models/Courseworkquestion.model');
@@ -47,20 +21,45 @@ async function sendEmail(to, subject, html) {
     return;
   }
   try {
-    await mailer.sendMail({
-      from: `"Celcium360" <${process.env.SMTP_USER}>`,
-      to, subject, html,
-    });
+    await mailer.sendMail({ from: `"Celcium360" <${process.env.SMTP_USER}>`, to, subject, html });
     console.log(`[Email] ${subject} → ${to}`);
   } catch (e) {
     console.error(`[Email failed] ${e.message}`);
   }
 }
 
-// ── Default questions for each week ──────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════
+//  KEY UTILITY — normalise weekProgress to a plain JS object
+//  Handles: Mongoose Map, plain object, undefined
+// ══════════════════════════════════════════════════════════════════════════
+function normalisedWeekProgress(rawWP) {
+  if (!rawWP) return {};
+
+  // Mongoose Map instance — has a forEach that gives (value, key)
+  if (typeof rawWP.forEach === 'function' && typeof rawWP.get === 'function') {
+    const out = {};
+    rawWP.forEach((val, key) => {
+      // val may be a Mongoose subdocument — convert to plain object
+      out[String(key)] = val && typeof val.toObject === 'function' ? val.toObject() : { ...val };
+    });
+    return out;
+  }
+
+  // Plain object (Mixed schema or after .lean())
+  const out = {};
+  for (const key of Object.keys(rawWP)) {
+    const val = rawWP[key];
+    out[String(key)] = val && typeof val.toObject === 'function' ? val.toObject() : { ...val };
+  }
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  Default questions
+// ══════════════════════════════════════════════════════════════════════════
 const DEFAULT_QUESTIONS = {
   1: {
-    weekTitle:   'Foundation for Workplace',
+    weekTitle: 'Foundation for Workplace',
     instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically. Your responses should reflect how a work-ready professional is expected to think, behave, communicate, and act in a real workplace environment.',
     questions: [
       'A colleague starts speaking negatively about your manager and tries to involve you in the conversation during work hours.',
@@ -76,7 +75,7 @@ const DEFAULT_QUESTIONS = {
     ],
   },
   2: {
-    weekTitle:   'Communication & Professional Presence',
+    weekTitle: 'Communication & Professional Presence',
     instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.',
     questions: [
       'You receive an email from your manager asking for an urgent update, but the tone feels harsh and demanding.',
@@ -92,7 +91,7 @@ const DEFAULT_QUESTIONS = {
     ],
   },
   3: {
-    weekTitle:   'Career Positioning & Job Readiness',
+    weekTitle: 'Career Positioning & Job Readiness',
     instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.',
     questions: [
       'You are asked in an interview: Tell me about yourself.',
@@ -108,7 +107,7 @@ const DEFAULT_QUESTIONS = {
     ],
   },
   4: {
-    weekTitle:   'Productivity & Workplace Performance',
+    weekTitle: 'Productivity & Workplace Performance',
     instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.',
     questions: [
       'You have multiple deadlines due at the same time and limited time to complete them.',
@@ -124,7 +123,7 @@ const DEFAULT_QUESTIONS = {
     ],
   },
   5: {
-    weekTitle:   'Workplace Excellence & Growth',
+    weekTitle: 'Workplace Excellence & Growth',
     instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.',
     questions: [
       'A client is unhappy and expresses frustration about your service.',
@@ -140,7 +139,7 @@ const DEFAULT_QUESTIONS = {
     ],
   },
   6: {
-    weekTitle:   'Career Direction & Real-World Application',
+    weekTitle: 'Career Direction & Real-World Application',
     instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.',
     questions: [
       'You receive two job offers: one with higher pay but poor growth, and another with lower pay but strong growth potential.',
@@ -157,10 +156,6 @@ const DEFAULT_QUESTIONS = {
   },
 };
 
-// ══════════════════════════════════════════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════════════════════════════════════════
-
 function parseWeekParam(param) {
   const n = parseInt(param, 10);
   if (isNaN(n) || n < 1 || n > 6) return null;
@@ -168,41 +163,24 @@ function parseWeekParam(param) {
 }
 
 function validate10Questions(questions) {
-  if (!Array.isArray(questions))        return 'questions must be an array';
-  if (questions.length !== 10)          return 'Exactly 10 questions are required';
+  if (!Array.isArray(questions))  return 'questions must be an array';
+  if (questions.length !== 10)    return 'Exactly 10 questions are required';
   const empty = questions.findIndex(q => !q || !String(q).trim());
   if (empty !== -1) return `Question ${empty + 1} is empty`;
   return null;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET ALL WEEKS — admin summary (all 6 weeks, published or not)
+//  GET ALL WEEKS
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.getAllWeeks = async (req, res) => {
   try {
     const dbWeeks = await CourseworkQuestion.find({}).sort({ weekNumber: 1 }).lean();
-
     const weeks = [];
     for (let w = 1; w <= 6; w++) {
       const found = dbWeeks.find(d => d.weekNumber === w);
-      if (found) {
-        weeks.push(found);
-      } else {
-        const def = DEFAULT_QUESTIONS[w];
-        weeks.push({
-          weekNumber:   w,
-          weekTitle:    def.weekTitle,
-          instruction:  def.instruction,
-          questions:    def.questions,
-          isPublished:  false,
-          publishedAt:  null,
-          updatedAt:    null,
-          _fromDefault: true,
-        });
-      }
+      weeks.push(found || { weekNumber: w, ...DEFAULT_QUESTIONS[w], isPublished: false, publishedAt: null, updatedAt: null, _fromDefault: true });
     }
-
     res.json({ weeks });
   } catch (err) {
     console.error('[getAllWeeks]', err.message);
@@ -211,21 +189,14 @@ exports.getAllWeeks = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET SINGLE WEEK — admin full detail
+//  GET SINGLE WEEK
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.getWeek = async (req, res) => {
   try {
     const weekNumber = parseWeekParam(req.params.week);
     if (!weekNumber) return res.status(400).json({ message: 'Invalid week number (1–6)' });
-
-    let week = await CourseworkQuestion.findOne({ weekNumber }).lean();
-
-    if (!week) {
-      const def = DEFAULT_QUESTIONS[weekNumber];
-      week = { weekNumber, ...def, isPublished: false, publishedAt: null, updatedAt: null, _fromDefault: true };
-    }
-
+    const week = await CourseworkQuestion.findOne({ weekNumber }).lean()
+      || { weekNumber, ...DEFAULT_QUESTIONS[weekNumber], isPublished: false, publishedAt: null, updatedAt: null, _fromDefault: true };
     res.json({ week });
   } catch (err) {
     console.error('[getWeek]', err.message);
@@ -234,20 +205,14 @@ exports.getWeek = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET WEEK FOR STUDENT — only if published
+//  GET WEEK FOR STUDENT
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.getWeekForStudent = async (req, res) => {
   try {
     const weekNumber = parseWeekParam(req.params.week);
     if (!weekNumber) return res.status(400).json({ message: 'Invalid week number' });
-
     const week = await CourseworkQuestion.findOne({ weekNumber, isPublished: true }).lean();
-
-    if (!week) {
-      return res.status(403).json({ message: 'This week has not been published yet' });
-    }
-
+    if (!week) return res.status(403).json({ message: 'This week has not been published yet' });
     const { weekNumber: wn, weekTitle, instruction, questions, publishedAt } = week;
     res.json({ week: { weekNumber: wn, weekTitle, instruction, questions, publishedAt } });
   } catch (err) {
@@ -257,39 +222,21 @@ exports.getWeekForStudent = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  PUT — create or fully replace a week's questions
+//  PUT — upsert week questions
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.upsertWeek = async (req, res) => {
   try {
     const weekNumber = parseWeekParam(req.params.week);
     if (!weekNumber) return res.status(400).json({ message: 'Invalid week number (1–6)' });
-
     const { weekTitle, instruction, questions, updatedBy } = req.body;
-
-    if (!weekTitle || !String(weekTitle).trim()) {
-      return res.status(400).json({ message: 'weekTitle is required' });
-    }
-
+    if (!weekTitle?.trim()) return res.status(400).json({ message: 'weekTitle is required' });
     const qErr = validate10Questions(questions);
     if (qErr) return res.status(400).json({ message: qErr });
-
     const week = await CourseworkQuestion.findOneAndUpdate(
       { weekNumber },
-      {
-        $set: {
-          weekNumber,
-          weekTitle:   weekTitle.trim(),
-          instruction: instruction?.trim() || DEFAULT_QUESTIONS[weekNumber]?.instruction || '',
-          questions:   questions.map(q => String(q).trim()),
-          updatedAt:   new Date(),
-          updatedBy:   updatedBy || 'admin',
-        },
-      },
+      { $set: { weekNumber, weekTitle: weekTitle.trim(), instruction: instruction?.trim() || DEFAULT_QUESTIONS[weekNumber]?.instruction || '', questions: questions.map(q => String(q).trim()), updatedAt: new Date(), updatedBy: updatedBy || 'admin' } },
       { upsert: true, new: true, runValidators: true }
     );
-
-    console.log(`[CourseworkQ] Week ${weekNumber} saved by ${updatedBy || 'admin'}`);
     res.json({ message: `Week ${weekNumber} questions saved successfully`, week });
   } catch (err) {
     console.error('[upsertWeek]', err.message);
@@ -298,57 +245,30 @@ exports.upsertWeek = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  PATCH — partial update (title, instruction, or individual question)
+//  PATCH — partial update
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.patchWeek = async (req, res) => {
   try {
     const weekNumber = parseWeekParam(req.params.week);
     if (!weekNumber) return res.status(400).json({ message: 'Invalid week number (1–6)' });
-
     const { weekTitle, instruction, questionIndex, questionText, updatedBy } = req.body;
-
     const upd = { updatedAt: new Date(), updatedBy: updatedBy || 'admin' };
-
     if (weekTitle?.trim())   upd.weekTitle   = weekTitle.trim();
     if (instruction?.trim()) upd.instruction = instruction.trim();
-
     if (questionIndex !== undefined && questionText !== undefined) {
       const idx = parseInt(questionIndex, 10);
-      if (isNaN(idx) || idx < 0 || idx > 9) {
-        return res.status(400).json({ message: 'questionIndex must be 0–9' });
-      }
-      if (!String(questionText).trim()) {
-        return res.status(400).json({ message: 'questionText cannot be empty' });
-      }
+      if (isNaN(idx) || idx < 0 || idx > 9) return res.status(400).json({ message: 'questionIndex must be 0–9' });
+      if (!String(questionText).trim()) return res.status(400).json({ message: 'questionText cannot be empty' });
       upd[`questions.${idx}`] = String(questionText).trim();
     }
-
-    let week = await CourseworkQuestion.findOneAndUpdate(
-      { weekNumber },
-      { $set: upd },
-      { new: true }
-    );
-
+    let week = await CourseworkQuestion.findOneAndUpdate({ weekNumber }, { $set: upd }, { new: true });
     if (!week) {
       const def = DEFAULT_QUESTIONS[weekNumber];
-      const newWeek = new CourseworkQuestion({
-        weekNumber,
-        weekTitle:   weekTitle?.trim()   || def.weekTitle,
-        instruction: instruction?.trim() || def.instruction,
-        questions:   [...def.questions],
-        isPublished: false,
-        updatedAt:   new Date(),
-        updatedBy:   updatedBy || 'admin',
-      });
-      if (questionIndex !== undefined) {
-        const idx = parseInt(questionIndex, 10);
-        newWeek.questions[idx] = String(questionText).trim();
-      }
+      const newWeek = new CourseworkQuestion({ weekNumber, weekTitle: weekTitle?.trim() || def.weekTitle, instruction: instruction?.trim() || def.instruction, questions: [...def.questions], isPublished: false, updatedAt: new Date(), updatedBy: updatedBy || 'admin' });
+      if (questionIndex !== undefined) newWeek.questions[parseInt(questionIndex, 10)] = String(questionText).trim();
       await newWeek.save();
       week = newWeek;
     }
-
     res.json({ message: 'Week updated', week });
   } catch (err) {
     console.error('[patchWeek]', err.message);
@@ -357,101 +277,52 @@ exports.patchWeek = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  PATCH /publish — publish or unpublish a week
+//  PATCH /publish
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.setPublishStatus = async (req, res) => {
   try {
     const weekNumber = parseWeekParam(req.params.week);
     if (!weekNumber) return res.status(400).json({ message: 'Invalid week number (1–6)' });
-
     const { publish, dueDate, publishedBy } = req.body;
-
-    if (typeof publish !== 'boolean') {
-      return res.status(400).json({ message: '"publish" must be true or false' });
-    }
-
+    if (typeof publish !== 'boolean') return res.status(400).json({ message: '"publish" must be true or false' });
     let week = await CourseworkQuestion.findOne({ weekNumber });
-
     if (!week) {
-      if (!publish) {
-        return res.status(404).json({ message: `Week ${weekNumber} has no questions set yet` });
-      }
+      if (!publish) return res.status(404).json({ message: `Week ${weekNumber} has no questions set yet` });
       const def = DEFAULT_QUESTIONS[weekNumber];
-      week = new CourseworkQuestion({
-        weekNumber,
-        weekTitle:   def.weekTitle,
-        instruction: def.instruction,
-        questions:   [...def.questions],
-        isPublished: false,
-        updatedAt:   new Date(),
-        updatedBy:   publishedBy || 'admin',
-      });
+      week = new CourseworkQuestion({ weekNumber, weekTitle: def.weekTitle, instruction: def.instruction, questions: [...def.questions], isPublished: false, updatedAt: new Date(), updatedBy: publishedBy || 'admin' });
       await week.save();
     }
-
     if (publish) {
       const qErr = validate10Questions(week.questions);
-      if (qErr) {
-        return res.status(400).json({
-          message: `Cannot publish: ${qErr}. Please save all 10 questions first.`,
-        });
-      }
+      if (qErr) return res.status(400).json({ message: `Cannot publish: ${qErr}. Please save all 10 questions first.` });
     }
-
     week.isPublished = publish;
     week.publishedAt = publish ? new Date() : null;
     week.updatedAt   = new Date();
     week.updatedBy   = publishedBy || 'admin';
     await week.save();
-
-    console.log(`[Publish] Week ${weekNumber} → ${publish ? 'PUBLISHED' : 'UNPUBLISHED'} by ${publishedBy || 'admin'}`);
-
+    console.log(`[Publish] Week ${weekNumber} → ${publish ? 'PUBLISHED' : 'UNPUBLISHED'}`);
     if (publish) {
       try {
-        const students = await Registration.find({ status: 'approved' }, 'email fullName').lean();
-
-        const dueDateStr = dueDate
-          ? new Date(dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-          : null;
-
+        const students   = await Registration.find({ status: 'approved' }, 'email fullName').lean();
+        const dueDateStr = dueDate ? new Date(dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
         for (const s of students) {
-          await sendEmail(
-            s.email,
-            `📚 Week ${weekNumber} is Now Available — Celcium360`,
+          await sendEmail(s.email, `📚 Week ${weekNumber} is Now Available — Celcium360`,
             `<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto;padding:28px;background:#111;color:#e0e0e0;border-radius:12px;border:1px solid #B88D2A;">
               <h2 style="color:#B88D2A;margin-top:0;">Week ${weekNumber} is Live! 📚</h2>
               <p>Hi <strong>${s.fullName}</strong>,</p>
               <p><strong>Week ${weekNumber}: ${week.weekTitle}</strong> is now available in your student portal.</p>
-              ${dueDateStr ? `<div style="background:#1a1a1a;border:1px solid #2e2e2e;border-radius:8px;padding:12px 16px;margin:16px 0;display:inline-block;">
-                <span style="font-size:11px;color:#888;">Due Date</span><br>
-                <strong style="color:#B88D2A;font-size:15px;">${dueDateStr}</strong>
-              </div>` : ''}
+              ${dueDateStr ? `<div style="background:#1a1a1a;border:1px solid #2e2e2e;border-radius:8px;padding:12px 16px;margin:16px 0;display:inline-block;"><span style="font-size:11px;color:#888;">Due Date</span><br><strong style="color:#B88D2A;font-size:15px;">${dueDateStr}</strong></div>` : ''}
               <p style="margin-bottom:20px;">Log in to your student portal to view and submit your coursework.</p>
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/portal"
-                 style="display:inline-block;padding:13px 26px;background:#B88D2A;color:#000;text-decoration:none;border-radius:8px;font-weight:700;font-family:Arial;">
-                Open Student Portal →
-              </a>
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/portal" style="display:inline-block;padding:13px 26px;background:#B88D2A;color:#000;text-decoration:none;border-radius:8px;font-weight:700;">Open Student Portal →</a>
               <hr style="border-color:#2e2e2e;margin:24px 0;">
-              <p style="color:#555;font-size:11px;margin:0;">
-                Celcium360 Solutions Limited ·
-                <a href="mailto:training@celcium360solutions.com" style="color:#B88D2A;">training@celcium360solutions.com</a>
-              </p>
+              <p style="color:#555;font-size:11px;margin:0;">Celcium360 Solutions Limited · <a href="mailto:training@celcium360solutions.com" style="color:#B88D2A;">training@celcium360solutions.com</a></p>
             </div>`
           );
         }
-        console.log(`[Publish] Emails sent to ${students.length} students`);
-      } catch (emailErr) {
-        console.error('[Publish email error]', emailErr.message);
-      }
+      } catch (emailErr) { console.error('[Publish email error]', emailErr.message); }
     }
-
-    res.json({
-      message:     `Week ${weekNumber} ${publish ? 'published' : 'unpublished'} successfully`,
-      isPublished: week.isPublished,
-      publishedAt: week.publishedAt,
-      weekNumber,
-    });
+    res.json({ message: `Week ${weekNumber} ${publish ? 'published' : 'unpublished'} successfully`, isPublished: week.isPublished, publishedAt: week.publishedAt, weekNumber });
   } catch (err) {
     console.error('[setPublishStatus]', err.message);
     res.status(500).json({ message: err.message || 'Failed to update publish status' });
@@ -459,24 +330,15 @@ exports.setPublishStatus = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  DELETE — reset a week (remove from DB, student sees "coming soon")
+//  DELETE
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.deleteWeek = async (req, res) => {
   try {
     const weekNumber = parseWeekParam(req.params.week);
     if (!weekNumber) return res.status(400).json({ message: 'Invalid week number (1–6)' });
-
     const deleted = await CourseworkQuestion.findOneAndDelete({ weekNumber });
-
-    if (!deleted) {
-      return res.status(404).json({ message: `Week ${weekNumber} not found in database` });
-    }
-
-    console.log(`[CourseworkQ] Week ${weekNumber} reset/deleted`);
-    res.json({
-      message: `Week ${weekNumber} questions reset. Students will see "Coming Soon" until re-published.`,
-    });
+    if (!deleted) return res.status(404).json({ message: `Week ${weekNumber} not found in database` });
+    res.json({ message: `Week ${weekNumber} questions reset.` });
   } catch (err) {
     console.error('[deleteWeek]', err.message);
     res.status(500).json({ message: 'Failed to reset week' });
@@ -484,39 +346,44 @@ exports.deleteWeek = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET STUDENT PROGRESS — called by student dashboard on every load
+//  GET STUDENT PROGRESS  ← FIXED: properly reads Map or plain object
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.getStudentProgress = async (req, res) => {
   try {
     const { registrationId } = req.params;
 
-    // All weeks admin has published
     const publishedWeeks = await CourseworkQuestion
       .find({ isPublished: true })
       .select('weekNumber publishedAt')
       .lean();
 
-    // This student's progress record
-    const progressDoc = await StudentProgress.findOne({ registrationId }).lean();
+    // Load WITHOUT .lean() so we can call normalisedWeekProgress on the doc
+    const progressDoc = await StudentProgress.findOne({ registrationId });
 
-    // Convert Mongoose Map → plain object { "1": {...}, "2": {...} }
     const weekProgress = {};
-    if (progressDoc?.weekProgress) {
-      for (const [key, val] of Object.entries(progressDoc.weekProgress)) {
-        weekProgress[key] = val;
-      }
+    if (progressDoc) {
+      const normalised = normalisedWeekProgress(progressDoc.weekProgress);
+      Object.assign(weekProgress, normalised);
+    }
+
+    // Normalise finalExam
+    let finalExam = { submitted: false, score: null, feedback: null, graded: false };
+    if (progressDoc?.finalExam) {
+      const fe = typeof progressDoc.finalExam.toObject === 'function'
+        ? progressDoc.finalExam.toObject()
+        : { ...progressDoc.finalExam };
+      finalExam = {
+        submitted: fe.submitted ?? false,
+        score:     fe.score     ?? null,
+        feedback:  fe.feedback  ?? null,
+        graded:    fe.graded    ?? false,
+      };
     }
 
     res.json({
-      publishedWeeks: publishedWeeks.map(w => ({
-        weekId:  w.weekNumber,
-        dueDate: w.publishedAt || null,
-      })),
+      publishedWeeks: publishedWeeks.map(w => ({ weekId: w.weekNumber, dueDate: w.publishedAt || null })),
       weekProgress,
-      finalExam: progressDoc?.finalExam || {
-        submitted: false, score: null, feedback: null, graded: false,
-      },
+      finalExam,
     });
   } catch (err) {
     console.error('[getStudentProgress]', err.message);
@@ -525,36 +392,33 @@ exports.getStudentProgress = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  SUBMIT COURSEWORK — student submits answers for a week
+//  SUBMIT COURSEWORK  ← uses $set with dot notation — works for Map AND Mixed
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.submitCoursework = async (req, res) => {
   const { registrationId, weekId, answers, studentName, studentEmail } = req.body;
-
   if (!registrationId || !weekId || !answers?.length) {
     return res.status(400).json({ message: 'Missing required fields.' });
   }
-
   try {
+    const key = String(weekId);
     await StudentProgress.findOneAndUpdate(
       { registrationId },
       {
         $set: {
           studentName:  studentName  || '',
           studentEmail: studentEmail || '',
-          [`weekProgress.${weekId}`]: {
+          [`weekProgress.${key}`]: {
             submitted:   true,
             score:       null,
             feedback:    null,
             graded:      false,
             submittedAt: new Date(),
-            answers:     answers,          // ← store answers so admin can read them
+            answers:     answers,
           },
         },
       },
       { upsert: true, new: true }
     );
-
     res.json({ success: true, message: `Week ${weekId} submitted.` });
   } catch (err) {
     console.error('[submitCoursework]', err.message);
@@ -563,16 +427,13 @@ exports.submitCoursework = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  SUBMIT FINAL EXAM — student submits final exam answers
+//  SUBMIT FINAL EXAM
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.submitFinalExam = async (req, res) => {
   const { registrationId, answers, studentName, studentEmail } = req.body;
-
   if (!registrationId || !answers?.length) {
     return res.status(400).json({ message: 'Missing required fields.' });
   }
-
   try {
     await StudentProgress.findOneAndUpdate(
       { registrationId },
@@ -580,19 +441,16 @@ exports.submitFinalExam = async (req, res) => {
         $set: {
           studentName:  studentName  || '',
           studentEmail: studentEmail || '',
-          finalExam: {
-            submitted:   true,
-            score:       null,
-            feedback:    null,
-            graded:      false,
-            submittedAt: new Date(),
-            answers:     answers,          // ← store answers so admin can read them
-          },
+          'finalExam.submitted':   true,
+          'finalExam.score':       null,
+          'finalExam.feedback':    null,
+          'finalExam.graded':      false,
+          'finalExam.submittedAt': new Date(),
+          'finalExam.answers':     answers,
         },
       },
       { upsert: true, new: true }
     );
-
     res.json({ success: true, message: 'Final exam submitted.' });
   } catch (err) {
     console.error('[submitFinalExam]', err.message);
@@ -601,116 +459,93 @@ exports.submitFinalExam = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET ALL SUBMISSIONS — admin fetches real student submissions
-//
-//  Query params:
-//    ?week=N   → filter to a specific week (1-6). Omit for all weeks.
-//    ?type=final → return final exam submissions instead
+//  GET ALL SUBMISSIONS  ← FIXED: uses normalisedWeekProgress
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.getAllSubmissions = async (req, res) => {
   try {
     const { week, type } = req.query;
 
-    // Fetch all StudentProgress documents
-    const allProgress = await StudentProgress.find({}).lean();
+    // Load without .lean() so normalisedWeekProgress can handle Map instances
+    const allProgress = await StudentProgress.find({});
 
-    if (!allProgress.length) {
-      return res.json({ submissions: [] });
-    }
+    if (!allProgress.length) return res.json({ submissions: [] });
 
-    // Build a map of registrationId → student info from Registration collection
     const regIds   = allProgress.map(p => p.registrationId);
     const students = await Registration.find(
       { registrationId: { $in: regIds } },
       'registrationId fullName email category'
     ).lean();
-
     const studentMap = {};
     students.forEach(s => { studentMap[s.registrationId] = s; });
 
+    const weekTitleFallback = {
+      1: 'Foundation for Workplace',      2: 'Communication & Professional Presence',
+      3: 'Career Positioning & Job Readiness', 4: 'Productivity & Workplace Performance',
+      5: 'Workplace Excellence & Growth',  6: 'Career Direction & Real-World Application',
+    };
+    const cwWeeks = await CourseworkQuestion.find({}).select('weekNumber weekTitle').lean();
+    const weekTitleMap = {};
+    cwWeeks.forEach(w => { weekTitleMap[w.weekNumber] = w.weekTitle; });
+
     const submissions = [];
 
-    // ── Final exam submissions ──────────────────────────────────────────
+    // ── Final exam ──────────────────────────────────────────────────
     if (type === 'final') {
       allProgress.forEach(progress => {
         const student     = studentMap[progress.registrationId] || {};
         const studentName = student.fullName || progress.studentName || progress.registrationId;
-        const fe          = progress.finalExam || {};
+        const fe = progress.finalExam && typeof progress.finalExam.toObject === 'function'
+          ? progress.finalExam.toObject()
+          : { ...(progress.finalExam || {}) };
 
         submissions.push({
           registrationId: progress.registrationId,
-          student:        studentName,
-          email:          student.email || progress.studentEmail || '',
-          category:       student.category || '',
-          type:           'final',
-          weekId:         null,
-          weekLabel:      'Final Exam',
-          submitted:      fe.submitted  ?? false,
-          score:          fe.score      ?? null,
-          feedback:       fe.feedback   ?? null,
-          graded:         fe.graded     ?? false,
-          submittedAt:    fe.submittedAt ?? null,
-          answers:        fe.answers    ?? [],
+          student:  studentName,
+          email:    student.email || progress.studentEmail || '',
+          category: student.category || '',
+          type:     'final',
+          weekId:   null,
+          weekLabel: 'Final Exam',
+          submitted:   fe.submitted  ?? false,
+          score:       fe.score      ?? null,
+          feedback:    fe.feedback   ?? null,
+          graded:      fe.graded     ?? false,
+          submittedAt: fe.submittedAt ?? null,
+          answers:     Array.isArray(fe.answers) ? fe.answers : [],
         });
       });
-
       return res.json({ submissions });
     }
 
-    // ── Weekly coursework submissions ───────────────────────────────────
+    // ── Weekly ──────────────────────────────────────────────────────
     const weeksToReturn = week ? [parseInt(week, 10)] : [1, 2, 3, 4, 5, 6];
-
-    // Get published week info so we can show week title
-    const publishedWeeks = await CourseworkQuestion
-      .find({})
-      .select('weekNumber weekTitle isPublished')
-      .lean();
-    const weekTitleMap = {};
-    publishedWeeks.forEach(w => { weekTitleMap[w.weekNumber] = w.weekTitle; });
-
-    const weekTitleFallback = {
-      1: 'Foundation for Workplace',
-      2: 'Communication & Professional Presence',
-      3: 'Career Positioning & Job Readiness',
-      4: 'Productivity & Workplace Performance',
-      5: 'Workplace Excellence & Growth',
-      6: 'Career Direction & Real-World Application',
-    };
 
     allProgress.forEach(progress => {
       const student     = studentMap[progress.registrationId] || {};
       const studentName = student.fullName || progress.studentName || progress.registrationId;
 
+      // ← THE KEY FIX: normalise once per student
+      const wp = normalisedWeekProgress(progress.weekProgress);
+
       weeksToReturn.forEach(w => {
-        // weekProgress may be a Mongoose Map (has .get()) or plain object after .lean()
-        // .lean() should convert Maps to plain objects, but key may be stored as string
-        let weekData = null;
-        if (progress.weekProgress) {
-          if (typeof progress.weekProgress.get === 'function') {
-            // Mongoose Map instance (shouldn't happen after .lean() but just in case)
-            weekData = progress.weekProgress.get(String(w)) || null;
-          } else {
-            // Plain object — key could be number or string depending on Mongoose version
-            weekData = progress.weekProgress[w] || progress.weekProgress[String(w)] || null;
-          }
-        }
-        console.log(`[Submissions] regId=${progress.registrationId} week=${w} found=${!!weekData}`);
+        const weekData = wp[String(w)] || null;
+
+        console.log(`[Sub] ${progress.registrationId} wk=${w} found=${!!weekData} score=${weekData?.score ?? 'null'} graded=${weekData?.graded ?? false} answers=${weekData?.answers?.length ?? 0}`);
 
         submissions.push({
           registrationId: progress.registrationId,
-          student:        studentName,
-          email:          student.email || progress.studentEmail || '',
-          category:       student.category || '',
-          type:           'weekly',
-          weekId:         w,
-          weekLabel:      `Week ${w}: ${weekTitleMap[w] || weekTitleFallback[w] || ''}`,
-          submitted:      weekData?.submitted  ?? false,
-          score:          weekData?.score      ?? null,
-          feedback:       weekData?.feedback   ?? null,
-          graded:         weekData?.graded     ?? false,
-          submittedAt:    weekData?.submittedAt ?? null,
-          answers:        weekData?.answers    ?? [],
+          student:  studentName,
+          email:    student.email || progress.studentEmail || '',
+          category: student.category || '',
+          type:     'weekly',
+          weekId:   w,
+          weekLabel: `Week ${w}: ${weekTitleMap[w] || weekTitleFallback[w] || ''}`,
+          submitted:   weekData?.submitted  ?? false,
+          score:       weekData?.score      ?? null,
+          feedback:    weekData?.feedback   ?? null,
+          graded:      weekData?.graded     ?? false,
+          submittedAt: weekData?.submittedAt ?? null,
+          answers:     Array.isArray(weekData?.answers) ? weekData.answers : [],
         });
       });
     });
@@ -723,76 +558,66 @@ exports.getAllSubmissions = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GRADE SUBMISSION — admin scores a student's weekly or final submission
-//
-//  Body: { registrationId, weekId, score, feedback, gradedBy }
-//        weekId: 1-6 for weekly, or "final" for final exam
+//  GRADE SUBMISSION  ← FIXED: uses $set dot-notation, never spreads Map data
 // ══════════════════════════════════════════════════════════════════════════
-
 exports.gradeSubmission = async (req, res) => {
   try {
     const { registrationId, weekId, score, feedback, gradedBy } = req.body;
 
-    if (!registrationId) {
-      return res.status(400).json({ message: 'registrationId is required.' });
-    }
-    if (score === undefined || score === null) {
-      return res.status(400).json({ message: 'score is required.' });
-    }
+    if (!registrationId)                      return res.status(400).json({ message: 'registrationId is required.' });
+    if (score === undefined || score === null) return res.status(400).json({ message: 'score is required.' });
 
-    const progress = await StudentProgress.findOne({ registrationId });
-    if (!progress) {
-      return res.status(404).json({ message: 'Student progress record not found.' });
-    }
+    // Verify the student actually submitted before grading
+    const check = await StudentProgress.findOne({ registrationId });
+    if (!check) return res.status(404).json({ message: 'Student progress record not found.' });
 
     if (weekId === 'final') {
-      // Grade final exam
-      if (!progress.finalExam) {
-        return res.status(400).json({ message: 'Student has not submitted the final exam.' });
-      }
-      progress.finalExam.score    = Number(score);
-      progress.finalExam.feedback = feedback || '';
-      progress.finalExam.graded   = true;
-      progress.finalExam.gradedAt = new Date();
-      progress.finalExam.gradedBy = gradedBy || 'admin';
+      const fe = check.finalExam && typeof check.finalExam.toObject === 'function'
+        ? check.finalExam.toObject() : { ...(check.finalExam || {}) };
+      if (!fe.submitted) return res.status(400).json({ message: 'Student has not submitted the final exam.' });
+
+      // Use $set with dot-notation — works regardless of schema type
+      await StudentProgress.findOneAndUpdate(
+        { registrationId },
+        {
+          $set: {
+            'finalExam.score':    Number(score),
+            'finalExam.feedback': feedback || '',
+            'finalExam.graded':   true,
+            'finalExam.gradedAt': new Date(),
+            'finalExam.gradedBy': gradedBy || 'admin',
+          },
+        }
+      );
     } else {
-      // Grade a weekly submission
       const wid = parseInt(weekId, 10);
-      if (isNaN(wid) || wid < 1 || wid > 6) {
-        return res.status(400).json({ message: 'Invalid weekId. Must be 1-6 or "final".' });
-      }
+      if (isNaN(wid) || wid < 1 || wid > 6) return res.status(400).json({ message: 'Invalid weekId. Must be 1-6 or "final".' });
 
-      const key      = String(wid);
-      const existing = progress.weekProgress?.get
-        ? progress.weekProgress.get(key)        // Mongoose Map
-        : progress.weekProgress?.[key];         // plain object
+      const wp       = normalisedWeekProgress(check.weekProgress);
+      const existing = wp[String(wid)];
+      if (!existing || !existing.submitted) return res.status(400).json({ message: `Student has not submitted Week ${wid}.` });
 
-      if (!existing || !existing.submitted) {
-        return res.status(400).json({ message: `Student has not submitted Week ${wid}.` });
-      }
+      const key = String(wid);
 
-      const updatedWeek = {
-        ...existing,
-        score:    Number(score),
-        feedback: feedback || '',
-        graded:   true,
-        gradedAt: new Date(),
-        gradedBy: gradedBy || 'admin',
-      };
-
-      // Handle both Mongoose Map and plain object storage
-      if (progress.weekProgress?.set) {
-        progress.weekProgress.set(key, updatedWeek);
-      } else {
-        progress.weekProgress[key] = updatedWeek;
-      }
+      // Use $set with dot-notation — this is the critical fix.
+      // Spreading a Mongoose subdoc was silently losing data on save.
+      await StudentProgress.findOneAndUpdate(
+        { registrationId },
+        {
+          $set: {
+            [`weekProgress.${key}.score`]:    Number(score),
+            [`weekProgress.${key}.feedback`]: feedback || '',
+            [`weekProgress.${key}.graded`]:   true,
+            [`weekProgress.${key}.gradedAt`]: new Date(),
+            [`weekProgress.${key}.gradedBy`]: gradedBy || 'admin',
+          },
+        }
+      );
     }
 
-    progress.markModified('weekProgress');
-    progress.markModified('finalExam');
-    await progress.save();
+    console.log(`[Grade] ${registrationId} weekId=${weekId} score=${score} ✓`);
 
-    // Send grade notification email to student
+    // Email student
     try {
       const student = await Registration.findOne({ registrationId }, 'email fullName').lean();
       if (student?.email) {
@@ -808,30 +633,47 @@ exports.gradeSubmission = async (req, res) => {
             <div style="background:#1a1a1a;border:1px solid #2e2e2e;border-radius:8px;padding:16px;margin:16px 0;">
               <div style="font-size:11px;color:#888;margin-bottom:4px;">Your Score</div>
               <div style="font-size:28px;font-weight:700;color:#B88D2A;">${scoreVal}</div>
-              ${feedback ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #2e2e2e;">
-                <div style="font-size:11px;color:#888;margin-bottom:4px;">Feedback</div>
-                <div style="font-size:13px;color:#ccc;">${feedback}</div>
-              </div>` : ''}
+              ${feedback ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #2e2e2e;"><div style="font-size:11px;color:#888;margin-bottom:4px;">Feedback</div><div style="font-size:13px;color:#ccc;">${feedback}</div></div>` : ''}
             </div>
             <p>Log in to your student portal to view your full results.</p>
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/portal"
-               style="display:inline-block;padding:13px 26px;background:#B88D2A;color:#000;text-decoration:none;border-radius:8px;font-weight:700;">
-              View My Results →
-            </a>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/portal" style="display:inline-block;padding:13px 26px;background:#B88D2A;color:#000;text-decoration:none;border-radius:8px;font-weight:700;">View My Results →</a>
             <hr style="border-color:#2e2e2e;margin:24px 0;">
             <p style="color:#555;font-size:11px;margin:0;">Celcium360 Solutions Limited</p>
           </div>`
         );
       }
-    } catch (emailErr) {
-      console.error('[Grade email error]', emailErr.message);
-      // Don't fail the request if email fails
-    }
+    } catch (emailErr) { console.error('[Grade email error]', emailErr.message); }
 
-    console.log(`[Grade] ${registrationId} Week/Final=${weekId} Score=${score} by ${gradedBy || 'admin'}`);
     res.json({ success: true, message: 'Submission graded successfully.' });
   } catch (err) {
     console.error('[gradeSubmission]', err.message);
     res.status(500).json({ message: err.message || 'Failed to grade submission.' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  MIGRATE — one-time endpoint to convert old Map records to plain objects
+//  POST /api/coursework-questions/migrate
+// ══════════════════════════════════════════════════════════════════════════
+exports.migrateProgress = async (req, res) => {
+  try {
+    const allDocs = await StudentProgress.find({});
+    let migrated = 0;
+
+    for (const doc of allDocs) {
+      const normalised = normalisedWeekProgress(doc.weekProgress);
+      // Replace weekProgress entirely with the plain object
+      doc.weekProgress = undefined;  // clear
+      await StudentProgress.findByIdAndUpdate(doc._id, {
+        $set: { weekProgress: normalised },
+      });
+      migrated++;
+    }
+
+    console.log(`[Migrate] ${migrated} documents normalised`);
+    res.json({ success: true, migrated, total: allDocs.length, message: 'Migration complete. Refresh the admin page.' });
+  } catch (err) {
+    console.error('[migrateProgress]', err.message);
+    res.status(500).json({ message: err.message });
   }
 };
