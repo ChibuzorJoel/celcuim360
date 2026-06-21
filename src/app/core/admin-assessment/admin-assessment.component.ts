@@ -48,7 +48,9 @@ export class AdminAssessmentComponent implements OnInit {
   allWeeks:     WeekData[] = [];
   weeksLoading  = true;
 
-  activeWeekNum  = 1;
+  // 'final' is a sidebar item alongside 1-6, but has no WeekData of its own —
+  // it's governed entirely by the finalExam* fields below.
+  activeWeekNum:  number | 'final' = 1;
   activeWeekData: WeekData | null = null;
 
   // ── Edit Mode ─────────────────────────────────────────────────────────────
@@ -61,9 +63,19 @@ export class AdminAssessmentComponent implements OnInit {
   saveError    = '';
   saveSuccess  = '';
 
-  // ── Publish ───────────────────────────────────────────────────────────────
+  // ── Publish (weeks) ───────────────────────────────────────────────────────
   publishLoading = false;
   publishError   = '';
+
+  // ── Final Exam publish toggle ───────────────────────────────────────────
+  // Questions are NOT editable here — this only controls whether eligible
+  // students (all 6 weeks done + video submitted) can see/start the exam.
+  finalExamPublished:      boolean = false;
+  finalExamPublishedAt:    string | null = null;
+  finalExamStatusLoading:  boolean = true;
+  finalExamPublishLoading: boolean = false;
+  finalExamPublishError:   string = '';
+  finalExamSaveSuccess:    string = '';
 
   // ── Submissions (REAL data from server) ──────────────────────────────────
   submissionsLoading   = false;
@@ -194,6 +206,7 @@ export class AdminAssessmentComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAllWeeks();
+    this.loadFinalExamStatus();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -206,26 +219,28 @@ export class AdminAssessmentComponent implements OnInit {
       next: (res) => {
         this.allWeeks     = res.weeks || [];
         this.weeksLoading = false;
-        this.selectWeek(this.activeWeekNum);
+        this.selectWeek(this.activeWeekNum === 'final' ? 1 : this.activeWeekNum);
         this.cdr.detectChanges();
       },
       error: () => {
         this.weeksLoading = false;
-        this.selectWeek(this.activeWeekNum);
+        this.selectWeek(this.activeWeekNum === 'final' ? 1 : this.activeWeekNum);
       },
     });
   }
 
   selectWeek(w: number): void {
     this.activeWeekNum  = w;
-    this.editMode       = false;
-    this.saveError      = '';
-    this.saveSuccess    = '';
-    this.publishError   = '';
-    this.activeWeekData = this.allWeeks.find(wk => wk.weekNumber === w) || null;
+    this.editMode        = false;
+    this.saveError        = '';
+    this.saveSuccess      = '';
+    this.publishError     = '';
+    this.activeWeekData   = this.allWeeks.find(wk => wk.weekNumber === w) || null;
   }
 
   startEdit(): void {
+    if (this.activeWeekNum === 'final') return; // safety guard, button never shown for 'final'
+
     if (this.activeWeekData) {
       this.editTitle       = this.activeWeekData.weekTitle;
       this.editInstruction = this.activeWeekData.instruction;
@@ -248,6 +263,8 @@ export class AdminAssessmentComponent implements OnInit {
   }
 
   saveQuestions(): void {
+    if (this.activeWeekNum === 'final') return; // safety guard
+
     this.saveError   = '';
     this.saveSuccess = '';
 
@@ -295,6 +312,8 @@ export class AdminAssessmentComponent implements OnInit {
   }
 
   saveDefaultsAndPublish(): void {
+    if (this.activeWeekNum === 'final') return; // safety guard
+
     this.saveError      = '';
     this.saveSuccess    = '';
     this.publishError   = '';
@@ -351,7 +370,7 @@ export class AdminAssessmentComponent implements OnInit {
   }
 
   togglePublish(): void {
-    if (!this.activeWeekData) return;
+    if (this.activeWeekNum === 'final' || !this.activeWeekData) return;
 
     this.publishLoading = true;
     this.publishError   = '';
@@ -380,6 +399,67 @@ export class AdminAssessmentComponent implements OnInit {
       error: (err) => {
         this.publishLoading = false;
         this.publishError   = err.error?.message || 'Failed to update publish status.';
+      },
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // FINAL EXAM — publish toggle only (questions are hardcoded in student app)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /** Selects the "Final Exam" sidebar item */
+  selectFinalExam(): void {
+    this.activeWeekNum         = 'final';
+    this.editMode               = false;
+    this.activeWeekData         = null;
+    this.saveError              = '';
+    this.saveSuccess            = '';
+    this.publishError           = '';
+    this.finalExamPublishError  = '';
+    this.finalExamSaveSuccess   = '';
+  }
+
+  loadFinalExamStatus(): void {
+    this.finalExamStatusLoading = true;
+    this.http.get<any>(`${this.api}/api/final-exam/status`).subscribe({
+      next: (res) => {
+        this.finalExamPublished     = res.isPublished ?? false;
+        this.finalExamPublishedAt   = res.publishedAt ?? null;
+        this.finalExamStatusLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Fail closed: if we can't confirm status, don't claim it's published
+        this.finalExamPublished     = false;
+        this.finalExamStatusLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  toggleFinalExamPublish(): void {
+    this.finalExamPublishLoading = true;
+    this.finalExamPublishError   = '';
+    this.finalExamSaveSuccess    = '';
+
+    const newState = !this.finalExamPublished;
+
+    this.http.patch<any>(
+      `${this.api}/api/final-exam/publish`,
+      { publish: newState },
+      { headers: this.headers }
+    ).subscribe({
+      next: (res) => {
+        this.finalExamPublishLoading = false;
+        this.finalExamPublished      = res.isPublished;
+        this.finalExamPublishedAt    = res.publishedAt;
+        this.finalExamSaveSuccess    = `Final Exam ${newState ? 'published — eligible students can now access it' : 'unpublished — hidden from all students'}.`;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.finalExamPublishLoading = false;
+        this.finalExamPublishError   = err.error?.message || 'Failed to update final exam publish status.';
+        this.cdr.detectChanges();
       },
     });
   }

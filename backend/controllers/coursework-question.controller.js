@@ -6,6 +6,7 @@ const CourseworkQuestion = require('../models/Courseworkquestion.model');
 const Registration       = require('../models/Registration');
 const StudentProgress    = require('../models/StudentProgress.model');
 const nodemailer         = require('nodemailer');
+const mongoose           = require('mongoose');
 
 // ── Email helper ──────────────────────────────────────────────────────────
 const mailer = nodemailer.createTransport({
@@ -27,6 +28,22 @@ async function sendEmail(to, subject, html) {
     console.error(`[Email failed] ${e.message}`);
   }
 }
+
+// ── FinalVideo model ─────────────────────────────────────────────────────
+// Reuse the FinalVideo model (already registered by final-video.routes.js,
+// but safe to reference again here since Mongoose caches models by name).
+// NOTE: if final-video.routes.js's schema ever changes, update this copy too
+// — or better, extract both to a shared models/FinalVideo.model.js file.
+const FinalVideoSchema = new mongoose.Schema({
+  registrationId: { type: String, required: true, unique: true },
+  studentName:    { type: String, default: '' },
+  studentEmail:   { type: String, default: '' },
+  videoFilename:  { type: String, required: true },
+  videoUrl:       { type: String, required: true },
+  consentGiven:   { type: Boolean, default: false },
+  submittedAt:    { type: Date,   default: Date.now },
+});
+const FinalVideo = mongoose.models.FinalVideo || mongoose.model('FinalVideo', FinalVideoSchema);
 
 // ══════════════════════════════════════════════════════════════════════════
 //  KEY UTILITY — normalise weekProgress to a plain JS object
@@ -346,7 +363,11 @@ exports.deleteWeek = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET STUDENT PROGRESS  ← FIXED: properly reads Map or plain object
+//  GET STUDENT PROGRESS
+//  - normalises weekProgress whether it's a Mongoose Map or a plain object
+//  - normalises finalExam the same way
+//  - NEW: includes videoSubmission so the student dashboard can decide
+//    whether to show the video gate or go straight to the exam
 // ══════════════════════════════════════════════════════════════════════════
 exports.getStudentProgress = async (req, res) => {
   try {
@@ -359,6 +380,9 @@ exports.getStudentProgress = async (req, res) => {
 
     // Load WITHOUT .lean() so we can call normalisedWeekProgress on the doc
     const progressDoc = await StudentProgress.findOne({ registrationId });
+
+    // NEW: check final-video submission status
+    const videoDoc = await FinalVideo.findOne({ registrationId }).lean();
 
     const weekProgress = {};
     if (progressDoc) {
@@ -384,6 +408,12 @@ exports.getStudentProgress = async (req, res) => {
       publishedWeeks: publishedWeeks.map(w => ({ weekId: w.weekNumber, dueDate: w.publishedAt || null })),
       weekProgress,
       finalExam,
+      // NEW: video submission status
+      videoSubmission: {
+        submitted:   !!videoDoc,
+        videoUrl:    videoDoc?.videoUrl    ?? null,
+        submittedAt: videoDoc?.submittedAt ?? null,
+      },
     });
   } catch (err) {
     console.error('[getStudentProgress]', err.message);
@@ -459,7 +489,7 @@ exports.submitFinalExam = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET ALL SUBMISSIONS  ← FIXED: uses normalisedWeekProgress
+//  GET ALL SUBMISSIONS  ← uses normalisedWeekProgress
 // ══════════════════════════════════════════════════════════════════════════
 exports.getAllSubmissions = async (req, res) => {
   try {
@@ -524,7 +554,6 @@ exports.getAllSubmissions = async (req, res) => {
       const student     = studentMap[progress.registrationId] || {};
       const studentName = student.fullName || progress.studentName || progress.registrationId;
 
-      // ← THE KEY FIX: normalise once per student
       const wp = normalisedWeekProgress(progress.weekProgress);
 
       weeksToReturn.forEach(w => {
@@ -558,7 +587,7 @@ exports.getAllSubmissions = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GRADE SUBMISSION  ← FIXED: uses $set dot-notation, never spreads Map data
+//  GRADE SUBMISSION  ← uses $set dot-notation, never spreads Map data
 // ══════════════════════════════════════════════════════════════════════════
 exports.gradeSubmission = async (req, res) => {
   try {

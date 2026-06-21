@@ -215,7 +215,193 @@
   flex-direction: column;
   gap: 3px;
 }
+/* ── ADD THESE to student-dashboard.component.css ── */
 
+.video-gate-modal {
+  max-width: 720px;
+}
+
+.video-gate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.video-instructions {
+  background: #161616;
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+  padding: 18px 20px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.video-req-section {
+  margin-top: 14px;
+}
+
+.video-req-section:first-child { margin-top: 0; }
+
+.video-req-section h4 {
+  color: #B88D2A;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.video-req-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.video-req-section li {
+  color: #ccc;
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+
+.video-req-checklist {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #2e2e2e;
+}
+
+.video-req-checklist h4 {
+  color: #B88D2A;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.vr-item {
+  color: #10b981;
+  font-size: 0.83rem;
+  padding: 2px 0;
+}
+
+/* Upload zone */
+.video-upload-zone {
+  background: #111;
+  border: 2px dashed #3a3a3a;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.vu-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 20px;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.vu-dropzone:hover { color: #B88D2A; }
+
+.vu-dz-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.vu-dz-sub {
+  font-size: 0.78rem;
+  color: #666;
+}
+
+.vu-selected {
+  padding: 14px;
+}
+
+.vu-preview {
+  width: 100%;
+  max-height: 280px;
+  border-radius: 8px;
+  background: #000;
+  display: block;
+}
+
+.vu-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.vu-file-name {
+  font-size: 0.85rem;
+  color: #e0e0e0;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.vu-file-size {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.vu-remove {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.vu-remove:hover { background: #ef444422; }
+.vu-remove:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.video-upload-error {
+  margin: 10px 14px 0;
+  padding: 10px 14px;
+  background: #2a1a1a;
+  color: #fca5a5;
+  border: 1px solid #ef444444;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+/* Consent box */
+.video-consent-box {
+  background: #161616;
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.vc-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.vc-label input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: #B88D2A;
+  cursor: pointer;
+}
+
+.vc-text {
+  font-size: 0.8rem;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+/* Progress */
+.video-progress-wrap {
+  margin-top: 4px;
+}
 .nav-btn {
   display: flex;
   align-items: center;

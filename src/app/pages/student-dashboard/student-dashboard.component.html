@@ -598,83 +598,194 @@
 <!-- ══════════════════════════════════════════════
      FINAL EXAM MODAL
 ══════════════════════════════════════════════ -->
-<div class="modal-overlay" *ngIf="showFinalExam" (click)="closeFinalExam()">
-  <div class="modal-box modal-wide" (click)="$event.stopPropagation()">
+<!-- ═══════════════════════════════════════════════════════════════════════
+     STEP 1 — REPLACE the existing "Final exam banner" block in your
+     student-dashboard.component.html (inside the dashboard tab) with this:
+═══════════════════════════════════════════════════════════════════════ -->
 
-    <div class="modal-head final-head">
-      <div>
-        <span class="modal-tag">🏆 Final Assessment</span>
-        <h3>Workforce Readiness — Final Exam (40 Questions)</h3>
-      </div>
-      <button class="modal-close" (click)="closeFinalExam()">✕</button>
-    </div>
-
-    <!-- Already submitted -->
-    <div class="result-screen" *ngIf="finalExamSubmitted">
-      <div class="res-icon res-pass">🏆</div>
-      <div class="res-score">{{ finalExamScore }}/40</div>
-      <div class="res-fraction">questions submitted</div>
-      <p class="res-msg">
-        Outstanding! All 40 questions have been submitted.
-        Your instructor will review and grade your responses.
-        Check your <strong>Grades</strong> tab for your result.
-      </p>
-      <button class="btn-gold" (click)="closeFinalExam()">Close</button>
-    </div>
-
-    <!-- Questions -->
-    <ng-container *ngIf="!finalExamSubmitted">
-      <div class="modal-body">
-        <p class="modal-intro">
-          For each scenario or task, respond based on what you would actually do in a real
-          workplace. Be clear, specific and professional.<br>
-          <strong>40 Questions · 40 Marks · Global Standard</strong>
-        </p>
-
-        <div class="prog-bar">
-          <div class="prog-fill" [style.width.%]="finalAnsweredCount / 40 * 100"></div>
-        </div>
-        <p class="prog-text">{{ finalAnsweredCount }} of 40 answered</p>
-
-        <ng-container *ngFor="let section of finalExamSections">
-          <div class="section-header">
-            <h4>{{ section.title }}</h4>
-            <p>{{ section.sub }}</p>
-          </div>
-          <div class="q-list" style="margin-bottom:8px;">
-            <div class="q-item" *ngFor="let q of section.questions; let i = index">
-              <div class="q-head">
-                <span class="q-num">{{ getFinalQNum(section, i) }}</span>
-                <p class="q-text">{{ q }}</p>
-              </div>
-              <textarea class="q-textarea"
-                        placeholder="Write your professional response here…"
-                        rows="3"
-                        (input)="onFinalAnswer(getFinalQNum(section, i) - 1, $event)"></textarea>
-              <div class="q-word-count">
-                {{ getWordCount(finalAnswers[getFinalQNum(section, i) - 1]) }} words
-              </div>
+        <!-- Final exam banner -->
+        <div class="final-banner" [class.unlocked]="canTakeFinalExam">
+          <div class="fb-left">
+            <div class="fb-icon">🏆</div>
+            <div>
+              <h3>Final Assessment</h3>
+              <p *ngIf="!canTakeFinalExam">
+                40-question comprehensive exam covering all 6 weeks.
+                Unlocks when all weeks are completed.
+              </p>
+              <p *ngIf="canTakeFinalExam && !videoSubmitted && !finalExamSubmitted">
+                All weeks complete! Submit your 1-minute self-presentation video
+                to unlock the final 40-question exam.
+              </p>
+              <p *ngIf="canTakeFinalExam && videoSubmitted && !finalExamSubmitted">
+                Video received ✓ — 40-question comprehensive exam covering all 6 weeks.
+              </p>
             </div>
           </div>
-        </ng-container>
+          <button class="btn-gold"
+                  [disabled]="!canTakeFinalExam || finalExamSubmitted"
+                  (click)="onFinalExamButtonClick()">
+            <span *ngIf="!finalExamSubmitted && !canTakeFinalExam">🔒 Complete All Weeks First</span>
+            <span *ngIf="!finalExamSubmitted && canTakeFinalExam && !videoSubmitted">🎥 Submit Video to Unlock</span>
+            <span *ngIf="!finalExamSubmitted && canTakeFinalExam && videoSubmitted">🏆 Take Final Exam</span>
+            <span *ngIf="finalExamSubmitted">
+              Final Submitted ✓
+              <span *ngIf="finalExamGraded"> — {{ finalExamScore }}/40</span>
+              <span *ngIf="!finalExamGraded"> — Awaiting Grade</span>
+            </span>
+          </button>
+        </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     STEP 2 — ADD this new modal block right after the existing
+     "COURSEWORK RESULT MODAL" block and before the "FINAL EXAM MODAL"
+     block, at the bottom of student-dashboard.component.html
+═══════════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════
+     VIDEO SUBMISSION GATE MODAL
+     Required before the final exam unlocks
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showVideoGateModal" (click)="closeVideoGateModal()">
+  <div class="modal-box modal-wide video-gate-modal" (click)="$event.stopPropagation()">
+
+    <div class="modal-head">
+      <div>
+        <span class="modal-tag">🎥 Required Before Final Exam</span>
+        <h3>Personal Reflection &amp; Self-Presentation Video</h3>
+      </div>
+      <button class="modal-close" (click)="closeVideoGateModal()" [disabled]="videoUploading">✕</button>
+    </div>
+
+    <!-- Success state -->
+    <div class="result-screen" *ngIf="videoSubmitted && !videoUploading">
+      <div class="res-icon res-pass">✓</div>
+      <div class="res-score">Video Received</div>
+      <div class="res-fraction">Opening your Final Exam…</div>
+    </div>
+
+    <!-- Upload form -->
+    <div class="modal-body video-gate-body" *ngIf="!videoSubmitted">
+
+      <div class="video-instructions">
+        <p class="modal-intro">
+          As part of the final stage of the Work Readiness Program, you are required to
+          record and upload a clear, well-lit, <strong>1-minute</strong> video before
+          your final assessment questions unlock.
+        </p>
+
+        <div class="video-req-section">
+          <h4>1. Personal Introduction</h4>
+          <ul>
+            <li>Full name</li>
+            <li>Current status (student, job seeker, employee, entrepreneur, etc.)</li>
+            <li>Career aspirations or professional direction</li>
+          </ul>
+        </div>
+
+        <div class="video-req-section">
+          <h4>2. Program Experience &amp; Learning</h4>
+          <ul>
+            <li>Key lessons and insights gained from the Work Readiness Program</li>
+            <li>Skills and competencies developed during the program</li>
+            <li>How you intend to apply what you have learned in your workplace, career, or business</li>
+            <li>Practical ways these skills will improve your performance, productivity, or employability</li>
+          </ul>
+        </div>
+
+        <div class="video-req-section">
+          <h4>3. Career Goals &amp; Personal Pitch</h4>
+          <ul>
+            <li>Your short-term and long-term career goals</li>
+            <li>How the program has positioned you to achieve these goals</li>
+            <li>Expected impact on your personal growth, workplace, or business environment</li>
+            <li>Present yourself as a job-ready or business-ready individual</li>
+            <li>You may mention organizations you aspire to work with or industries you are targeting</li>
+            <li>Highlight your strengths, readiness, and value proposition based on your learning</li>
+          </ul>
+        </div>
+
+        <div class="video-req-checklist">
+          <h4>Video Requirements</h4>
+          <div class="vr-item">✓ Clear audio and video quality</div>
+          <div class="vr-item">✓ Well-lit environment (natural or artificial lighting)</div>
+          <div class="vr-item">✓ Personalized and authentic presentation</div>
+          <div class="vr-item">✓ Duration: approximately 1 minute</div>
+          <div class="vr-item">✓ Speak confidently and clearly</div>
+        </div>
       </div>
 
-      <div class="modal-foot">
-        <span class="modal-warn">
-          {{ finalAnsweredCount < 40
-             ? (40 - finalAnsweredCount) + ' more question(s) to answer.'
-             : '✓ Ready to submit!' }}
-        </span>
-        <button class="btn-gold"
-                [disabled]="finalAnsweredCount < 40 || finalExamSubmitting"
-                (click)="submitFinalExam()">
-          <span *ngIf="!finalExamSubmitting">Submit Final Exam</span>
-          <span *ngIf="finalExamSubmitting" class="loading-btn">
-            <span class="spin-sm"></span> Submitting…
-          </span>
-        </button>
+      <!-- File upload zone -->
+      <div class="video-upload-zone">
+
+        <div class="vu-empty" *ngIf="!videoFile">
+          <input type="file" id="videoFileInput" accept="video/*"
+                 (change)="onVideoFileSelected($event)" style="display:none;">
+          <label for="videoFileInput" class="vu-dropzone">
+            <svg viewBox="0 0 24 24" fill="none" width="32" height="32">
+              <path d="M23 7l-7 5 7 5V7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="1" y="5" width="15" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span class="vu-dz-title">Click to select your video</span>
+            <span class="vu-dz-sub">MP4, MOV, WebM &middot; Max 200MB</span>
+          </label>
+        </div>
+
+        <div class="vu-selected" *ngIf="videoFile">
+          <video *ngIf="videoFilePreviewUrl" [src]="videoFilePreviewUrl" controls class="vu-preview"></video>
+          <div class="vu-file-info">
+            <span class="vu-file-name">{{ videoFileName }}</span>
+            <span class="vu-file-size">{{ formatFileSize(videoFile.size) }}</span>
+            <button class="vu-remove" (click)="removeSelectedVideo()" [disabled]="videoUploading">
+              Remove &amp; choose another
+            </button>
+          </div>
+        </div>
+
+        <div class="video-upload-error" *ngIf="videoUploadError">⚠ {{ videoUploadError }}</div>
+
       </div>
-    </ng-container>
+
+      <!-- Consent checkbox -->
+      <div class="video-consent-box">
+        <label class="vc-label">
+          <input type="checkbox" [checked]="videoConsentChecked"
+                 (change)="toggleVideoConsent($event)" [disabled]="videoUploading">
+          <span class="vc-text">
+            I hereby consent that the video submitted as part of my final assessment for the
+            Work Readiness Program may be used, shared, or published by Celcium360 Solutions
+            for educational, promotional, testimonial, and visibility purposes. This includes
+            but is not limited to publication on social media platforms, websites, and other
+            official communication channels where necessary. I confirm that I have read and
+            agree to this statement.
+          </span>
+        </label>
+      </div>
+
+      <!-- Upload progress -->
+      <div class="video-progress-wrap" *ngIf="videoUploading">
+        <div class="prog-bar">
+          <div class="prog-fill" [style.width.%]="videoUploadProgress"></div>
+        </div>
+        <p class="prog-text">Uploading… {{ videoUploadProgress }}%</p>
+      </div>
+
+    </div>
+
+    <div class="modal-foot" *ngIf="!videoSubmitted">
+      <span class="modal-warn">
+        <ng-container *ngIf="!videoFile">Select a video file to continue.</ng-container>
+        <ng-container *ngIf="videoFile && !videoConsentChecked">Please check the consent box to continue.</ng-container>
+        <ng-container *ngIf="videoFile && videoConsentChecked">✓ Ready to submit!</ng-container>
+      </span>
+      <button class="btn-gold" [disabled]="!canSubmitVideo" (click)="submitVideo()">
+        <span *ngIf="!videoUploading">Submit Video &amp; Unlock Final Exam</span>
+        <span *ngIf="videoUploading" class="loading-btn">
+          <span class="spin-sm"></span> Uploading…
+        </span>
+      </button>
+    </div>
 
   </div>
 </div>

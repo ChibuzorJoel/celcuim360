@@ -241,6 +241,7 @@ app.use('/api/coursework-questions', require('./routes/courseworkquestions.route
 app.use('/api/student', require('./routes/student.routes'));
 app.use('/api', require('./routes/student.routes'));
 app.use('/api/final-exam',           require('./routes/finalexam.routes'));
+app.use('/api/final-video', require('./routes/final-video.routes'));
 // -----------------------------------------------------------------------------
 // ERROR HANDLER
 // -----------------------------------------------------------------------------

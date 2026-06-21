@@ -48,10 +48,24 @@
             <span *ngIf="getWeekStatus(w) === 'empty'">+ New</span>
           </span>
         </button>
+
+        <!-- Final Exam item -->
+        <div style="height:1px;background:#2e2e2e;margin:14px 0;"></div>
+        <div class="ws-title">Assessment</div>
+        <button class="ws-item" [class.active]="activeWeekNum === 'final'" (click)="selectFinalExam()">
+          <div class="ws-item-left">
+            <span class="ws-num">FE</span>
+            <span class="ws-label">Final Exam</span>
+          </div>
+          <span class="ws-status" [class]="'ws-' + (finalExamPublished ? 'published' : 'draft')">
+            <span *ngIf="finalExamPublished">● Live</span>
+            <span *ngIf="!finalExamPublished">○ Draft</span>
+          </span>
+        </button>
       </div>
 
-      <!-- Main panel -->
-      <div class="question-panel">
+      <!-- Main panel — Week questions (1-6) -->
+      <div class="question-panel" *ngIf="activeWeekNum !== 'final'">
 
         <!-- VIEW MODE -->
         <ng-container *ngIf="!editMode">
@@ -192,6 +206,65 @@
         </ng-container>
 
       </div>
+
+      <!-- Main panel — Final Exam (publish toggle only, no question editing) -->
+      <div class="question-panel" *ngIf="activeWeekNum === 'final'">
+
+        <div class="loading-row" *ngIf="finalExamStatusLoading">
+          <div class="spinner-gold"></div>
+          <span>Loading final exam status…</span>
+        </div>
+
+        <div *ngIf="!finalExamStatusLoading">
+
+          <div class="qp-header">
+            <div class="qp-header-left">
+              <div class="qp-week-tag">Final Assessment</div>
+              <h2 class="qp-title">Final Exam — 40 Questions</h2>
+              <div class="qp-meta">
+                Only unlocks for students who have completed all 6 weeks and submitted their self-presentation video.
+              </div>
+            </div>
+            <div class="qp-header-actions">
+              <button class="btn-publish" [class.btn-unpublish]="finalExamPublished"
+                [disabled]="finalExamPublishLoading" (click)="toggleFinalExamPublish()">
+                <span *ngIf="!finalExamPublishLoading">
+                  {{ finalExamPublished ? '⏸ Unpublish' : '🚀 Publish Final Exam' }}
+                </span>
+                <span *ngIf="finalExamPublishLoading">Updating…</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="publish-bar"
+            [class.pub-live]="finalExamPublished"
+            [class.pub-draft]="!finalExamPublished">
+            <div class="pb-dot"></div>
+            <span *ngIf="finalExamPublished">
+              ✓ <strong>LIVE</strong> — Eligible students can now access and submit the Final Exam.
+              Published: {{ formatDate(finalExamPublishedAt) }}
+            </span>
+            <span *ngIf="!finalExamPublished">
+              🔒 <strong>Draft</strong> — The Final Exam is hidden from all students, even those who are otherwise eligible.
+              Click <strong>"🚀 Publish Final Exam"</strong> when ready to release it.
+            </span>
+          </div>
+
+          <div class="save-success" *ngIf="finalExamSaveSuccess">✓ {{ finalExamSaveSuccess }}</div>
+          <div class="save-error"   *ngIf="finalExamPublishError">⚠ {{ finalExamPublishError }}</div>
+
+          <div class="instruction-box">
+            <div class="ib-label">Note</div>
+            <p class="ib-text">
+              The Final Exam's 6 sections and 40 questions are fixed in the student app and are not editable here.
+              This toggle only controls whether eligible students can see and start the exam.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
   </div>
