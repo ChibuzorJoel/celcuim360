@@ -34,9 +34,6 @@ dotenv.config({
   path: path.join(__dirname, '.env'),
 });
 
-
-// This checks cPanel's port first, then your .env PORT (3000), and defaults to 5000 if both fail
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -64,8 +61,7 @@ app.use(
         return callback(null, true);
       }
 
-      // Flexible origin matching
-      const isAllowed = ALLOWED_ORIGINS.some(allowedOrigin => 
+      const isAllowed = ALLOWED_ORIGINS.some(allowedOrigin =>
         origin === allowedOrigin || origin.startsWith(allowedOrigin)
       );
 
@@ -85,8 +81,8 @@ app.use(
       'X-Requested-With',
       'X-CSRF-Token',
     ],
-    credentials: true,           // Recommended for auth
-    maxAge: 86400,               // 24 hours
+    credentials: true,
+    maxAge: 86400,
     preflightContinue: false,
     optionsSuccessStatus: 204,
   })
@@ -113,12 +109,7 @@ app.use(
 // -----------------------------------------------------------------------------
 
 app.use(express.json({ limit: '10mb' }));
-app.use(
-  express.urlencoded({
-    extended: true,
-    limit: '10mb',
-  })
-);
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // -----------------------------------------------------------------------------
 // LOGGING
@@ -176,7 +167,16 @@ app.get('/api/health', (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
-// UPLOADS DIRECTORY
+// UPLOADS — static middleware + explicit route handlers
+//
+// ORDER MATTERS:
+//   1. express.static handles the common case efficiently (images, PDFs, etc.)
+//   2. /uploads/final-videos/:filename  — explicit handler for video subfolder
+//      with proper MIME types and Accept-Ranges so the browser player can seek
+//   3. /uploads/:filename               — fallback for top-level upload files
+//
+// The generic /:filename param only captures ONE path segment, so without step 2
+// any request to /uploads/final-videos/xxx.mp4 falls straight to the 404 handler.
 // -----------------------------------------------------------------------------
 
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -185,6 +185,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// 1 — Static middleware (covers everything efficiently for normal cases)
 app.use(
   '/uploads',
   express.static(uploadsDir, {
@@ -195,23 +196,78 @@ app.use(
   })
 );
 
+// 2 — Explicit handler for /uploads/final-videos/:filename
+//     Needs to come BEFORE the generic /:filename handler.
+//     Supports range requests so the <video> element can seek/scrub.
+app.get('/uploads/final-videos/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(uploadsDir, 'final-videos', filename);
+
+  if (!fs.existsSync(filePath)) {
+    console.warn(`[Video 404] ${filePath}`);
+    return res.status(404).json({ success: false, message: 'Video file not found.' });
+  }
+
+  const ext = path.extname(filename).toLowerCase();
+  const videoMimeTypes = {
+    '.mp4':  'video/mp4',
+    '.mov':  'video/quicktime',
+    '.webm': 'video/webm',
+    '.avi':  'video/x-msvideo',
+    '.mkv':  'video/x-matroska',
+    '.ogv':  'video/ogg',
+  };
+  const contentType = videoMimeTypes[ext] || 'video/mp4';
+
+  const stat     = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range    = req.headers.range;
+
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (range) {
+    // Partial content — lets the browser seek to any point in the video
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end   = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunkSize = end - start + 1;
+
+    res.writeHead(206, {
+      'Content-Range':  `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges':  'bytes',
+      'Content-Length': chunkSize,
+      'Content-Type':   contentType,
+    });
+
+    fs.createReadStream(filePath, { start, end }).pipe(res);
+  } else {
+    // Full file
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Content-Type':   contentType,
+      'Accept-Ranges':  'bytes',
+    });
+
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
+
+// 3 — Fallback handler for top-level /uploads/:filename (images, PDFs, etc.)
 app.get('/uploads/:filename', (req, res) => {
   const filePath = path.join(uploadsDir, req.params.filename);
 
   if (!fs.existsSync(filePath)) {
-    return res.status(404).json({
-      success: false,
-      message: 'File not found',
-    });
+    return res.status(404).json({ success: false, message: 'File not found' });
   }
 
   const mimeTypes = {
-    '.jpg': 'image/jpeg',
+    '.jpg':  'image/jpeg',
     '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.gif': 'image/gif',
+    '.png':  'image/png',
+    '.gif':  'image/gif',
     '.webp': 'image/webp',
-    '.pdf': 'application/pdf',
+    '.pdf':  'application/pdf',
   };
 
   const ext = path.extname(filePath).toLowerCase();
@@ -234,15 +290,15 @@ mongooseConnect();
 // API ROUTES
 // -----------------------------------------------------------------------------
 
-app.use('/api/auth', require('./routes/auth.routes'));
-app.use('/api/registration', require('./routes/registration.routes'));
-app.use('/api/admin/registrations', require('./routes/admin.routes'));
-app.use('/api/coursework-questions', require('./routes/courseworkquestions.routes'));
-app.use('/api/student', require('./routes/student.routes'));
-app.use('/api', require('./routes/student.routes'));
-app.use('/api/final-exam',           require('./routes/finalexam.routes'));
-app.use('/api/final-video', require('./routes/final-video.routes'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/auth',                  require('./routes/auth.routes'));
+app.use('/api/registration',          require('./routes/registration.routes'));
+app.use('/api/admin/registrations',   require('./routes/admin.routes'));
+app.use('/api/coursework-questions',  require('./routes/courseworkquestions.routes'));
+app.use('/api/student',               require('./routes/student.routes'));
+app.use('/api',                       require('./routes/student.routes'));
+app.use('/api/final-exam',            require('./routes/finalexam.routes'));
+app.use('/api/final-video',           require('./routes/final-video.routes'));
+
 // -----------------------------------------------------------------------------
 // ERROR HANDLER
 // -----------------------------------------------------------------------------

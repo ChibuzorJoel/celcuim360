@@ -1,9 +1,4 @@
 // src/app/pages/student-dashboard/student-dashboard.component.ts
-// ═══════════════════════════════════════════════════════════════════════════
-//  NEW: Final video submission gate
-//  Students must upload a 1-minute self-presentation video + check consent
-//  BEFORE the 40-question final exam unlocks.
-// ═══════════════════════════════════════════════════════════════════════════
 
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { HttpClient }                            from '@angular/common/http';
@@ -13,17 +8,17 @@ export type WeekStatus = 'completed' | 'pending' | 'overdue' | 'locked';
 export type ActiveTab  = 'dashboard' | 'coursework' | 'assignments' | 'grades';
 
 export interface CourseWeek {
-  id:           number;
-  title:        string;
-  description:  string;
-  topics:       string[];
-  status:       WeekStatus;
-  cwSubmitted:  boolean;
-  cwScore:      number | null;
-  cwFeedback:   string | null;
-  cwGraded:     boolean;
-  dueDate:      string;
-  cwQuestions:  string[];
+  id:               number;
+  title:            string;
+  description:      string;
+  topics:           string[];
+  status:           WeekStatus;
+  cwSubmitted:      boolean;
+  cwScore:          number | null;
+  cwFeedback:       string | null;
+  cwGraded:         boolean;
+  dueDate:          string;
+  cwQuestions:      string[];
   publishedByAdmin: boolean;
 }
 
@@ -66,11 +61,11 @@ export class StudentDashboardComponent implements OnInit {
   alerts: { type: 'warning' | 'danger' | 'info'; message: string }[] = [];
 
   // ── Coursework modal ──────────────────────────────────────────────────────
-  showCwModal:    boolean       = false;
-  activeCwWeek:   CourseWeek | null = null;
-  cwModalAnswers: { [idx: number]: string } = {};
-  cwSubmitting  = false;
-  showCwResult  = false;
+  showCwModal:       boolean        = false;
+  activeCwWeek:      CourseWeek | null = null;
+  cwModalAnswers:    { [idx: number]: string } = {};
+  cwSubmitting       = false;
+  showCwResult       = false;
   lastSubmittedWeek: CourseWeek | null = null;
 
   // ── Final exam modal ──────────────────────────────────────────────────────
@@ -82,19 +77,25 @@ export class StudentDashboardComponent implements OnInit {
   finalExamFeedback:   string | null = null;
   finalExamGraded:     boolean = false;
 
-  // ── NEW: Video submission gate ────────────────────────────────────────────
-  showVideoGateModal:   boolean = false;
-  videoFile:            File | null = null;
-  videoFileName:        string = '';
-  videoFilePreviewUrl:  string | null = null;
-  videoConsentChecked:  boolean = false;
-  videoUploading:       boolean = false;
-  videoUploadProgress:  number = 0;
-  videoUploadError:     string = '';
+  // ── Admin-controlled Final Exam publish gate ──────────────────────────────
+  // Even when a student has completed all weeks + submitted their video,
+  // the exam stays locked until the admin publishes it from the admin panel.
+  finalExamPublished:   boolean = false;
+  finalExamPublishedAt: string | null = null;
+
+  // ── Video submission gate ────────────────────────────────────────────────
+  showVideoGateModal:  boolean = false;
+  videoFile:           File | null = null;
+  videoFileName:       string = '';
+  videoFilePreviewUrl: string | null = null;
+  videoConsentChecked: boolean = false;
+  videoUploading:      boolean = false;
+  videoUploadProgress: number = 0;
+  videoUploadError:    string = '';
 
   // Server-tracked video submission state (persists across logins)
-  videoSubmitted:  boolean = false;
-  videoUrl:        string | null = null;
+  videoSubmitted:   boolean = false;
+  videoUrl:         string | null = null;
   videoSubmittedAt: string | null = null;
 
   // ── Course weeks — ALL start LOCKED ──────────────────────────────────────
@@ -115,8 +116,8 @@ export class StudentDashboardComponent implements OnInit {
         'During a virtual meeting, you strongly disagree with a point being made while someone else is speaking.',
         'A junior colleague makes a mistake that directly impacts your own work.',
         'Your manager asks for an update on a task that is not yet completed, but is close to completion.',
-        'You are working with international colleagues whose communication style feels blunt or too direct.'
-      ]
+        'You are working with international colleagues whose communication style feels blunt or too direct.',
+      ],
     },
     {
       id: 2, title: 'Communication & Professional Presence',
@@ -134,8 +135,8 @@ export class StudentDashboardComponent implements OnInit {
         'You receive a message from a recruiter asking about your availability, but you are not fully interested in the role.',
         'You notice your LinkedIn profile does not clearly reflect what you do or the value you bring.',
         'During a meeting, you are asked a question you do not know the answer to.',
-        'You are communicating with a senior colleague and they respond with very short, direct messages.'
-      ]
+        'You are communicating with a senior colleague and they respond with very short, direct messages.',
+      ],
     },
     {
       id: 3, title: 'Career Positioning & Job Readiness',
@@ -153,8 +154,8 @@ export class StudentDashboardComponent implements OnInit {
         'You want to transition into a new career path with little direct experience.',
         'You are asked to provide examples of your work, but you have limited formal experience.',
         'You find a remote job opportunity with global applicants competing for the same role.',
-        'After an interview, you feel you didn\'t perform your best.'
-      ]
+        "After an interview, you feel you didn't perform your best.",
+      ],
     },
     {
       id: 4, title: 'Productivity & Workplace Performance',
@@ -172,8 +173,8 @@ export class StudentDashboardComponent implements OnInit {
         'Your workload suddenly increases beyond what you can realistically handle.',
         'You are working on repetitive tasks that take too much time daily.',
         'You are part of a team project where timelines are tight and coordination is required.',
-        'You complete your tasks early while others are still behind.'
-      ]
+        'You complete your tasks early while others are still behind.',
+      ],
     },
     {
       id: 5, title: 'Workplace Excellence & Growth',
@@ -191,8 +192,8 @@ export class StudentDashboardComponent implements OnInit {
         'You are working with someone whose personality clashes with yours.',
         'You are given an opportunity to take on more responsibility.',
         'A client makes a request that goes beyond your role or company policy.',
-        'You feel stuck in your current role with little growth.'
-      ]
+        'You feel stuck in your current role with little growth.',
+      ],
     },
     {
       id: 6, title: 'Career Direction & Real-World Application',
@@ -210,8 +211,8 @@ export class StudentDashboardComponent implements OnInit {
         'You are given feedback that conflicts with how you see your performance.',
         'You are asked to step into a leadership role unexpectedly.',
         'You experience a major setback in your work or career.',
-        'You are asked: What value do you bring to this organization?'
-      ]
+        'You are asked: What value do you bring to this organization?',
+      ],
     },
   ];
 
@@ -229,7 +230,7 @@ export class StudentDashboardComponent implements OnInit {
         'List 3 types of posts you would consistently share on LinkedIn to build your personal brand.',
         'You want to position yourself as a professional in a specific field but have limited experience.',
         'You come across a controversial topic online and feel strongly about it.',
-      ]
+      ],
     },
     {
       title: 'Section B: CV, Job Application & Positioning',
@@ -242,7 +243,7 @@ export class StudentDashboardComponent implements OnInit {
         'You submit your CV but receive no response after some time.',
         'You are applying for a role you are qualified for but lack confidence.',
         'You are asked to provide proof of your skills during a hiring process.',
-      ]
+      ],
     },
     {
       title: 'Section C: Communication, Email & Workplace Presence',
@@ -255,7 +256,7 @@ export class StudentDashboardComponent implements OnInit {
         'You are required to give an update on your work progress.',
         'You are communicating with a busy senior colleague who gives minimal responses.',
         'You receive feedback that your communication is not clear.',
-      ]
+      ],
     },
     {
       title: 'Section D: Workplace Mindset, Responsibility & Growth',
@@ -267,7 +268,7 @@ export class StudentDashboardComponent implements OnInit {
         'You see others getting ahead faster than you in their careers.',
         'You are assigned a task that stretches your current ability.',
         'You feel your role is becoming repetitive and less challenging.',
-      ]
+      ],
     },
     {
       title: 'Section E: Workplace Behavior, Etiquette & Professionalism',
@@ -279,7 +280,7 @@ export class StudentDashboardComponent implements OnInit {
         'You notice someone consistently fails to acknowledge emails or messages.',
         'You are asked to handle a situation involving a dissatisfied internal stakeholder.',
         'You are in a workplace where boundaries are often blurred.',
-      ]
+      ],
     },
     {
       title: 'Section F: Performance, Productivity & Burnout',
@@ -291,7 +292,7 @@ export class StudentDashboardComponent implements OnInit {
         'You are required to deliver under pressure consistently.',
         'You realize you are close to burnout.',
         'You are balancing multiple priorities across different expectations.',
-      ]
+      ],
     },
   ];
 
@@ -382,7 +383,6 @@ export class StudentDashboardComponent implements OnInit {
     }
   }
 
-  // Fetch server-side progress: which weeks are published + student grades
   private loadProgressFromServer(registrationId: string): void {
     this.http.get<any>(`${this.api}/api/student/${registrationId}/progress`).subscribe({
       next: data => {
@@ -404,10 +404,10 @@ export class StudentDashboardComponent implements OnInit {
             const progress = data.weekProgress[wid];
             const week     = this.courseWeeks.find(w => w.id === Number(wid));
             if (week) {
-              week.cwSubmitted = progress.submitted  ?? week.cwSubmitted;
-              week.cwScore     = progress.score      ?? week.cwScore;
-              week.cwFeedback  = progress.feedback   ?? null;
-              week.cwGraded    = progress.graded     ?? false;
+              week.cwSubmitted = progress.submitted ?? week.cwSubmitted;
+              week.cwScore     = progress.score     ?? week.cwScore;
+              week.cwFeedback  = progress.feedback  ?? null;
+              week.cwGraded    = progress.graded    ?? false;
               if (progress.submitted) {
                 week.status = 'completed';
                 const next = this.courseWeeks.find(w => w.id === week.id + 1);
@@ -427,11 +427,17 @@ export class StudentDashboardComponent implements OnInit {
           this.finalExamGraded    = data.finalExam.graded    ?? false;
         }
 
-        // NEW: Apply video submission data
+        // Apply video submission data
         if (data.videoSubmission) {
-          this.videoSubmitted   = data.videoSubmission.submitted ?? false;
-          this.videoUrl         = data.videoSubmission.videoUrl  ?? null;
+          this.videoSubmitted   = data.videoSubmission.submitted  ?? false;
+          this.videoUrl         = data.videoSubmission.videoUrl   ?? null;
           this.videoSubmittedAt = data.videoSubmission.submittedAt ?? null;
+        }
+
+        // Apply admin Final Exam publish gate — fails closed (false) if missing
+        if (typeof data.finalExamPublished === 'boolean') {
+          this.finalExamPublished   = data.finalExamPublished;
+          this.finalExamPublishedAt = data.finalExamPublishedAt ?? null;
         }
 
         this.loading = false;
@@ -439,6 +445,7 @@ export class StudentDashboardComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
+        // Offline / network error — restore from localStorage
         const weeksSt = localStorage.getItem('c360_weeks');
         const finalSt = localStorage.getItem('c360_final');
         const videoSt = localStorage.getItem('c360_video');
@@ -461,6 +468,8 @@ export class StudentDashboardComponent implements OnInit {
           const v = JSON.parse(videoSt);
           this.videoSubmitted = v.submitted;
         }
+        // Offline fallback: exam stays locked by default — never assume it's published
+        this.finalExamPublished = false;
         this.loading = false;
         this.generateAlerts();
         this.cdr.detectChanges();
@@ -497,19 +506,39 @@ export class StudentDashboardComponent implements OnInit {
   // COMPUTED GETTERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  get completionRate():  number  { return Math.round((this.completedCount / this.courseWeeks.length) * 100); }
-  get completedCount():  number  { return this.courseWeeks.filter(w => w.status === 'completed').length; }
-  get pendingCount():    number  { return this.courseWeeks.filter(w => w.status === 'pending').length; }
-  get overdueCount():    number  { return this.courseWeeks.filter(w => w.status === 'overdue').length; }
+  get completionRate():     number { return Math.round((this.completedCount / this.courseWeeks.length) * 100); }
+  get completedCount():     number { return this.courseWeeks.filter(w => w.status === 'completed').length; }
+  get pendingCount():       number { return this.courseWeeks.filter(w => w.status === 'pending').length; }
+  get overdueCount():       number { return this.courseWeeks.filter(w => w.status === 'overdue').length; }
   get enrolledWeeksLabel(): string { return `${this.completedCount} of 6 weeks complete`; }
 
+  /** All 6 weeks are in 'completed' status */
   get canTakeFinalExam(): boolean {
     return this.courseWeeks.every(w => w.status === 'completed');
   }
 
-  // NEW: final exam button now also requires video submitted
+  /**
+   * The exam is actually openable only when:
+   *   1. All 6 weeks completed
+   *   2. Video submitted
+   *   3. Admin has published the final exam
+   */
   get canAccessFinalExamQuestions(): boolean {
-    return this.canTakeFinalExam && this.videoSubmitted;
+    return this.canTakeFinalExam && this.videoSubmitted && this.finalExamPublished;
+  }
+
+  /**
+   * Student has done everything on their end (weeks + video) but the admin
+   * hasn't flipped the publish switch yet.
+   * Used to show the "waiting for release" alert without a confusing locked button.
+   */
+  get isWaitingForFinalExamRelease(): boolean {
+    return (
+      this.canTakeFinalExam &&
+      this.videoSubmitted &&
+      !this.finalExamPublished &&
+      !this.finalExamSubmitted
+    );
   }
 
   get averageScoreLabel(): string {
@@ -538,8 +567,8 @@ export class StudentDashboardComponent implements OnInit {
 
   generateAlerts(): void {
     this.alerts = [];
-    const overdue = this.courseWeeks.filter(w => w.status === 'overdue');
-    const pending = this.courseWeeks.filter(w => w.status === 'pending' && !w.cwSubmitted);
+    const overdue   = this.courseWeeks.filter(w => w.status === 'overdue');
+    const pending   = this.courseWeeks.filter(w => w.status === 'pending' && !w.cwSubmitted);
     const allLocked = this.courseWeeks.every(w => !w.publishedByAdmin);
 
     if (allLocked) {
@@ -557,8 +586,13 @@ export class StudentDashboardComponent implements OnInit {
     if (this.completionRate === 100 && !this.videoSubmitted && !this.finalExamSubmitted) {
       this.alerts.push({ type: 'info', message: 'All 6 weeks complete! Submit your self-presentation video to unlock the Final Assessment.' });
     }
-    if (this.completionRate === 100 && this.videoSubmitted && !this.finalExamSubmitted) {
-      this.alerts.push({ type: 'info', message: 'Video received — your Final Assessment is now unlocked!' });
+    // Student done on their end — waiting on admin to flip the switch
+    if (this.isWaitingForFinalExamRelease) {
+      this.alerts.push({ type: 'info', message: 'Video received! The Final Assessment will open as soon as it is released by the admin team.' });
+    }
+    // All gates cleared
+    if (this.completionRate === 100 && this.videoSubmitted && this.finalExamPublished && !this.finalExamSubmitted) {
+      this.alerts.push({ type: 'info', message: 'Your Final Assessment is now unlocked — good luck!' });
     }
   }
 
@@ -616,9 +650,9 @@ export class StudentDashboardComponent implements OnInit {
 
         this.lastSubmittedWeek = week;
         this.saveLocalState();
-        this.cwSubmitting  = false;
-        this.showCwModal   = false;
-        this.showCwResult  = true;
+        this.cwSubmitting = false;
+        this.showCwModal  = false;
+        this.showCwResult = true;
         this.generateAlerts();
         document.body.style.overflow = 'hidden';
         this.cdr.detectChanges();
@@ -634,26 +668,25 @@ export class StudentDashboardComponent implements OnInit {
   closeCwResult(): void { this.showCwResult = false; document.body.style.overflow = ''; }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // NEW: VIDEO SUBMISSION GATE
-  // ─────────────────────────────────────────────────────────────────────────
-  // Flow:
-  //   1. Student clicks "Take Final Exam" button on dashboard
-  //   2. If video not yet submitted → openVideoGateModal() shows upload form
-  //   3. Student selects video file + checks consent box
-  //   4. submitVideo() uploads to backend, marks videoSubmitted = true
-  //   5. Modal closes, openFinalExam() now opens the 40-question exam
+  // VIDEO SUBMISSION GATE
   // ─────────────────────────────────────────────────────────────────────────
 
-  /** Called when student clicks the final exam button on the dashboard banner */
+  /** Called when student clicks the Final Exam button */
   onFinalExamButtonClick(): void {
-    if (!this.canTakeFinalExam) return;        // weeks not done yet — button is disabled anyway
-    if (this.finalExamSubmitted) return;        // already submitted — nothing to do
+    if (!this.canTakeFinalExam)   return; // weeks not done — button disabled anyway
+    if (this.finalExamSubmitted)  return; // already submitted
 
     if (!this.videoSubmitted) {
       this.openVideoGateModal();
-    } else {
-      this.openFinalExam();
+      return;
     }
+
+    if (!this.finalExamPublished) {
+      // Student has done everything; waiting on admin. The alert already says this.
+      return;
+    }
+
+    this.openFinalExam();
   }
 
   openVideoGateModal(): void {
@@ -669,7 +702,7 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   closeVideoGateModal(): void {
-    if (this.videoUploading) return; // prevent closing mid-upload
+    if (this.videoUploading) return; // block closing mid-upload
     this.showVideoGateModal = false;
     document.body.style.overflow = '';
     if (this.videoFilePreviewUrl) {
@@ -685,24 +718,20 @@ export class StudentDashboardComponent implements OnInit {
 
     if (!file) return;
 
-    // Validate it's a video file
     if (!file.type.startsWith('video/')) {
       this.videoUploadError = 'Please select a valid video file (MP4, MOV, WebM, etc.).';
       input.value = '';
       return;
     }
 
-    // Validate file size — cap at 200MB to keep uploads reasonable
-    const maxSizeBytes = 200 * 1024 * 1024;
+    const maxSizeBytes = 200 * 1024 * 1024; // 200 MB
     if (file.size > maxSizeBytes) {
-      this.videoUploadError = 'Video file is too large. Please keep it under 200MB.';
+      this.videoUploadError = 'Video file is too large. Please keep it under 200 MB.';
       input.value = '';
       return;
     }
 
-    if (this.videoFilePreviewUrl) {
-      URL.revokeObjectURL(this.videoFilePreviewUrl);
-    }
+    if (this.videoFilePreviewUrl) URL.revokeObjectURL(this.videoFilePreviewUrl);
 
     this.videoFile           = file;
     this.videoFileName       = file.name;
@@ -711,9 +740,7 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   removeSelectedVideo(): void {
-    if (this.videoFilePreviewUrl) {
-      URL.revokeObjectURL(this.videoFilePreviewUrl);
-    }
+    if (this.videoFilePreviewUrl) URL.revokeObjectURL(this.videoFilePreviewUrl);
     this.videoFile           = null;
     this.videoFileName       = '';
     this.videoFilePreviewUrl = null;
@@ -730,15 +757,21 @@ export class StudentDashboardComponent implements OnInit {
   submitVideo(): void {
     if (!this.canSubmitVideo || !this.videoFile) return;
 
+    // ── Guard: profile must be loaded so the filename is never 'unknown-xxx' ──
+    if (!this.student?.registrationId || this.student.registrationId === 'demo') {
+      this.videoUploadError = 'Your profile is not loaded yet. Please refresh the page and try again.';
+      return;
+    }
+
     this.videoUploading      = true;
     this.videoUploadProgress = 0;
     this.videoUploadError    = '';
 
     const formData = new FormData();
-    formData.append('video', this.videoFile);
-    formData.append('registrationId', this.student?.registrationId || '');
-    formData.append('studentName',    this.student?.fullName || '');
-    formData.append('studentEmail',   this.student?.email || '');
+    formData.append('video',          this.videoFile);
+    formData.append('registrationId', this.student.registrationId);
+    formData.append('studentName',    this.student.fullName   || '');
+    formData.append('studentEmail',   this.student.email      || '');
     formData.append('consentGiven',   'true');
 
     this.http.post(`${this.api}/api/final-video`, formData, {
@@ -760,11 +793,16 @@ export class StudentDashboardComponent implements OnInit {
           this.videoUploading = false;
           this.cdr.detectChanges();
 
-          // Brief pause so student sees the success state, then move to exam
+          // Brief pause so student sees the 100% success state, then decide next step
           setTimeout(() => {
             this.closeVideoGateModal();
             this.generateAlerts();
-            this.openFinalExam();
+
+            // Only open the exam immediately if the admin has also published it.
+            // Otherwise the "waiting for release" alert tells the student what's next.
+            if (this.finalExamPublished) {
+              this.openFinalExam();
+            }
           }, 1200);
         }
       },
@@ -822,10 +860,9 @@ export class StudentDashboardComponent implements OnInit {
 
     this.http.post(`${this.api}/api/final-exam`, payload).subscribe({
       next: () => {
-        this.finalExamScore     = 40;
-        this.finalExamSubmitted = true;
+        this.finalExamSubmitted  = true;
         this.finalExamSubmitting = false;
-        localStorage.setItem('c360_final', JSON.stringify({ submitted: true, score: 40 }));
+        localStorage.setItem('c360_final', JSON.stringify({ submitted: true, score: null }));
         this.generateAlerts();
         this.cdr.detectChanges();
       },
