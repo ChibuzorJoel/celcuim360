@@ -27,8 +27,7 @@
   <div *ngIf="activeTab === 'questions'">
 
     <div class="loading-row" *ngIf="weeksLoading">
-      <div class="spinner-gold"></div>
-      <span>Loading questions…</span>
+      <div class="spinner-gold"></div><span>Loading questions…</span>
     </div>
 
     <div *ngIf="!weeksLoading" class="questions-layout">
@@ -49,7 +48,7 @@
           </span>
         </button>
 
-        <!-- Final Exam item -->
+        <!-- Final Exam sidebar item -->
         <div style="height:1px;background:#2e2e2e;margin:14px 0;"></div>
         <div class="ws-title">Assessment</div>
         <button class="ws-item" [class.active]="activeWeekNum === 'final'" (click)="selectFinalExam()">
@@ -64,35 +63,24 @@
         </button>
       </div>
 
-      <!-- Main panel — Week questions (1-6) -->
+      <!-- Main panel — weeks 1-6 -->
       <div class="question-panel" *ngIf="activeWeekNum !== 'final'">
-
-        <!-- VIEW MODE -->
         <ng-container *ngIf="!editMode">
-
-          <!-- Empty state -->
           <div class="empty-week" *ngIf="!activeWeekData">
             <div class="ew-icon">📝</div>
             <h3>Week {{ activeWeekNum }} — No Questions Yet</h3>
             <p>{{ weekTitles[activeWeekNum] }}</p>
             <div class="empty-actions">
-              <button class="btn-add-questions" (click)="startEdit()">
-                ✏️ Add 10 Questions for Week {{ activeWeekNum }}
-              </button>
+              <button class="btn-add-questions" (click)="startEdit()">✏️ Add 10 Questions for Week {{ activeWeekNum }}</button>
               <button class="btn-publish-default" [disabled]="publishLoading" (click)="saveDefaultsAndPublish()">
                 <span *ngIf="!publishLoading">🚀 Use Default Questions &amp; Publish</span>
                 <span *ngIf="publishLoading">Publishing…</span>
               </button>
             </div>
-            <p class="empty-hint">
-              "Use Default Questions &amp; Publish" instantly unlocks this week for students
-              using the pre-built scenario questions. You can still edit them later.
-            </p>
+            <p class="empty-hint">"Use Default Questions &amp; Publish" instantly unlocks this week for students using the pre-built scenario questions.</p>
           </div>
 
-          <!-- Existing week -->
           <div *ngIf="activeWeekData">
-
             <div class="qp-header">
               <div class="qp-header-left">
                 <div class="qp-week-tag">Week {{ activeWeekNum }}</div>
@@ -100,53 +88,34 @@
                 <div class="qp-meta">Last updated: {{ formatDate(activeWeekData.updatedAt) }}</div>
               </div>
               <div class="qp-header-actions">
-                <button class="btn-publish" [class.btn-unpublish]="activeWeekData.isPublished"
-                  [disabled]="publishLoading" (click)="togglePublish()">
-                  <span *ngIf="!publishLoading">
-                    {{ activeWeekData.isPublished ? '⏸ Unpublish' : '🚀 Publish to Students' }}
-                  </span>
+                <button class="btn-publish" [class.btn-unpublish]="activeWeekData.isPublished" [disabled]="publishLoading" (click)="togglePublish()">
+                  <span *ngIf="!publishLoading">{{ activeWeekData.isPublished ? '⏸ Unpublish' : '🚀 Publish to Students' }}</span>
                   <span *ngIf="publishLoading">Updating…</span>
                 </button>
                 <button class="btn-edit-q" (click)="startEdit()">✏ Edit Questions</button>
               </div>
             </div>
-
-            <div class="publish-bar"
-              [class.pub-live]="activeWeekData.isPublished"
-              [class.pub-draft]="!activeWeekData.isPublished">
+            <div class="publish-bar" [class.pub-live]="activeWeekData.isPublished" [class.pub-draft]="!activeWeekData.isPublished">
               <div class="pb-dot"></div>
-              <span *ngIf="activeWeekData.isPublished">
-                ✓ <strong>LIVE</strong> — Students can now see and submit Week {{ activeWeekNum }} coursework.
-                Published: {{ formatDate(activeWeekData.publishedAt) }}
-              </span>
-              <span *ngIf="!activeWeekData.isPublished">
-                🔒 <strong>Draft</strong> — Students cannot see this yet.
-                Click <strong>"🚀 Publish to Students"</strong> when ready.
-              </span>
+              <span *ngIf="activeWeekData.isPublished">✓ <strong>LIVE</strong> — Published: {{ formatDate(activeWeekData.publishedAt) }}</span>
+              <span *ngIf="!activeWeekData.isPublished">🔒 <strong>Draft</strong> — Students cannot see this yet.</span>
             </div>
-
             <div class="save-success" *ngIf="saveSuccess">✓ {{ saveSuccess }}</div>
             <div class="save-error"   *ngIf="publishError">⚠ {{ publishError }}</div>
-
             <div class="instruction-box">
               <div class="ib-label">Instruction to Students</div>
               <p class="ib-text">{{ activeWeekData.instruction }}</p>
             </div>
-
             <div class="q-view-list">
               <div class="qv-item" *ngFor="let q of activeWeekData.questions; let i = index">
                 <span class="qv-num">{{ i + 1 }}</span>
                 <p class="qv-text">{{ q }}</p>
               </div>
             </div>
-
           </div>
-
         </ng-container>
 
-        <!-- EDIT MODE -->
         <ng-container *ngIf="editMode">
-
           <div class="edit-header">
             <div>
               <div class="qp-week-tag">Week {{ activeWeekNum }} — Edit Mode</div>
@@ -155,145 +124,97 @@
             <div class="edit-header-actions">
               <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
               <button class="btn-save-q" [disabled]="saveLoading" (click)="saveQuestions()">
-                <span *ngIf="!saveLoading">💾 Save Questions</span>
-                <span *ngIf="saveLoading">Saving…</span>
+                <span *ngIf="!saveLoading">💾 Save Questions</span><span *ngIf="saveLoading">Saving…</span>
               </button>
             </div>
           </div>
-
           <div class="save-error" *ngIf="saveError">⚠ {{ saveError }}</div>
-
           <div class="edit-field">
             <label>Week Title</label>
-            <input type="text" class="edit-input" [(ngModel)]="editTitle"
-              placeholder="e.g. Foundation for Workplace">
+            <input type="text" class="edit-input" [(ngModel)]="editTitle" placeholder="e.g. Foundation for Workplace">
           </div>
-
           <div class="edit-field">
             <label>Instruction to Students</label>
-            <textarea class="edit-textarea" rows="3" [(ngModel)]="editInstruction"
-              placeholder="Instructions shown above the questions…"></textarea>
+            <textarea class="edit-textarea" rows="3" [(ngModel)]="editInstruction" placeholder="Instructions shown above the questions…"></textarea>
           </div>
-
-          <div class="edit-questions-label">
-            Questions
-            <span class="eq-count">{{ getFilledQuestionsCount() }} / 10 filled</span>
-          </div>
-
+          <div class="edit-questions-label">Questions <span class="eq-count">{{ getFilledQuestionsCount() }} / 10 filled</span></div>
           <div class="edit-q-list">
-            <div class="eq-item"
-              *ngFor="let q of editQuestions; let i = index; trackBy: trackByIndex">
+            <div class="eq-item" *ngFor="let q of editQuestions; let i = index; trackBy: trackByIndex">
               <span class="eq-num">{{ i + 1 }}</span>
-              <textarea class="eq-input" rows="2"
-                [(ngModel)]="editQuestions[i]"
+              <textarea class="eq-input" rows="2" [(ngModel)]="editQuestions[i]"
                 [placeholder]="'Enter scenario question ' + (i + 1) + '…'"
                 [class.eq-filled]="editQuestions[i]?.trim()">
               </textarea>
             </div>
           </div>
-
           <div class="edit-bottom-bar">
             <span class="edit-hint">All 10 questions must be filled before saving.</span>
             <div class="edit-bottom-actions">
               <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
               <button class="btn-save-q" [disabled]="saveLoading" (click)="saveQuestions()">
-                <span *ngIf="!saveLoading">💾 Save Questions</span>
-                <span *ngIf="saveLoading">Saving…</span>
+                <span *ngIf="!saveLoading">💾 Save Questions</span><span *ngIf="saveLoading">Saving…</span>
               </button>
             </div>
           </div>
-
         </ng-container>
-
       </div>
 
-      <!-- Main panel — Final Exam (publish toggle only, no question editing) -->
+      <!-- Main panel — Final Exam publish toggle -->
       <div class="question-panel" *ngIf="activeWeekNum === 'final'">
-
         <div class="loading-row" *ngIf="finalExamStatusLoading">
-          <div class="spinner-gold"></div>
-          <span>Loading final exam status…</span>
+          <div class="spinner-gold"></div><span>Loading final exam status…</span>
         </div>
-
         <div *ngIf="!finalExamStatusLoading">
-
           <div class="qp-header">
             <div class="qp-header-left">
               <div class="qp-week-tag">Final Assessment</div>
               <h2 class="qp-title">Final Exam — 40 Questions</h2>
-              <div class="qp-meta">
-                Only unlocks for students who have completed all 6 weeks and submitted their self-presentation video.
-              </div>
+              <div class="qp-meta">Only unlocks for students who completed all 6 weeks and submitted their self-presentation video.</div>
             </div>
             <div class="qp-header-actions">
-              <button class="btn-publish" [class.btn-unpublish]="finalExamPublished"
-                [disabled]="finalExamPublishLoading" (click)="toggleFinalExamPublish()">
-                <span *ngIf="!finalExamPublishLoading">
-                  {{ finalExamPublished ? '⏸ Unpublish' : '🚀 Publish Final Exam' }}
-                </span>
+              <button class="btn-publish" [class.btn-unpublish]="finalExamPublished" [disabled]="finalExamPublishLoading" (click)="toggleFinalExamPublish()">
+                <span *ngIf="!finalExamPublishLoading">{{ finalExamPublished ? '⏸ Unpublish' : '🚀 Publish Final Exam' }}</span>
                 <span *ngIf="finalExamPublishLoading">Updating…</span>
               </button>
             </div>
           </div>
-
-          <div class="publish-bar"
-            [class.pub-live]="finalExamPublished"
-            [class.pub-draft]="!finalExamPublished">
+          <div class="publish-bar" [class.pub-live]="finalExamPublished" [class.pub-draft]="!finalExamPublished">
             <div class="pb-dot"></div>
-            <span *ngIf="finalExamPublished">
-              ✓ <strong>LIVE</strong> — Eligible students can now access and submit the Final Exam.
-              Published: {{ formatDate(finalExamPublishedAt) }}
-            </span>
-            <span *ngIf="!finalExamPublished">
-              🔒 <strong>Draft</strong> — The Final Exam is hidden from all students, even those who are otherwise eligible.
-              Click <strong>"🚀 Publish Final Exam"</strong> when ready to release it.
-            </span>
+            <span *ngIf="finalExamPublished">✓ <strong>LIVE</strong> — Eligible students can now access the Final Exam. Published: {{ formatDate(finalExamPublishedAt) }}</span>
+            <span *ngIf="!finalExamPublished">🔒 <strong>Draft</strong> — Hidden from all students. Click <strong>"🚀 Publish Final Exam"</strong> when ready.</span>
           </div>
-
           <div class="save-success" *ngIf="finalExamSaveSuccess">✓ {{ finalExamSaveSuccess }}</div>
           <div class="save-error"   *ngIf="finalExamPublishError">⚠ {{ finalExamPublishError }}</div>
-
           <div class="instruction-box">
             <div class="ib-label">Note</div>
-            <p class="ib-text">
-              The Final Exam's 6 sections and 40 questions are fixed in the student app and are not editable here.
-              This toggle only controls whether eligible students can see and start the exam.
-            </p>
+            <p class="ib-text">The Final Exam's 6 sections and 40 questions are fixed in the student app and are not editable here. This toggle only controls whether eligible students can see and start the exam.</p>
           </div>
-
         </div>
-
       </div>
 
     </div>
-
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════ -->
-  <!-- SCORES TAB — Real student submissions                            -->
+  <!-- SCORES TAB                                                        -->
   <!-- ══════════════════════════════════════════════════════════════════ -->
 
   <div *ngIf="activeTab === 'scores'">
 
-    <!-- Week / Final filter -->
     <div class="controls-bar">
       <div class="filter-row">
-        <button class="filter-chip"
-          *ngFor="let opt of scoreWeekOptions"
-          [class.active]="activeScoreWeek === opt.value"
-          (click)="setScoreWeek(opt.value)">
+        <button class="filter-chip" *ngFor="let opt of scoreWeekOptions"
+          [class.active]="activeScoreWeek === opt.value" (click)="setScoreWeek(opt.value)">
           {{ opt.label }}
         </button>
       </div>
-
       <div class="ctrl-right">
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
             <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"></circle>
             <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
           </svg>
-          <input type="text" placeholder="Search students…"
-            [(ngModel)]="searchTerm" (input)="applyFilters()">
+          <input type="text" placeholder="Search students…" [(ngModel)]="searchTerm" (input)="applyFilters()">
         </div>
         <button class="act-btn" (click)="exportPDF()">↓ Export</button>
       </div>
@@ -308,6 +229,11 @@
       <div class="stat-pill">
         <span class="sp-val">{{ filteredSubmissions.length - summaryStats.submitted }}</span>
         <span class="sp-lbl">Not Submitted</span>
+      </div>
+      <!-- Video stat — only shown on Final Exam tab -->
+      <div class="stat-pill" *ngIf="activeScoreWeek === 0">
+        <span class="sp-val">{{ summaryStats.videoSubmitted }}</span>
+        <span class="sp-lbl">Video Submitted</span>
       </div>
       <div class="stat-pill">
         <span class="sp-val">{{ summaryStats.pending }}</span>
@@ -331,32 +257,26 @@
       </div>
     </div>
 
-    <!-- Loading / error -->
     <div class="loading-row" *ngIf="submissionsLoading">
-      <div class="spinner-gold"></div>
-      <span>Loading submissions…</span>
+      <div class="spinner-gold"></div><span>Loading submissions…</span>
     </div>
-    <div class="save-error" *ngIf="submissionsError && !submissionsLoading">
-      ⚠ {{ submissionsError }}
-    </div>
+    <div class="save-error" *ngIf="submissionsError && !submissionsLoading">⚠ {{ submissionsError }}</div>
 
-    <!-- Empty state -->
-    <div class="empty-week"
-      *ngIf="!submissionsLoading && !submissionsError && filteredSubmissions.length === 0">
+    <div class="empty-week" *ngIf="!submissionsLoading && !submissionsError && filteredSubmissions.length === 0">
       <div class="ew-icon">📭</div>
       <h3>No submissions yet</h3>
       <p>Students who submit will appear here.</p>
     </div>
 
-    <!-- Submissions table -->
-    <div class="submissions-wrap"
-      *ngIf="!submissionsLoading && filteredSubmissions.length > 0">
+    <div class="submissions-wrap" *ngIf="!submissionsLoading && filteredSubmissions.length > 0">
       <table class="sub-table">
         <thead>
           <tr>
             <th>#</th>
             <th>Student</th>
             <th>Email</th>
+            <!-- Video column — only visible on Final Exam tab -->
+            <th *ngIf="activeScoreWeek === 0">Video</th>
             <th>Submitted</th>
             <th>Score</th>
             <th>%</th>
@@ -369,6 +289,22 @@
             <td>{{ i + 1 }}</td>
             <td><strong>{{ sub.student }}</strong></td>
             <td style="font-size:0.8rem;color:#888;">{{ sub.email }}</td>
+
+            <!-- Video cell — Final Exam tab only -->
+            <td *ngIf="activeScoreWeek === 0">
+              <button *ngIf="sub.videoSubmitted && sub.videoUrl"
+                class="btn-view"
+                (click)="openVideoModal(sub)"
+                title="Watch submitted video"
+                style="background:#1a1a0e;border-color:#c8b46a;color:#c8b46a;">
+                🎥 Watch
+              </button>
+              <span *ngIf="sub.videoSubmitted && !sub.videoUrl"
+                style="color:#c8b46a;font-size:0.8rem;">✓ Submitted</span>
+              <span *ngIf="!sub.videoSubmitted"
+                style="color:#555;font-size:0.8rem;">—</span>
+            </td>
+
             <td style="font-size:0.8rem;">
               {{ sub.submittedAt ? formatDate(sub.submittedAt) : '—' }}
             </td>
@@ -385,22 +321,15 @@
             </td>
             <td>
               <span *ngIf="!sub.submitted" class="badge badge-notsubmitted">Not Submitted</span>
-              <span *ngIf="sub.submitted && !sub.graded"  class="badge badge-pending">⏳ Pending</span>
-              <span *ngIf="sub.submitted && sub.graded"   class="badge badge-graded">✓ Graded</span>
+              <span *ngIf="sub.submitted && !sub.graded" class="badge badge-pending">⏳ Pending</span>
+              <span *ngIf="sub.submitted && sub.graded"  class="badge badge-graded">✓ Graded</span>
             </td>
             <td>
               <div class="action-btns">
-                <!-- View answers — only if student submitted -->
-                <button class="btn-view"
-                  *ngIf="sub.submitted"
-                  (click)="openAnswersModal(sub)"
-                  title="View answers">
+                <button class="btn-view" *ngIf="sub.submitted" (click)="openAnswersModal(sub)" title="View answers">
                   👁 Answers
                 </button>
-                <!-- Grade button -->
-                <button class="btn-grade"
-                  *ngIf="sub.submitted"
-                  (click)="openGradeModal(sub)"
+                <button class="btn-grade" *ngIf="sub.submitted" (click)="openGradeModal(sub)"
                   title="{{ sub.graded ? 'Edit grade' : 'Grade this submission' }}">
                   {{ sub.graded ? '✏ Edit Grade' : '🎯 Grade' }}
                 </button>
@@ -417,7 +346,42 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!-- ANSWERS MODAL — read student's full responses                        -->
+<!-- VIDEO PREVIEW MODAL — admin watches student's self-presentation video -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+<div class="modal-overlay" *ngIf="showVideoModal" (click)="closeVideoModal()">
+  <div class="modal-box" style="max-width:720px;" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div>
+        <h2 style="margin:0;">Self-Presentation Video</h2>
+        <p style="margin:4px 0 0;color:#888;font-size:0.85rem;">{{ viewingVideoName }}</p>
+      </div>
+      <button class="modal-close" (click)="closeVideoModal()">✕</button>
+    </div>
+
+    <div style="padding:16px;">
+      <video *ngIf="viewingVideoUrl"
+        [src]="viewingVideoUrl"
+        controls
+        style="width:100%;border-radius:8px;background:#000;max-height:420px;">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-edit" (click)="closeVideoModal()">Close</button>
+      <a [href]="viewingVideoUrl" download target="_blank" class="btn-save-q" style="text-decoration:none;">
+        ↓ Download
+      </a>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- ANSWERS MODAL                                                        -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 
 <div class="modal-overlay" *ngIf="showAnswersModal" (click)="closeAnswersModal()">
@@ -434,7 +398,6 @@
       <button class="modal-close" (click)="closeAnswersModal()">✕</button>
     </div>
 
-    <!-- Grade badge if already graded -->
     <div class="grade-badge-row" *ngIf="viewingSubmission?.graded">
       <span class="grade-badge">
         Score: {{ scoreDisplay(viewingSubmission!.score, viewingSubmission!.type === 'final') }}
@@ -445,17 +408,10 @@
       </span>
     </div>
 
-    <!-- Q&A list -->
     <div class="answers-list">
-      <div class="answer-card"
-        *ngFor="let a of viewingSubmission?.answers; let i = index">
-        <div class="answer-q">
-          <span class="answer-num">Q{{ i + 1 }}</span>
-          {{ a.questionText }}
-        </div>
-        <div class="answer-a">
-          {{ a.answer || '(No answer provided)' }}
-        </div>
+      <div class="answer-card" *ngFor="let a of viewingSubmission?.answers; let i = index">
+        <div class="answer-q"><span class="answer-num">Q{{ i + 1 }}</span>{{ a.questionText }}</div>
+        <div class="answer-a">{{ a.answer || '(No answer provided)' }}</div>
       </div>
 
       <div *ngIf="!viewingSubmission?.answers?.length"
@@ -466,8 +422,7 @@
           This submission was made before answer storage was enabled.<br>
           Ask the student to resubmit, or grade based on other records.
         </p>
-        <button
-          style="padding:8px 20px;background:#c8b46a;color:#1a1a0e;border:none;border-radius:6px;font-weight:700;cursor:pointer;"
+        <button style="padding:8px 20px;background:#c8b46a;color:#1a1a0e;border:none;border-radius:6px;font-weight:700;cursor:pointer;"
           (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)">
           Grade Without Answers
         </button>
@@ -476,8 +431,7 @@
 
     <div class="modal-footer">
       <button class="btn-cancel-edit" (click)="closeAnswersModal()">Close</button>
-      <button class="btn-save-q" (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)"
-        *ngIf="viewingSubmission?.submitted">
+      <button class="btn-save-q" (click)="closeAnswersModal(); openGradeModal(viewingSubmission!)" *ngIf="viewingSubmission?.submitted">
         🎯 {{ viewingSubmission?.graded ? 'Edit Grade' : 'Grade This Submission' }}
       </button>
     </div>
@@ -487,7 +441,7 @@
 
 
 <!-- ══════════════════════════════════════════════════════════════════════ -->
-<!-- GRADE MODAL — admin enters score and feedback                        -->
+<!-- GRADE MODAL                                                          -->
 <!-- ══════════════════════════════════════════════════════════════════════ -->
 
 <div class="modal-overlay" *ngIf="showGradeModal" (click)="closeGradeModal()">
@@ -504,47 +458,30 @@
     </div>
 
     <div class="grade-form">
-
       <div class="grade-field">
-        <label>
-          Score
-          <span style="color:#888;font-weight:400;font-size:0.8rem;">
-            (out of {{ maxGradeScore }})
-          </span>
-        </label>
-        <input
-          type="number"
-          class="grade-input"
-          [(ngModel)]="gradeScoreInput"
-          [min]="0"
-          [max]="maxGradeScore"
+        <label>Score <span style="color:#888;font-weight:400;font-size:0.8rem;">(out of {{ maxGradeScore }})</span></label>
+        <input type="number" class="grade-input" [(ngModel)]="gradeScoreInput"
+          [min]="0" [max]="maxGradeScore"
           placeholder="e.g. {{ maxGradeScore === 40 ? '32' : '8' }}">
         <div class="grade-hint">
           Max: {{ maxGradeScore }} &nbsp;·&nbsp;
           <span *ngIf="gradeScoreInput">
-            {{ gradeScoreInput }}/{{ maxGradeScore }}
-            = {{ (+gradeScoreInput / maxGradeScore * 100).toFixed(0) }}%
+            {{ gradeScoreInput }}/{{ maxGradeScore }} = {{ (+gradeScoreInput / maxGradeScore * 100).toFixed(0) }}%
           </span>
         </div>
       </div>
-
       <div class="grade-field">
         <label>Feedback to Student <span style="color:#888;font-weight:400;font-size:0.8rem;">(optional)</span></label>
-        <textarea class="grade-textarea" rows="4"
-          [(ngModel)]="gradeFeedbackInput"
+        <textarea class="grade-textarea" rows="4" [(ngModel)]="gradeFeedbackInput"
           placeholder="Write constructive feedback the student will see on their dashboard…">
         </textarea>
       </div>
-
       <div class="save-error"   *ngIf="gradeError">⚠ {{ gradeError }}</div>
       <div class="save-success" *ngIf="gradeSuccess">✓ {{ gradeSuccess }}</div>
-
     </div>
 
     <div class="modal-footer">
-      <button class="btn-cancel-edit" (click)="closeGradeModal()" [disabled]="gradeLoading">
-        Cancel
-      </button>
+      <button class="btn-cancel-edit" (click)="closeGradeModal()" [disabled]="gradeLoading">Cancel</button>
       <button class="btn-save-q" (click)="submitGrade()" [disabled]="gradeLoading">
         <span *ngIf="!gradeLoading">💾 Save Grade</span>
         <span *ngIf="gradeLoading">Saving…</span>

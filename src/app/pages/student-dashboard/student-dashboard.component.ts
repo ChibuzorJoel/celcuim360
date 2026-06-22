@@ -1,9 +1,8 @@
 // src/app/pages/student-dashboard/student-dashboard.component.ts
 // ═══════════════════════════════════════════════════════════════════════════
-//  Final video submission gate + admin-controlled Final Exam publish gate
-//  Students must: (1) complete all 6 weeks, (2) upload a 1-minute
-//  self-presentation video + consent, AND (3) have the admin publish the
-//  Final Exam — before the 40-question final exam unlocks.
+//  NEW: Final video submission gate
+//  Students must upload a 1-minute self-presentation video + check consent
+//  BEFORE the 40-question final exam unlocks.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
@@ -83,13 +82,7 @@ export class StudentDashboardComponent implements OnInit {
   finalExamFeedback:   string | null = null;
   finalExamGraded:     boolean = false;
 
-  // ── Final exam admin publish gate ───────────────────────────────────────
-  // Even when a student has completed all weeks + submitted their video,
-  // the exam stays locked until the admin publishes it from the dashboard.
-  finalExamPublished:   boolean = false;
-  finalExamPublishedAt: string | null = null;
-
-  // ── Video submission gate ────────────────────────────────────────────────
+  // ── NEW: Video submission gate ────────────────────────────────────────────
   showVideoGateModal:   boolean = false;
   videoFile:            File | null = null;
   videoFileName:        string = '';
@@ -434,18 +427,11 @@ export class StudentDashboardComponent implements OnInit {
           this.finalExamGraded    = data.finalExam.graded    ?? false;
         }
 
-        // Apply video submission data
+        // NEW: Apply video submission data
         if (data.videoSubmission) {
           this.videoSubmitted   = data.videoSubmission.submitted ?? false;
           this.videoUrl         = data.videoSubmission.videoUrl  ?? null;
           this.videoSubmittedAt = data.videoSubmission.submittedAt ?? null;
-        }
-
-        // NEW: Apply final exam admin-publish status
-        // Fails closed (stays false) if the field is missing for any reason.
-        if (typeof data.finalExamPublished === 'boolean') {
-          this.finalExamPublished   = data.finalExamPublished;
-          this.finalExamPublishedAt = data.finalExamPublishedAt ?? null;
         }
 
         this.loading = false;
@@ -475,7 +461,6 @@ export class StudentDashboardComponent implements OnInit {
           const v = JSON.parse(videoSt);
           this.videoSubmitted = v.submitted;
         }
-        // Offline/error fallback: final exam stays unpublished (locked) by default.
         this.loading = false;
         this.generateAlerts();
         this.cdr.detectChanges();
@@ -522,15 +507,9 @@ export class StudentDashboardComponent implements OnInit {
     return this.courseWeeks.every(w => w.status === 'completed');
   }
 
-  // Final exam access requires: all weeks done + video submitted + admin published.
+  // NEW: final exam button now also requires video submitted
   get canAccessFinalExamQuestions(): boolean {
-    return this.canTakeFinalExam && this.videoSubmitted && this.finalExamPublished;
-  }
-
-  // True when the student has done everything on their end (weeks + video)
-  // and is just waiting on the admin to flip the publish switch.
-  get isWaitingForFinalExamRelease(): boolean {
-    return this.canTakeFinalExam && this.videoSubmitted && !this.finalExamPublished && !this.finalExamSubmitted;
+    return this.canTakeFinalExam && this.videoSubmitted;
   }
 
   get averageScoreLabel(): string {
@@ -578,12 +557,7 @@ export class StudentDashboardComponent implements OnInit {
     if (this.completionRate === 100 && !this.videoSubmitted && !this.finalExamSubmitted) {
       this.alerts.push({ type: 'info', message: 'All 6 weeks complete! Submit your self-presentation video to unlock the Final Assessment.' });
     }
-    // NEW: video done, but admin hasn't published the exam yet
-    if (this.isWaitingForFinalExamRelease) {
-      this.alerts.push({ type: 'info', message: 'Video received! The Final Assessment will open as soon as it is released by the admin team.' });
-    }
-    // Both gates cleared — exam is actually accessible now
-    if (this.completionRate === 100 && this.videoSubmitted && this.finalExamPublished && !this.finalExamSubmitted) {
+    if (this.completionRate === 100 && this.videoSubmitted && !this.finalExamSubmitted) {
       this.alerts.push({ type: 'info', message: 'Video received — your Final Assessment is now unlocked!' });
     }
   }
@@ -660,15 +634,14 @@ export class StudentDashboardComponent implements OnInit {
   closeCwResult(): void { this.showCwResult = false; document.body.style.overflow = ''; }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // VIDEO SUBMISSION GATE
+  // NEW: VIDEO SUBMISSION GATE
   // ─────────────────────────────────────────────────────────────────────────
   // Flow:
   //   1. Student clicks "Take Final Exam" button on dashboard
   //   2. If video not yet submitted → openVideoGateModal() shows upload form
   //   3. Student selects video file + checks consent box
   //   4. submitVideo() uploads to backend, marks videoSubmitted = true
-  //   5. If the admin has ALSO published the exam, it opens automatically.
-  //      Otherwise the student sees the "waiting for release" alert.
+  //   5. Modal closes, openFinalExam() now opens the 40-question exam
   // ─────────────────────────────────────────────────────────────────────────
 
   /** Called when student clicks the final exam button on the dashboard banner */
@@ -678,16 +651,9 @@ export class StudentDashboardComponent implements OnInit {
 
     if (!this.videoSubmitted) {
       this.openVideoGateModal();
-      return;
+    } else {
+      this.openFinalExam();
     }
-
-    if (!this.finalExamPublished) {
-      // Student has done everything required on their end; the alert banner
-      // (generateAlerts) already communicates that we're waiting on admin release.
-      return;
-    }
-
-    this.openFinalExam();
   }
 
   openVideoGateModal(): void {
@@ -795,14 +761,10 @@ export class StudentDashboardComponent implements OnInit {
           this.cdr.detectChanges();
 
           // Brief pause so student sees the success state, then move to exam
-          // — but only if the admin has actually published it. Otherwise just
-          // close the modal and let the "waiting for release" alert show.
           setTimeout(() => {
             this.closeVideoGateModal();
             this.generateAlerts();
-            if (this.finalExamPublished) {
-              this.openFinalExam();
-            }
+            this.openFinalExam();
           }, 1200);
         }
       },

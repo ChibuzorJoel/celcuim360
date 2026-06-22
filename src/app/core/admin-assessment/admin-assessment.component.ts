@@ -14,21 +14,24 @@ interface WeekData {
   updatedAt:   string | null;
 }
 
-// Real submission fetched from server
 export interface Submission {
-  registrationId: string;
-  student:        string;
-  email:          string;
-  category:       string;
-  type:           'weekly' | 'final';
-  weekId:         number | null;
-  weekLabel:      string;
-  submitted:      boolean;
-  score:          number | null;
-  feedback:       string | null;
-  graded:         boolean;
-  submittedAt:    string | null;
-  answers:        { questionIndex: number; questionText: string; answer: string }[];
+  registrationId:   string;
+  student:          string;
+  email:            string;
+  category:         string;
+  type:             'weekly' | 'final';
+  weekId:           number | null;
+  weekLabel:        string;
+  submitted:        boolean;
+  score:            number | null;
+  feedback:         string | null;
+  graded:           boolean;
+  submittedAt:      string | null;
+  answers:          { questionIndex: number; questionText: string; answer: string }[];
+  // Final exam only
+  videoSubmitted?:   boolean;
+  videoUrl?:         string | null;
+  videoSubmittedAt?: string | null;
 }
 
 @Component({
@@ -41,19 +44,14 @@ export class AdminAssessmentComponent implements OnInit {
   private api     = environment.apiUrl;
   private headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
   activeTab: 'scores' | 'questions' = 'questions';
 
-  // ── Week question management ──────────────────────────────────────────────
   allWeeks:     WeekData[] = [];
   weeksLoading  = true;
 
-  // 'final' is a sidebar item alongside 1-6, but has no WeekData of its own —
-  // it's governed entirely by the finalExam* fields below.
   activeWeekNum:  number | 'final' = 1;
   activeWeekData: WeekData | null = null;
 
-  // ── Edit Mode ─────────────────────────────────────────────────────────────
   editMode        = false;
   editTitle       = '';
   editInstruction = '';
@@ -63,13 +61,9 @@ export class AdminAssessmentComponent implements OnInit {
   saveError    = '';
   saveSuccess  = '';
 
-  // ── Publish (weeks) ───────────────────────────────────────────────────────
   publishLoading = false;
   publishError   = '';
 
-  // ── Final Exam publish toggle ───────────────────────────────────────────
-  // Questions are NOT editable here — this only controls whether eligible
-  // students (all 6 weeks done + video submitted) can see/start the exam.
   finalExamPublished:      boolean = false;
   finalExamPublishedAt:    string | null = null;
   finalExamStatusLoading:  boolean = true;
@@ -77,17 +71,14 @@ export class AdminAssessmentComponent implements OnInit {
   finalExamPublishError:   string = '';
   finalExamSaveSuccess:    string = '';
 
-  // ── Submissions (REAL data from server) ──────────────────────────────────
   submissionsLoading   = false;
   submissionsError     = '';
   allSubmissions:      Submission[] = [];
   filteredSubmissions: Submission[] = [];
 
-  // Filters
-  activeScoreWeek = 1;        // 1-6 or 0 = Final Exam
+  activeScoreWeek = 1;
   searchTerm      = '';
 
-  // Grading modal
   showGradeModal      = false;
   gradingSubmission:  Submission | null = null;
   gradeScoreInput     = '';
@@ -96,17 +87,20 @@ export class AdminAssessmentComponent implements OnInit {
   gradeError          = '';
   gradeSuccess        = '';
 
-  // Answers preview modal
   showAnswersModal    = false;
   viewingSubmission:  Submission | null = null;
 
-  // Summary stats (computed from filteredSubmissions)
+  // Video preview modal (admin watches the submitted video)
+  showVideoModal    = false;
+  viewingVideoUrl:  string | null = null;
+  viewingVideoName: string = '';
+
   summaryStats = {
     avgScore: 0, submitted: 0, total: 0,
     atRisk: 0, pending: 0, topScore: 0, topStudent: '',
+    videoSubmitted: 0,
   };
 
-  // ── Default questions per week ────────────────────────────────────────────
   readonly defaultQuestions: Record<number, string[]> = {
     1: [
       'A colleague starts speaking negatively about your manager and tries to involve you in the conversation during work hours.',
@@ -191,7 +185,6 @@ export class AdminAssessmentComponent implements OnInit {
     6: 'Career Direction & Real-World Application',
   };
 
-  // Week filter options shown above the table. 0 = Final Exam
   readonly scoreWeekOptions: { label: string; value: number }[] = [
     { label: 'Week 1', value: 1 },
     { label: 'Week 2', value: 2 },
@@ -209,9 +202,7 @@ export class AdminAssessmentComponent implements OnInit {
     this.loadFinalExamStatus();
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // WEEK QUESTION MANAGEMENT
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── Week management ───────────────────────────────────────────────────────
 
   loadAllWeeks(): void {
     this.weeksLoading = true;
@@ -219,12 +210,12 @@ export class AdminAssessmentComponent implements OnInit {
       next: (res) => {
         this.allWeeks     = res.weeks || [];
         this.weeksLoading = false;
-        this.selectWeek(this.activeWeekNum === 'final' ? 1 : this.activeWeekNum);
+        this.selectWeek(this.activeWeekNum === 'final' ? 1 : this.activeWeekNum as number);
         this.cdr.detectChanges();
       },
       error: () => {
         this.weeksLoading = false;
-        this.selectWeek(this.activeWeekNum === 'final' ? 1 : this.activeWeekNum);
+        this.selectWeek(this.activeWeekNum === 'final' ? 1 : this.activeWeekNum as number);
       },
     });
   }
@@ -239,184 +230,94 @@ export class AdminAssessmentComponent implements OnInit {
   }
 
   startEdit(): void {
-    if (this.activeWeekNum === 'final') return; // safety guard, button never shown for 'final'
-
+    if (this.activeWeekNum === 'final') return;
     if (this.activeWeekData) {
       this.editTitle       = this.activeWeekData.weekTitle;
       this.editInstruction = this.activeWeekData.instruction;
       this.editQuestions   = [...this.activeWeekData.questions];
       while (this.editQuestions.length < 10) this.editQuestions.push('');
     } else {
-      this.editTitle       = this.weekTitles[this.activeWeekNum];
+      this.editTitle       = this.weekTitles[this.activeWeekNum as number];
       this.editInstruction = 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.';
-      this.editQuestions   = [...(this.defaultQuestions[this.activeWeekNum] || new Array(10).fill(''))];
+      this.editQuestions   = [...(this.defaultQuestions[this.activeWeekNum as number] || new Array(10).fill(''))];
     }
     this.editMode    = true;
     this.saveError   = '';
     this.saveSuccess = '';
   }
 
-  cancelEdit(): void {
-    this.editMode    = false;
-    this.saveError   = '';
-    this.saveSuccess = '';
-  }
+  cancelEdit(): void { this.editMode = false; this.saveError = ''; this.saveSuccess = ''; }
 
   saveQuestions(): void {
-    if (this.activeWeekNum === 'final') return; // safety guard
-
-    this.saveError   = '';
-    this.saveSuccess = '';
-
+    if (this.activeWeekNum === 'final') return;
+    this.saveError = ''; this.saveSuccess = '';
     const empty = this.editQuestions.findIndex(q => !q || !q.trim());
-    if (empty !== -1) {
-      this.saveError = `Question ${empty + 1} is empty. All 10 questions are required.`;
-      return;
-    }
-    if (!this.editTitle.trim()) {
-      this.saveError = 'Week title is required.';
-      return;
-    }
-
+    if (empty !== -1) { this.saveError = `Question ${empty + 1} is empty. All 10 questions are required.`; return; }
+    if (!this.editTitle.trim()) { this.saveError = 'Week title is required.'; return; }
     this.saveLoading = true;
-
-    const payload = {
-      weekTitle:   this.editTitle.trim(),
-      instruction: this.editInstruction.trim(),
-      questions:   this.editQuestions.map(q => q.trim()),
-    };
-
-    this.http.put<any>(
-      `${this.api}/api/coursework-questions/${this.activeWeekNum}`,
-      payload,
-      { headers: this.headers }
-    ).subscribe({
+    const payload = { weekTitle: this.editTitle.trim(), instruction: this.editInstruction.trim(), questions: this.editQuestions.map(q => q.trim()) };
+    this.http.put<any>(`${this.api}/api/coursework-questions/${this.activeWeekNum}`, payload, { headers: this.headers }).subscribe({
       next: (res) => {
-        this.saveLoading    = false;
-        this.saveSuccess    = `Week ${this.activeWeekNum} questions saved successfully.`;
-        this.editMode       = false;
+        this.saveLoading = false; this.saveSuccess = `Week ${this.activeWeekNum} questions saved successfully.`; this.editMode = false;
         this.activeWeekData = res.week;
-
         const idx = this.allWeeks.findIndex(w => w.weekNumber === this.activeWeekNum);
-        if (idx !== -1) this.allWeeks[idx] = res.week;
-        else            this.allWeeks.push(res.week);
+        if (idx !== -1) this.allWeeks[idx] = res.week; else this.allWeeks.push(res.week);
         this.allWeeks.sort((a, b) => a.weekNumber - b.weekNumber);
-
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.saveLoading = false;
-        this.saveError   = err.error?.message || 'Failed to save questions.';
-      },
+      error: (err) => { this.saveLoading = false; this.saveError = err.error?.message || 'Failed to save questions.'; },
     });
   }
 
   saveDefaultsAndPublish(): void {
-    if (this.activeWeekNum === 'final') return; // safety guard
-
-    this.saveError      = '';
-    this.saveSuccess    = '';
-    this.publishError   = '';
-    this.publishLoading = true;
-
-    const payload = {
-      weekTitle:   this.weekTitles[this.activeWeekNum],
-      instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.',
-      questions:   this.defaultQuestions[this.activeWeekNum],
-    };
-
-    this.http.put<any>(
-      `${this.api}/api/coursework-questions/${this.activeWeekNum}`,
-      payload,
-      { headers: this.headers }
-    ).subscribe({
+    if (this.activeWeekNum === 'final') return;
+    this.saveError = ''; this.saveSuccess = ''; this.publishError = ''; this.publishLoading = true;
+    const payload = { weekTitle: this.weekTitles[this.activeWeekNum as number], instruction: 'Based on what you have learned this week, respond to each real-life workplace scenario clearly and practically.', questions: this.defaultQuestions[this.activeWeekNum as number] };
+    this.http.put<any>(`${this.api}/api/coursework-questions/${this.activeWeekNum}`, payload, { headers: this.headers }).subscribe({
       next: (res) => {
         this.activeWeekData = res.week;
         const idx = this.allWeeks.findIndex(w => w.weekNumber === this.activeWeekNum);
-        if (idx !== -1) this.allWeeks[idx] = res.week;
-        else            this.allWeeks.push(res.week);
+        if (idx !== -1) this.allWeeks[idx] = res.week; else this.allWeeks.push(res.week);
         this.allWeeks.sort((a, b) => a.weekNumber - b.weekNumber);
-
-        this.http.patch<any>(
-          `${this.api}/api/coursework-questions/${this.activeWeekNum}/publish`,
-          { publish: true },
-          { headers: this.headers }
-        ).subscribe({
+        this.http.patch<any>(`${this.api}/api/coursework-questions/${this.activeWeekNum}/publish`, { publish: true }, { headers: this.headers }).subscribe({
           next: (pub) => {
             this.publishLoading = false;
-            this.activeWeekData!.isPublished = pub.isPublished;
-            this.activeWeekData!.publishedAt = pub.publishedAt;
+            this.activeWeekData!.isPublished = pub.isPublished; this.activeWeekData!.publishedAt = pub.publishedAt;
             const i = this.allWeeks.findIndex(w => w.weekNumber === this.activeWeekNum);
-            if (i !== -1) {
-              this.allWeeks[i].isPublished = pub.isPublished;
-              this.allWeeks[i].publishedAt = pub.publishedAt;
-            }
+            if (i !== -1) { this.allWeeks[i].isPublished = pub.isPublished; this.allWeeks[i].publishedAt = pub.publishedAt; }
             this.saveSuccess = `Week ${this.activeWeekNum} published! Students can now access it.`;
             this.cdr.detectChanges();
           },
-          error: (err) => {
-            this.publishLoading = false;
-            this.publishError   = err.error?.message || 'Questions saved but publish failed. Try the Publish button.';
-            this.cdr.detectChanges();
-          },
+          error: (err) => { this.publishLoading = false; this.publishError = err.error?.message || 'Questions saved but publish failed.'; this.cdr.detectChanges(); },
         });
       },
-      error: (err) => {
-        this.publishLoading = false;
-        this.saveError      = err.error?.message || 'Failed to save default questions.';
-        this.cdr.detectChanges();
-      },
+      error: (err) => { this.publishLoading = false; this.saveError = err.error?.message || 'Failed to save default questions.'; this.cdr.detectChanges(); },
     });
   }
 
   togglePublish(): void {
     if (this.activeWeekNum === 'final' || !this.activeWeekData) return;
-
-    this.publishLoading = true;
-    this.publishError   = '';
-    this.saveSuccess    = '';
-
+    this.publishLoading = true; this.publishError = ''; this.saveSuccess = '';
     const newState = !this.activeWeekData.isPublished;
-
-    this.http.patch<any>(
-      `${this.api}/api/coursework-questions/${this.activeWeekNum}/publish`,
-      { publish: newState },
-      { headers: this.headers }
-    ).subscribe({
+    this.http.patch<any>(`${this.api}/api/coursework-questions/${this.activeWeekNum}/publish`, { publish: newState }, { headers: this.headers }).subscribe({
       next: (res) => {
         this.publishLoading = false;
-        this.activeWeekData!.isPublished = res.isPublished;
-        this.activeWeekData!.publishedAt = res.publishedAt;
-
+        this.activeWeekData!.isPublished = res.isPublished; this.activeWeekData!.publishedAt = res.publishedAt;
         const idx = this.allWeeks.findIndex(w => w.weekNumber === this.activeWeekNum);
-        if (idx !== -1) {
-          this.allWeeks[idx].isPublished = res.isPublished;
-          this.allWeeks[idx].publishedAt = res.publishedAt;
-        }
-        this.saveSuccess = `Week ${this.activeWeekNum} ${newState ? 'published — students can now access it' : 'unpublished — hidden from students'}.`;
+        if (idx !== -1) { this.allWeeks[idx].isPublished = res.isPublished; this.allWeeks[idx].publishedAt = res.publishedAt; }
+        this.saveSuccess = `Week ${this.activeWeekNum} ${newState ? 'published' : 'unpublished'}.`;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.publishLoading = false;
-        this.publishError   = err.error?.message || 'Failed to update publish status.';
-      },
+      error: (err) => { this.publishLoading = false; this.publishError = err.error?.message || 'Failed to update publish status.'; },
     });
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // FINAL EXAM — publish toggle only (questions are hardcoded in student app)
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── Final Exam publish toggle ─────────────────────────────────────────────
 
-  /** Selects the "Final Exam" sidebar item */
   selectFinalExam(): void {
-    this.activeWeekNum         = 'final';
-    this.editMode               = false;
-    this.activeWeekData         = null;
-    this.saveError              = '';
-    this.saveSuccess            = '';
-    this.publishError           = '';
-    this.finalExamPublishError  = '';
-    this.finalExamSaveSuccess   = '';
+    this.activeWeekNum = 'final'; this.editMode = false; this.activeWeekData = null;
+    this.saveError = ''; this.saveSuccess = ''; this.publishError = '';
+    this.finalExamPublishError = ''; this.finalExamSaveSuccess = '';
   }
 
   loadFinalExamStatus(): void {
@@ -428,27 +329,14 @@ export class AdminAssessmentComponent implements OnInit {
         this.finalExamStatusLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        // Fail closed: if we can't confirm status, don't claim it's published
-        this.finalExamPublished     = false;
-        this.finalExamStatusLoading = false;
-        this.cdr.detectChanges();
-      },
+      error: () => { this.finalExamPublished = false; this.finalExamStatusLoading = false; this.cdr.detectChanges(); },
     });
   }
 
   toggleFinalExamPublish(): void {
-    this.finalExamPublishLoading = true;
-    this.finalExamPublishError   = '';
-    this.finalExamSaveSuccess    = '';
-
+    this.finalExamPublishLoading = true; this.finalExamPublishError = ''; this.finalExamSaveSuccess = '';
     const newState = !this.finalExamPublished;
-
-    this.http.patch<any>(
-      `${this.api}/api/final-exam/publish`,
-      { publish: newState },
-      { headers: this.headers }
-    ).subscribe({
+    this.http.patch<any>(`${this.api}/api/final-exam/publish`, { publish: newState }, { headers: this.headers }).subscribe({
       next: (res) => {
         this.finalExamPublishLoading = false;
         this.finalExamPublished      = res.isPublished;
@@ -456,235 +344,160 @@ export class AdminAssessmentComponent implements OnInit {
         this.finalExamSaveSuccess    = `Final Exam ${newState ? 'published — eligible students can now access it' : 'unpublished — hidden from all students'}.`;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.finalExamPublishLoading = false;
-        this.finalExamPublishError   = err.error?.message || 'Failed to update final exam publish status.';
-        this.cdr.detectChanges();
-      },
+      error: (err) => { this.finalExamPublishLoading = false; this.finalExamPublishError = err.error?.message || 'Failed to update final exam publish status.'; this.cdr.detectChanges(); },
     });
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // REAL SUBMISSION DATA
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── Submission data ───────────────────────────────────────────────────────
 
-  /** Called when switching to the Scores tab or changing week filter */
   loadSubmissions(): void {
-    this.submissionsLoading = true;
-    this.submissionsError   = '';
-
+    this.submissionsLoading = true; this.submissionsError = '';
     const isFinal = this.activeScoreWeek === 0;
-    const url     = isFinal
+    const url = isFinal
       ? `${this.api}/api/coursework-questions/submissions?type=final`
       : `${this.api}/api/coursework-questions/submissions?week=${this.activeScoreWeek}`;
-
     this.http.get<any>(url).subscribe({
       next: (res) => {
-        this.allSubmissions     = res.submissions || [];
+        this.allSubmissions = res.submissions || [];
         this.submissionsLoading = false;
         this.applyFilters();
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.submissionsLoading = false;
-        this.submissionsError   = err.error?.message || 'Failed to load submissions.';
-        this.cdr.detectChanges();
-      },
+      error: (err) => { this.submissionsLoading = false; this.submissionsError = err.error?.message || 'Failed to load submissions.'; this.cdr.detectChanges(); },
     });
   }
 
-  setScoreWeek(value: number): void {
-    this.activeScoreWeek = value;
-    this.searchTerm      = '';
-    this.loadSubmissions();
-  }
+  setScoreWeek(value: number): void { this.activeScoreWeek = value; this.searchTerm = ''; this.loadSubmissions(); }
 
   applyFilters(): void {
     let list = [...this.allSubmissions];
-
     if (this.searchTerm.trim()) {
       const q = this.searchTerm.toLowerCase();
-      list = list.filter(s =>
-        s.student.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q)
-      );
+      list = list.filter(s => s.student.toLowerCase().includes(q) || s.email.toLowerCase().includes(q));
     }
-
     this.filteredSubmissions = list;
     this.computeStats(list);
   }
 
   private computeStats(list: Submission[]): void {
-    const submitted = list.filter(s => s.submitted);
-    const graded    = submitted.filter(s => s.graded && s.score !== null);
-    const avg       = graded.length
-      ? Math.round(graded.reduce((a, s) => a + s.score!, 0) / graded.length) : 0;
-    const top       = [...graded].sort((a, b) => b.score! - a.score!)[0];
-
-    // Max score depends on week type
-    const maxScore      = this.activeScoreWeek === 0 ? 40 : 10;
-    const atRiskThresh  = maxScore * 0.6;
+    const submitted    = list.filter(s => s.submitted);
+    const graded       = submitted.filter(s => s.graded && s.score !== null);
+    const avg          = graded.length ? Math.round(graded.reduce((a, s) => a + s.score!, 0) / graded.length) : 0;
+    const top          = [...graded].sort((a, b) => b.score! - a.score!)[0];
+    const maxScore     = this.activeScoreWeek === 0 ? 40 : 10;
+    const atRiskThresh = maxScore * 0.6;
+    const vidCount     = list.filter(s => s.videoSubmitted).length;
 
     this.summaryStats = {
-      avgScore:   avg,
-      submitted:  submitted.length,
-      total:      list.length,
-      atRisk:     graded.filter(s => s.score! < atRiskThresh).length,
-      pending:    submitted.filter(s => !s.graded).length,
-      topScore:   top?.score   ?? 0,
-      topStudent: top?.student ?? '—',
+      avgScore:      avg,
+      submitted:     submitted.length,
+      total:         list.length,
+      atRisk:        graded.filter(s => s.score! < atRiskThresh).length,
+      pending:       submitted.filter(s => !s.graded).length,
+      topScore:      top?.score   ?? 0,
+      topStudent:    top?.student ?? '—',
+      videoSubmitted: vidCount,
     };
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // GRADING MODAL
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── Grade modal ───────────────────────────────────────────────────────────
 
   openGradeModal(sub: Submission): void {
     if (!sub.submitted) return;
-    this.gradingSubmission = sub;
-    this.gradeScoreInput   = sub.score !== null ? String(sub.score) : '';
+    this.gradingSubmission  = sub;
+    this.gradeScoreInput    = sub.score !== null ? String(sub.score) : '';
     this.gradeFeedbackInput = sub.feedback || '';
-    this.gradeError        = '';
-    this.gradeSuccess      = '';
-    this.gradeLoading      = false;
-    this.showGradeModal    = true;
+    this.gradeError = ''; this.gradeSuccess = ''; this.gradeLoading = false;
+    this.showGradeModal = true;
     document.body.style.overflow = 'hidden';
   }
 
-  closeGradeModal(): void {
-    this.showGradeModal    = false;
-    this.gradingSubmission = null;
-    document.body.style.overflow = '';
-  }
+  closeGradeModal(): void { this.showGradeModal = false; this.gradingSubmission = null; document.body.style.overflow = ''; }
 
-  get maxGradeScore(): number {
-    return this.activeScoreWeek === 0 ? 40 : 10;
-  }
+  get maxGradeScore(): number { return this.activeScoreWeek === 0 ? 40 : 10; }
 
   submitGrade(): void {
     if (!this.gradingSubmission) return;
-
     const score = parseFloat(this.gradeScoreInput);
-    if (isNaN(score) || score < 0 || score > this.maxGradeScore) {
-      this.gradeError = `Score must be between 0 and ${this.maxGradeScore}.`;
-      return;
-    }
-
-    this.gradeLoading = true;
-    this.gradeError   = '';
-
-    const weekId = this.gradingSubmission.weekId !== null
-      ? String(this.gradingSubmission.weekId)
-      : 'final';
-
-    this.http.patch<any>(
-      `${this.api}/api/coursework-questions/submissions/grade`,
-      {
-        registrationId: this.gradingSubmission.registrationId,
-        weekId,
-        score,
-        feedback: this.gradeFeedbackInput.trim(),
-        gradedBy: 'admin',
-      },
-      { headers: this.headers }
-    ).subscribe({
+    if (isNaN(score) || score < 0 || score > this.maxGradeScore) { this.gradeError = `Score must be between 0 and ${this.maxGradeScore}.`; return; }
+    this.gradeLoading = true; this.gradeError = '';
+    const weekId = this.gradingSubmission.weekId !== null ? String(this.gradingSubmission.weekId) : 'final';
+    this.http.patch<any>(`${this.api}/api/coursework-questions/submissions/grade`, { registrationId: this.gradingSubmission.registrationId, weekId, score, feedback: this.gradeFeedbackInput.trim(), gradedBy: 'admin' }, { headers: this.headers }).subscribe({
       next: () => {
-        // Update local state so the table refreshes immediately
-        const sub = this.allSubmissions.find(
-          s => s.registrationId === this.gradingSubmission!.registrationId
-        );
-        if (sub) {
-          sub.score    = score;
-          sub.feedback = this.gradeFeedbackInput.trim();
-          sub.graded   = true;
-        }
-
-        this.gradeLoading = false;
-        this.gradeSuccess = 'Grade saved and student notified.';
-        this.applyFilters();
-        this.cdr.detectChanges();
-
-        // Auto-close after 1.5s
+        const sub = this.allSubmissions.find(s => s.registrationId === this.gradingSubmission!.registrationId);
+        if (sub) { sub.score = score; sub.feedback = this.gradeFeedbackInput.trim(); sub.graded = true; }
+        this.gradeLoading = false; this.gradeSuccess = 'Grade saved and student notified.';
+        this.applyFilters(); this.cdr.detectChanges();
         setTimeout(() => this.closeGradeModal(), 1500);
       },
-      error: (err) => {
-        this.gradeLoading = false;
-        this.gradeError   = err.error?.message || 'Failed to save grade.';
-        this.cdr.detectChanges();
-      },
+      error: (err) => { this.gradeLoading = false; this.gradeError = err.error?.message || 'Failed to save grade.'; this.cdr.detectChanges(); },
     });
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // ANSWERS PREVIEW MODAL
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── Answers modal ─────────────────────────────────────────────────────────
 
   openAnswersModal(sub: Submission): void {
-    this.viewingSubmission = sub;
-    this.showAnswersModal  = true;
+    this.viewingSubmission = sub; this.showAnswersModal = true;
     document.body.style.overflow = 'hidden';
   }
 
-  closeAnswersModal(): void {
-    this.showAnswersModal  = false;
-    this.viewingSubmission = null;
+  closeAnswersModal(): void { this.showAnswersModal = false; this.viewingSubmission = null; document.body.style.overflow = ''; }
+
+  // ── Video preview modal ───────────────────────────────────────────────────
+
+  openVideoModal(sub: Submission): void {
+    if (!sub.videoSubmitted || !sub.videoUrl) return;
+    this.viewingVideoUrl  = `${this.api}${sub.videoUrl}`;
+    this.viewingVideoName = sub.student;
+    this.showVideoModal   = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeVideoModal(): void {
+    this.showVideoModal  = false;
+    this.viewingVideoUrl = null;
     document.body.style.overflow = '';
   }
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // HELPERS
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  getFilledQuestionsCount(): number {
-    return this.editQuestions.filter(q => q && q.trim()).length;
-  }
+  getFilledQuestionsCount(): number { return this.editQuestions.filter(q => q && q.trim()).length; }
 
   scoreClass(score: number | null, isFinal = false): string {
     if (score === null) return 'score-pending';
-    const max  = isFinal ? 40 : 10;
-    const pct  = (score / max) * 100;
+    const pct = (score / (isFinal ? 40 : 10)) * 100;
     return pct >= 75 ? 'score-high' : pct >= 60 ? 'score-mid' : 'score-low';
   }
 
   scoreDisplay(score: number | null, isFinal = false): string {
     if (score === null) return '—';
-    const max = isFinal ? 40 : 10;
-    return `${score}/${max}`;
+    return `${score}/${isFinal ? 40 : 10}`;
   }
 
   scorePct(score: number | null, isFinal = false): number {
     if (score === null) return 0;
-    const max = isFinal ? 40 : 10;
-    return Math.round((score / max) * 100);
+    return Math.round((score / (isFinal ? 40 : 10)) * 100);
   }
 
   getWeekStatus(w: number): string {
     const week = this.allWeeks.find(wk => wk.weekNumber === w);
-    if (!week)            return 'empty';
-    if (week.isPublished) return 'published';
-    return 'draft';
+    if (!week) return 'empty';
+    return week.isPublished ? 'published' : 'draft';
   }
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   trackByIndex(i: number): number { return i; }
-
   trackByRegId(_: number, sub: Submission): string { return sub.registrationId; }
 
-  // ── Export PDF ────────────────────────────────────────────────────────────
   exportPDF(): void {
-    const isFinal = this.activeScoreWeek === 0;
-    const label   = isFinal ? 'Final Exam' : `Week ${this.activeScoreWeek}`;
+    const isFinal  = this.activeScoreWeek === 0;
+    const label    = isFinal ? 'Final Exam' : `Week ${this.activeScoreWeek}`;
     const maxScore = isFinal ? 40 : 10;
-
-    const iframe = document.createElement('iframe');
+    const iframe   = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
     const doc = iframe.contentWindow?.document;
@@ -707,6 +520,7 @@ export class AdminAssessmentComponent implements OnInit {
         <thead>
           <tr>
             <th>#</th><th>Student</th><th>Email</th>
+            ${isFinal ? '<th>Video</th>' : ''}
             <th>Score</th><th>%</th><th>Status</th><th>Submitted</th>
           </tr>
         </thead>
@@ -719,6 +533,7 @@ export class AdminAssessmentComponent implements OnInit {
               <td>${i + 1}</td>
               <td>${s.student}</td>
               <td>${s.email}</td>
+              ${isFinal ? `<td>${s.videoSubmitted ? '✓ Submitted' : '—'}</td>` : ''}
               <td class="${cls}">${s.score !== null ? `${s.score}/${maxScore}` : '—'}</td>
               <td class="${cls}">${pct !== null ? pct + '%' : '—'}</td>
               <td>${status}</td>
@@ -727,12 +542,6 @@ export class AdminAssessmentComponent implements OnInit {
           }).join('')}
         </tbody>
       </table>
-      <p style="font-size:10px;color:#999;margin-top:16px;">
-        Total: ${this.filteredSubmissions.length} |
-        Submitted: ${this.summaryStats.submitted} |
-        Graded: ${this.filteredSubmissions.filter(s => s.graded).length} |
-        Avg Score: ${this.summaryStats.avgScore}
-      </p>
       </body></html>
     `);
     doc.close();
