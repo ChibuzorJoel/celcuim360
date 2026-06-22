@@ -5,6 +5,7 @@
 const CourseworkQuestion = require('../models/Courseworkquestion.model');
 const Registration       = require('../models/Registration');
 const StudentProgress    = require('../models/StudentProgress.model');
+const FinalExamConfig    = require('../models/FinalExamConfig.model');
 const nodemailer         = require('nodemailer');
 const mongoose           = require('mongoose');
 
@@ -32,8 +33,6 @@ async function sendEmail(to, subject, html) {
 // ── FinalVideo model ─────────────────────────────────────────────────────
 // Reuse the FinalVideo model (already registered by final-video.routes.js,
 // but safe to reference again here since Mongoose caches models by name).
-// NOTE: if final-video.routes.js's schema ever changes, update this copy too
-// — or better, extract both to a shared models/FinalVideo.model.js file.
 const FinalVideoSchema = new mongoose.Schema({
   registrationId: { type: String, required: true, unique: true },
   studentName:    { type: String, default: '' },
@@ -45,6 +44,13 @@ const FinalVideoSchema = new mongoose.Schema({
 });
 const FinalVideo = mongoose.models.FinalVideo || mongoose.model('FinalVideo', FinalVideoSchema);
 
+// ── FinalExamConfig helper ────────────────────────────────────────────────
+async function getOrCreateFinalExamConfig() {
+  let config = await FinalExamConfig.findOne({});
+  if (!config) config = await FinalExamConfig.create({});
+  return config;
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //  KEY UTILITY — normalise weekProgress to a plain JS object
 //  Handles: Mongoose Map, plain object, undefined
@@ -52,17 +58,16 @@ const FinalVideo = mongoose.models.FinalVideo || mongoose.model('FinalVideo', Fi
 function normalisedWeekProgress(rawWP) {
   if (!rawWP) return {};
 
-  // Mongoose Map instance — has a forEach that gives (value, key)
+  // Mongoose Map instance
   if (typeof rawWP.forEach === 'function' && typeof rawWP.get === 'function') {
     const out = {};
     rawWP.forEach((val, key) => {
-      // val may be a Mongoose subdocument — convert to plain object
       out[String(key)] = val && typeof val.toObject === 'function' ? val.toObject() : { ...val };
     });
     return out;
   }
 
-  // Plain object (Mixed schema or after .lean())
+  // Plain object
   const out = {};
   for (const key of Object.keys(rawWP)) {
     const val = rawWP[key];
@@ -294,7 +299,7 @@ exports.patchWeek = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  PATCH /publish
+//  PATCH /publish — Week publish toggle
 // ══════════════════════════════════════════════════════════════════════════
 exports.setPublishStatus = async (req, res) => {
   try {
@@ -347,6 +352,73 @@ exports.setPublishStatus = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+//  GET FINAL EXAM STATUS
+//  GET /api/final-exam/status
+// ══════════════════════════════════════════════════════════════════════════
+exports.getFinalExamStatus = async (req, res) => {
+  try {
+    const config = await FinalExamConfig.findOne({}).lean();
+    res.json({
+      isPublished: config?.isPublished ?? false,
+      publishedAt: config?.publishedAt ?? null,
+    });
+  } catch (err) {
+    console.error('[getFinalExamStatus]', err.message);
+    res.status(500).json({ message: 'Failed to fetch final exam status' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+//  PATCH /final-exam/publish — toggle Final Exam visibility for students
+// ══════════════════════════════════════════════════════════════════════════
+exports.setFinalExamPublishStatus = async (req, res) => {
+  try {
+    const { publish, publishedBy } = req.body;
+    if (typeof publish !== 'boolean') {
+      return res.status(400).json({ message: '"publish" must be true or false' });
+    }
+
+    const config = await getOrCreateFinalExamConfig();
+    config.isPublished = publish;
+    config.publishedAt = publish ? new Date() : null;
+    config.updatedAt   = new Date();
+    config.updatedBy   = publishedBy || 'admin';
+    await config.save();
+
+    console.log(`[Publish] Final Exam → ${publish ? 'PUBLISHED' : 'UNPUBLISHED'}`);
+
+    if (publish) {
+      try {
+        const students = await Registration.find({ status: 'approved' }, 'email fullName').lean();
+        for (const s of students) {
+          await sendEmail(
+            s.email,
+            `🎓 Final Assessment is Now Available — Celcium360`,
+            `<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto;padding:28px;background:#111;color:#e0e0e0;border-radius:12px;border:1px solid #B88D2A;">
+              <h2 style="color:#B88D2A;margin-top:0;">Final Assessment is Live! 🎓</h2>
+              <p>Hi <strong>${s.fullName}</strong>,</p>
+              <p>The <strong>Final Assessment</strong> is now open. If you've completed all 6 weeks and submitted your self-presentation video, you can take it now from your student portal.</p>
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/portal" style="display:inline-block;padding:13px 26px;background:#B88D2A;color:#000;text-decoration:none;border-radius:8px;font-weight:700;">Open Student Portal →</a>
+              <hr style="border-color:#2e2e2e;margin:24px 0;">
+              <p style="color:#555;font-size:11px;margin:0;">Celcium360 Solutions Limited · <a href="mailto:training@celcium360solutions.com" style="color:#B88D2A;">training@celcium360solutions.com</a></p>
+            </div>`
+          );
+        }
+      } catch (emailErr) { console.error('[Final exam publish email error]', emailErr.message); }
+    }
+
+    res.json({
+      message: `Final Exam ${publish ? 'published' : 'unpublished'} successfully`,
+      isPublished: config.isPublished,
+      publishedAt: config.publishedAt,
+    });
+  } catch (err) {
+    console.error('[setFinalExamPublishStatus]', err.message);
+    res.status(500).json({ message: err.message || 'Failed to update final exam publish status' });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 //  DELETE
 // ══════════════════════════════════════════════════════════════════════════
 exports.deleteWeek = async (req, res) => {
@@ -364,10 +436,6 @@ exports.deleteWeek = async (req, res) => {
 
 // ══════════════════════════════════════════════════════════════════════════
 //  GET STUDENT PROGRESS
-//  - normalises weekProgress whether it's a Mongoose Map or a plain object
-//  - normalises finalExam the same way
-//  - NEW: includes videoSubmission so the student dashboard can decide
-//    whether to show the video gate or go straight to the exam
 // ══════════════════════════════════════════════════════════════════════════
 exports.getStudentProgress = async (req, res) => {
   try {
@@ -381,8 +449,11 @@ exports.getStudentProgress = async (req, res) => {
     // Load WITHOUT .lean() so we can call normalisedWeekProgress on the doc
     const progressDoc = await StudentProgress.findOne({ registrationId });
 
-    // NEW: check final-video submission status
+    // Video submission status
     const videoDoc = await FinalVideo.findOne({ registrationId }).lean();
+
+    // Final Exam admin publish status
+    const finalExamConfig = await FinalExamConfig.findOne({}).lean();
 
     const weekProgress = {};
     if (progressDoc) {
@@ -408,12 +479,13 @@ exports.getStudentProgress = async (req, res) => {
       publishedWeeks: publishedWeeks.map(w => ({ weekId: w.weekNumber, dueDate: w.publishedAt || null })),
       weekProgress,
       finalExam,
-      // NEW: video submission status
       videoSubmission: {
         submitted:   !!videoDoc,
         videoUrl:    videoDoc?.videoUrl    ?? null,
         submittedAt: videoDoc?.submittedAt ?? null,
       },
+      finalExamPublished:   finalExamConfig?.isPublished ?? false,
+      finalExamPublishedAt: finalExamConfig?.publishedAt ?? null,
     });
   } catch (err) {
     console.error('[getStudentProgress]', err.message);
@@ -422,7 +494,7 @@ exports.getStudentProgress = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  SUBMIT COURSEWORK  ← uses $set with dot notation — works for Map AND Mixed
+//  SUBMIT COURSEWORK
 // ══════════════════════════════════════════════════════════════════════════
 exports.submitCoursework = async (req, res) => {
   const { registrationId, weekId, answers, studentName, studentEmail } = req.body;
@@ -489,12 +561,87 @@ exports.submitFinalExam = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GET ALL SUBMISSIONS  ← uses normalisedWeekProgress
+//  GET ALL SUBMISSIONS
+//
+//  BUG FIX — the old version only iterated StudentProgress docs, so any
+//  student who submitted their video but hadn't yet started the 40-question
+//  exam (no StudentProgress doc) was invisible in the admin Final Exam tab.
+//
+//  Now for type=final we start from ALL approved Registration records so
+//  every student appears, and we join both FinalVideo and StudentProgress
+//  data on top.
 // ══════════════════════════════════════════════════════════════════════════
 exports.getAllSubmissions = async (req, res) => {
   try {
     const { week, type } = req.query;
 
+    // ── Final exam view ─────────────────────────────────────────────────
+    if (type === 'final') {
+      // Start from ALL approved students so nobody is missed
+      const allStudents = await Registration
+        .find({ status: 'approved' }, 'registrationId fullName email category')
+        .lean();
+
+      if (!allStudents.length) return res.json({ submissions: [] });
+
+      const regIds = allStudents.map(s => s.registrationId);
+
+      // Fetch video submissions — keyed by registrationId
+      const videoRecords = await FinalVideo.find({ registrationId: { $in: regIds } }).lean();
+      const videoMap = {};
+      videoRecords.forEach(v => { videoMap[v.registrationId] = v; });
+
+      // Fetch StudentProgress docs — keyed by registrationId
+      const progressDocs = await StudentProgress.find({ registrationId: { $in: regIds } });
+      const progressMap = {};
+      progressDocs.forEach(p => { progressMap[p.registrationId] = p; });
+
+      const submissions = allStudents.map(student => {
+        const videoDoc  = videoMap[student.registrationId]    || null;
+        const progress  = progressMap[student.registrationId] || null;
+
+        // Normalise finalExam from progress doc (handles Mongoose subdoc or plain obj)
+        let fe = { submitted: false, score: null, feedback: null, graded: false, submittedAt: null, answers: [] };
+        if (progress?.finalExam) {
+          const raw = typeof progress.finalExam.toObject === 'function'
+            ? progress.finalExam.toObject()
+            : { ...progress.finalExam };
+          fe = {
+            submitted:   raw.submitted   ?? false,
+            score:       raw.score       ?? null,
+            feedback:    raw.feedback    ?? null,
+            graded:      raw.graded      ?? false,
+            submittedAt: raw.submittedAt ?? null,
+            answers:     Array.isArray(raw.answers) ? raw.answers : [],
+          };
+        }
+
+        return {
+          registrationId: student.registrationId,
+          student:   student.fullName || student.registrationId,
+          email:     student.email    || '',
+          category:  student.category || '',
+          type:      'final',
+          weekId:    null,
+          weekLabel: 'Final Exam',
+          // Video gate
+          videoSubmitted:   !!videoDoc,
+          videoUrl:         videoDoc?.videoUrl    ?? null,
+          videoSubmittedAt: videoDoc?.submittedAt ?? null,
+          // Exam answers
+          submitted:   fe.submitted,
+          score:       fe.score,
+          feedback:    fe.feedback,
+          graded:      fe.graded,
+          submittedAt: fe.submittedAt,
+          answers:     fe.answers,
+        };
+      });
+
+      return res.json({ submissions });
+    }
+
+    // ── Weekly view ─────────────────────────────────────────────────────
     // Load without .lean() so normalisedWeekProgress can handle Map instances
     const allProgress = await StudentProgress.find({});
 
@@ -517,38 +664,8 @@ exports.getAllSubmissions = async (req, res) => {
     const weekTitleMap = {};
     cwWeeks.forEach(w => { weekTitleMap[w.weekNumber] = w.weekTitle; });
 
-    const submissions = [];
-
-    // ── Final exam ──────────────────────────────────────────────────
-    if (type === 'final') {
-      allProgress.forEach(progress => {
-        const student     = studentMap[progress.registrationId] || {};
-        const studentName = student.fullName || progress.studentName || progress.registrationId;
-        const fe = progress.finalExam && typeof progress.finalExam.toObject === 'function'
-          ? progress.finalExam.toObject()
-          : { ...(progress.finalExam || {}) };
-
-        submissions.push({
-          registrationId: progress.registrationId,
-          student:  studentName,
-          email:    student.email || progress.studentEmail || '',
-          category: student.category || '',
-          type:     'final',
-          weekId:   null,
-          weekLabel: 'Final Exam',
-          submitted:   fe.submitted  ?? false,
-          score:       fe.score      ?? null,
-          feedback:    fe.feedback   ?? null,
-          graded:      fe.graded     ?? false,
-          submittedAt: fe.submittedAt ?? null,
-          answers:     Array.isArray(fe.answers) ? fe.answers : [],
-        });
-      });
-      return res.json({ submissions });
-    }
-
-    // ── Weekly ──────────────────────────────────────────────────────
     const weeksToReturn = week ? [parseInt(week, 10)] : [1, 2, 3, 4, 5, 6];
+    const submissions = [];
 
     allProgress.forEach(progress => {
       const student     = studentMap[progress.registrationId] || {};
@@ -563,11 +680,11 @@ exports.getAllSubmissions = async (req, res) => {
 
         submissions.push({
           registrationId: progress.registrationId,
-          student:  studentName,
-          email:    student.email || progress.studentEmail || '',
-          category: student.category || '',
-          type:     'weekly',
-          weekId:   w,
+          student:   studentName,
+          email:     student.email || progress.studentEmail || '',
+          category:  student.category || '',
+          type:      'weekly',
+          weekId:    w,
           weekLabel: `Week ${w}: ${weekTitleMap[w] || weekTitleFallback[w] || ''}`,
           submitted:   weekData?.submitted  ?? false,
           score:       weekData?.score      ?? null,
@@ -587,7 +704,7 @@ exports.getAllSubmissions = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  GRADE SUBMISSION  ← uses $set dot-notation, never spreads Map data
+//  GRADE SUBMISSION
 // ══════════════════════════════════════════════════════════════════════════
 exports.gradeSubmission = async (req, res) => {
   try {
@@ -596,7 +713,6 @@ exports.gradeSubmission = async (req, res) => {
     if (!registrationId)                      return res.status(400).json({ message: 'registrationId is required.' });
     if (score === undefined || score === null) return res.status(400).json({ message: 'score is required.' });
 
-    // Verify the student actually submitted before grading
     const check = await StudentProgress.findOne({ registrationId });
     if (!check) return res.status(404).json({ message: 'Student progress record not found.' });
 
@@ -605,7 +721,6 @@ exports.gradeSubmission = async (req, res) => {
         ? check.finalExam.toObject() : { ...(check.finalExam || {}) };
       if (!fe.submitted) return res.status(400).json({ message: 'Student has not submitted the final exam.' });
 
-      // Use $set with dot-notation — works regardless of schema type
       await StudentProgress.findOneAndUpdate(
         { registrationId },
         {
@@ -627,9 +742,6 @@ exports.gradeSubmission = async (req, res) => {
       if (!existing || !existing.submitted) return res.status(400).json({ message: `Student has not submitted Week ${wid}.` });
 
       const key = String(wid);
-
-      // Use $set with dot-notation — this is the critical fix.
-      // Spreading a Mongoose subdoc was silently losing data on save.
       await StudentProgress.findOneAndUpdate(
         { registrationId },
         {
@@ -646,7 +758,6 @@ exports.gradeSubmission = async (req, res) => {
 
     console.log(`[Grade] ${registrationId} weekId=${weekId} score=${score} ✓`);
 
-    // Email student
     try {
       const student = await Registration.findOne({ registrationId }, 'email fullName').lean();
       if (student?.email) {
@@ -681,24 +792,18 @@ exports.gradeSubmission = async (req, res) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-//  MIGRATE — one-time endpoint to convert old Map records to plain objects
-//  POST /api/coursework-questions/migrate
+//  MIGRATE
 // ══════════════════════════════════════════════════════════════════════════
 exports.migrateProgress = async (req, res) => {
   try {
     const allDocs = await StudentProgress.find({});
     let migrated = 0;
-
     for (const doc of allDocs) {
       const normalised = normalisedWeekProgress(doc.weekProgress);
-      // Replace weekProgress entirely with the plain object
-      doc.weekProgress = undefined;  // clear
-      await StudentProgress.findByIdAndUpdate(doc._id, {
-        $set: { weekProgress: normalised },
-      });
+      doc.weekProgress = undefined;
+      await StudentProgress.findByIdAndUpdate(doc._id, { $set: { weekProgress: normalised } });
       migrated++;
     }
-
     console.log(`[Migrate] ${migrated} documents normalised`);
     res.json({ success: true, migrated, total: allDocs.length, message: 'Migration complete. Refresh the admin page.' });
   } catch (err) {
