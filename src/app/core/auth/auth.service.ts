@@ -191,15 +191,15 @@ export class AuthService {
     );
   }
 
-  resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(
-      `${this.baseUrl}/api/auth/reset-password`,
-      { token, password: newPassword },
-      { headers: this.baseHeaders }
-    ).pipe(
-      catchError(err => throwError(() => new Error(
-        err?.error?.message ?? 'Password reset failed. The link may have expired.'
-      )))
-    );
-  }
+  resetPassword(email: string, token: string, newPassword: string): Observable<{ message: string }> {
+  return this.http.post<{ message: string }>(
+    `${this.baseUrl}/api/auth/reset-password`,
+    { email, token, newPassword },
+    { headers: this.baseHeaders }
+  ).pipe(
+    catchError(err => throwError(() => new Error(
+      err?.error?.message ?? 'Password reset failed. The link may have expired.'
+    )))
+  );
+}
 }

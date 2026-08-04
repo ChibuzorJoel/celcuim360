@@ -43,7 +43,7 @@ export class AuthStudentService {
     return this.auth.sendPasswordReset(email);
   }
 
-  resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
-    return this.auth.resetPassword(token, newPassword);
-  }
+  resetPassword(email: string, token: string, newPassword: string): Observable<{ message: string }> {
+  return this.auth.resetPassword(email, token, newPassword);
+}
 }

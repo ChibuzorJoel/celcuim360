@@ -91,21 +91,25 @@ export class StudentLoginComponent implements OnInit, OnDestroy  {
    
     // ── Forgot password ───────────────────────────────────────────────────────
    
-    sendReset(): void {
-      this.forgotError = '';
-      if (!this.forgotEmail.trim())          { this.forgotError = 'Please enter your email address.'; return; }
-      if (!this.isValidEmail(this.forgotEmail)) { this.forgotError = 'Please enter a valid email address.'; return; }
-   
-      this.isSending = true;
-   
-      // Replace with real service call, e.g.:
-      // this.auth.sendPasswordReset(this.forgotEmail).subscribe({ next: ..., error: ... });
-      setTimeout(() => {
-        this.isSending     = false;
-        this.resetEmailSent = true;
-        this.startCooldown();
-      }, 1500);
-    }
+   sendReset(): void {
+  this.forgotError = '';
+  if (!this.forgotEmail.trim())          { this.forgotError = 'Please enter your email address.'; return; }
+  if (!this.isValidEmail(this.forgotEmail)) { this.forgotError = 'Please enter a valid email address.'; return; }
+
+  this.isSending = true;
+
+  this.auth.sendPasswordReset(this.forgotEmail).subscribe({
+    next: () => {
+      this.isSending      = false;
+      this.resetEmailSent = true;
+      this.startCooldown();
+    },
+    error: (err: any) => {
+      this.isSending   = false;
+      this.forgotError = err?.error?.message ?? err?.message ?? 'Something went wrong. Please try again.';
+    },
+  });
+}
    
     private startCooldown(): void {
       this.resendCooldown = 60;
