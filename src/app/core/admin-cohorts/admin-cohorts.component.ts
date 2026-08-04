@@ -1,19 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-
-interface CalWeek { num: number; date: string; done: boolean; current: boolean; }
-
-interface Cohort {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'forming' | 'closed';
-  enrolled: number;
-  approved: number;
-  pending: number;
-  avgScore: number;
-  weeks: CalWeek[];
-}
+import { CohortService, Cohort, CalWeek } from '../../core/services/cohort.service'; // adjust path to match your project structure
 
 @Component({
   selector: 'app-admin-cohorts',
@@ -24,55 +10,48 @@ export class AdminCohortsComponent implements OnInit {
   cohorts: Cohort[] = [];
   filteredCohorts: Cohort[] = [];
 
+  loading = false;
+  errorMsg = '';
+
   showCreateModal = false;
+  showEditModal = false;
   showDeleteModal = false;
   selectedCohort: Cohort | null = null;
 
   newCohort = { name: '', startDate: '', maxStudents: 30 };
+
+  editForm: { name: string; startDate: string; status: 'active' | 'forming' | 'closed'; maxStudents: number } = {
+    name: '',
+    startDate: '',
+    status: 'forming',
+    maxStudents: 30,
+  };
+
   calendarPreview: CalWeek[] = [];
   activeFilter: 'all' | 'active' | 'forming' | 'closed' = 'all';
 
+  constructor(private cohortService: CohortService) {}
+
   ngOnInit(): void {
-    this.cohorts = [
-      {
-        id: 'c7', name: 'Cohort 7', startDate: 'Jun 2, 2026', endDate: 'Jul 11, 2026',
-        status: 'active', enrolled: 24, approved: 20, pending: 4, avgScore: 76,
-        weeks: this.generateWeeks('2026-06-02'),
-      },
-      {
-        id: 'c8', name: 'Cohort 8', startDate: 'Jul 21, 2026', endDate: 'Aug 29, 2026',
-        status: 'forming', enrolled: 8, approved: 6, pending: 2, avgScore: 0,
-        weeks: this.generateWeeks('2026-07-21'),
-      },
-      {
-        id: 'c6', name: 'Cohort 6', startDate: 'Apr 7, 2026', endDate: 'May 16, 2026',
-        status: 'closed', enrolled: 22, approved: 22, pending: 0, avgScore: 81,
-        weeks: this.generateWeeks('2026-04-07', true),
-      },
-      {
-        id: 'c5', name: 'Cohort 5', startDate: 'Feb 9, 2026', endDate: 'Mar 21, 2026',
-        status: 'closed', enrolled: 20, approved: 20, pending: 0, avgScore: 78,
-        weeks: this.generateWeeks('2026-02-09', true),
-      },
-    ];
-    this.applyFilter();
+    this.loadCohorts();
   }
 
-  /** Generate a 6-week calendar from a start date */
-  generateWeeks(startIso: string, allDone = false): CalWeek[] {
-    const start = new Date(startIso);
-    const today = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(d.getDate() + i * 7);
-      const nextWeek = new Date(d); nextWeek.setDate(nextWeek.getDate() + 7);
-      const done    = allDone || nextWeek < today;
-      const current = !done && d <= today && today < nextWeek;
-      return {
-        num: i + 1,
-        date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        done, current,
-      };
+  // ── Loading ──────────────────────────────────────────────────────────────
+
+  loadCohorts(): void {
+    this.loading = true;
+    this.errorMsg = '';
+    this.cohortService.getAll().subscribe({
+      next: (res) => {
+        this.cohorts = res.cohorts;
+        this.applyFilter();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('[AdminCohorts] load failed', err);
+        this.errorMsg = 'Failed to load cohorts. Please refresh.';
+        this.loading = false;
+      },
     });
   }
 
@@ -87,48 +66,118 @@ export class AdminCohortsComponent implements OnInit {
       : this.cohorts.filter(c => c.status === this.activeFilter);
   }
 
+  // ── Create ───────────────────────────────────────────────────────────────
+
+  /** Client-side-only preview shown while typing a start date in the create modal.
+   *  The real weeks array is generated server-side on save. */
   previewCalendar(): void {
-    if (!this.newCohort.startDate) return;
-    this.calendarPreview = this.generateWeeks(this.newCohort.startDate);
+    if (!this.newCohort.startDate) { this.calendarPreview = []; return; }
+    const start = new Date(this.newCohort.startDate);
+    this.calendarPreview = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i * 7);
+      return {
+        num: i + 1,
+        date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        done: false,
+        current: false,
+      };
+    });
   }
 
-  openCreateModal(): void { this.showCreateModal = true; this.calendarPreview = []; }
+  openCreateModal(): void {
+    this.errorMsg = '';
+    this.newCohort = { name: '', startDate: '', maxStudents: 30 };
+    this.calendarPreview = [];
+    this.showCreateModal = true;
+  }
 
   createCohort(): void {
     if (!this.newCohort.name || !this.newCohort.startDate) return;
-    const start = new Date(this.newCohort.startDate);
-    const end   = new Date(start); end.setDate(end.getDate() + 41);
-
-    const cohort: Cohort = {
-      id: 'c' + Date.now(),
-      name: this.newCohort.name,
-      startDate: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      endDate:   end.toLocaleDateString('en-US',   { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'forming',
-      enrolled: 0, approved: 0, pending: 0, avgScore: 0,
-      weeks: this.generateWeeks(this.newCohort.startDate),
-    };
-
-    this.cohorts.unshift(cohort);
-    this.applyFilter();
-    this.newCohort = { name: '', startDate: '', maxStudents: 30 };
-    this.closeModals();
+    this.cohortService.create(this.newCohort).subscribe({
+      next: () => {
+        this.loadCohorts();
+        this.closeModals();
+      },
+      error: (err) => {
+        console.error('[AdminCohorts] create failed', err);
+        this.errorMsg = err?.error?.message || 'Failed to create cohort';
+      },
+    });
   }
 
-  openDeleteModal(c: Cohort): void { this.selectedCohort = c; this.showDeleteModal = true; }
+  // ── Edit (name / start date / status / max students) ───────────────────
+
+  openEditModal(c: Cohort): void {
+    this.errorMsg = '';
+    this.selectedCohort = c;
+    this.editForm = {
+      name: c.name,
+      startDate: this.toDateInputValue(c.startDate),
+      status: c.status,
+      maxStudents: c.maxStudents,
+    };
+    this.showEditModal = true;
+  }
+
+  /** Converts a display string like "Jun 2, 2026" into "yyyy-MM-dd" for <input type="date"> */
+  private toDateInputValue(display: string): string {
+    const d = new Date(display);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  }
+
+  saveEdit(): void {
+    if (!this.selectedCohort) return;
+    const cohortId = this.selectedCohort.cohortId;
+
+    this.cohortService.update(cohortId, {
+      name: this.editForm.name,
+      startDate: this.editForm.startDate,
+      status: this.editForm.status,
+      maxStudents: this.editForm.maxStudents,
+    }).subscribe({
+      next: () => {
+        this.loadCohorts();
+        this.closeModals();
+      },
+      error: (err) => {
+        console.error('[AdminCohorts] update failed', err);
+        this.errorMsg = err?.error?.message || 'Failed to update cohort';
+      },
+    });
+  }
+
+  // ── Archive ──────────────────────────────────────────────────────────────
+
+  openDeleteModal(c: Cohort): void {
+    this.errorMsg = '';
+    this.selectedCohort = c;
+    this.showDeleteModal = true;
+  }
 
   archiveCohort(): void {
     if (!this.selectedCohort) return;
-    this.selectedCohort.status = 'closed';
-    this.applyFilter();
-    this.closeModals();
+    this.cohortService.archive(this.selectedCohort.cohortId).subscribe({
+      next: () => {
+        this.loadCohorts();
+        this.closeModals();
+      },
+      error: (err) => {
+        console.error('[AdminCohorts] archive failed', err);
+        this.errorMsg = err?.error?.message || 'Failed to archive cohort';
+      },
+    });
   }
 
-  viewStudents(c: Cohort): void { console.log('View students for', c.name); }
+  // Left as-is intentionally — "View Students" / cohort-scoped calendar management
+  // are out of scope for this fix (they need a cohortId field added to
+  // Registration/Coursework first).
   manageCalendar(c: Cohort): void { console.log('Manage calendar for', c.name); }
 
   closeModals(): void {
     this.showCreateModal = false;
+    this.showEditModal = false;
     this.showDeleteModal = false;
     this.selectedCohort  = null;
   }

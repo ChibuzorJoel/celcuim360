@@ -1,5 +1,8 @@
 <div class="page-wrap">
 
+    <!-- Error banner -->
+    <div class="error-banner" *ngIf="errorMsg">{{ errorMsg }}</div>
+
     <!-- Controls -->
     <div class="controls-bar">
       <div class="filter-row" style="margin-bottom:0;">
@@ -10,9 +13,11 @@
       </div>
       <button class="btn-create" (click)="openCreateModal()">+ Create Cohort</button>
     </div>
-  
+
+    <div *ngIf="loading" class="loading-note">Loading cohorts…</div>
+
     <!-- Cohort cards -->
-    <div class="cohort-grid" style="margin-top:16px;">
+    <div class="cohort-grid" style="margin-top:16px;" *ngIf="!loading">
       <div class="cohort-card" *ngFor="let c of filteredCohorts" [class]="'status-' + c.status">
         <div class="cohort-card-head">
           <div>
@@ -21,14 +26,14 @@
           </div>
           <span class="pill" [class]="'pill-' + c.status">{{ c.status }}</span>
         </div>
-  
+
         <div class="cohort-stats">
           <div class="cstat"><span class="cstat-val">{{ c.enrolled }}</span><span class="cstat-label">Enrolled</span></div>
           <div class="cstat"><span class="cstat-val green">{{ c.approved }}</span><span class="cstat-label">Approved</span></div>
           <div class="cstat"><span class="cstat-val amber">{{ c.pending }}</span><span class="cstat-label">Pending</span></div>
           <div class="cstat"><span class="cstat-val gold">{{ c.avgScore }}%</span><span class="cstat-label">Avg Score</span></div>
         </div>
-  
+
         <!-- Auto-generated 6-week calendar -->
         <div class="cohort-cal-label">Auto-Generated 6-Week Calendar</div>
         <div class="cal-grid">
@@ -39,15 +44,15 @@
             <div class="cal-wstatus" *ngIf="w.current">●</div>
           </div>
         </div>
-  
+
         <div class="cohort-actions">
-          <button class="act-btn" (click)="viewStudents(c)">View Students</button>
+          <button class="act-btn" (click)="openEditModal(c)">Edit</button>
           <button class="act-btn" (click)="manageCalendar(c)">Calendar</button>
-          <button class="act-btn danger" (click)="openDeleteModal(c)">Archive</button>
+          <button class="act-btn danger" (click)="openDeleteModal(c)" *ngIf="c.status !== 'closed'">Archive</button>
         </div>
       </div>
     </div>
-  
+
     <!-- Create Cohort Modal -->
     <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModals()">
       <div class="modal-box" (click)="$event.stopPropagation()" style="max-width:500px;">
@@ -68,7 +73,7 @@
             <label>Max Students</label>
             <input type="number" [(ngModel)]="newCohort.maxStudents" placeholder="30" class="form-input"/>
           </div>
-  
+
           <!-- Calendar preview -->
           <div *ngIf="calendarPreview.length" style="margin-top:14px;">
             <div style="font-size:9px;color:#B88D2A;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px;">
@@ -91,8 +96,51 @@
         </div>
       </div>
     </div>
-  
-    <!-- Delete confirm modal -->
+
+    <!-- Edit Cohort Modal -->
+    <div class="modal-overlay" *ngIf="showEditModal" (click)="closeModals()">
+      <div class="modal-box" (click)="$event.stopPropagation()" style="max-width:500px;">
+        <div class="modal-head">
+          <h3>Edit {{ selectedCohort?.name }}</h3>
+          <button class="modal-x" (click)="closeModals()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Cohort Name</label>
+            <input type="text" [(ngModel)]="editForm.name" class="form-input"/>
+          </div>
+          <div class="form-row">
+            <label>Start Date</label>
+            <input type="date" [(ngModel)]="editForm.startDate" class="form-input"/>
+          </div>
+          <div class="form-row">
+            <label>Status</label>
+            <select [(ngModel)]="editForm.status" class="form-input">
+              <option value="forming">Forming</option>
+              <option value="active">Active</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Max Students</label>
+            <input type="number" [(ngModel)]="editForm.maxStudents" class="form-input"/>
+          </div>
+          <p style="font-size:11px;color:#666;margin-top:4px;">
+            Changing the start date regenerates the 6-week calendar. Setting status to
+            "Closed" revokes alumni portal access; "Active" grants it.
+          </p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-cancel-m" (click)="closeModals()">Cancel</button>
+          <button class="btn-confirm-m" (click)="saveEdit()"
+                  [disabled]="!editForm.name || !editForm.startDate">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive confirm modal -->
     <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModals()">
       <div class="modal-box" (click)="$event.stopPropagation()">
         <div class="modal-head" style="border-color:#ef4444;">
@@ -100,7 +148,8 @@
           <button class="modal-x" (click)="closeModals()">×</button>
         </div>
         <div class="modal-body">
-          <p>Archive <strong style="color:#ccc;">{{ selectedCohort?.name }}</strong>? This action cannot be undone.</p>
+          <p>Archive <strong style="color:#ccc;">{{ selectedCohort?.name }}</strong>? Alumni in this
+             cohort will lose portal access. This action cannot be undone from this screen.</p>
         </div>
         <div class="modal-foot">
           <button class="btn-cancel-m" (click)="closeModals()">Cancel</button>
@@ -108,5 +157,5 @@
         </div>
       </div>
     </div>
-  
+
   </div>

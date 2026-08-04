@@ -5,6 +5,7 @@
 
 'use strict';
 
+const authCtrl = require('../controllers/auth.controller');
 const express      = require('express');
 const router       = express.Router();
 const bcrypt       = require('bcryptjs');
@@ -173,6 +174,8 @@ const studentLoginHandler = async (req, res) => {
 
 router.post('/login',         studentLoginHandler);
 router.post('/student-login', studentLoginHandler);
+router.post('/forgot-password', authCtrl.forgotPassword);
+router.post('/reset-password',  authCtrl.resetPassword);
 
 /* ==========================================================
    CHANGE PASSWORD  —  POST /api/auth/change-password

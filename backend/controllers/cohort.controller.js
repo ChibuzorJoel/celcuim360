@@ -1,12 +1,12 @@
 /**
  * controllers/cohort.controller.js
  * Full CRUD for cohorts — create, read, update, archive, delete
- * Also computes live stats from registrations + coursework submissions
+ * Also computes live stats from registrations + student progress
  */
 
-const Cohort       = require('../models/Cohort');
-const Registration = require('../models/Registration');
-const Coursework   = require('../models/Coursework');
+const Cohort          = require('../models/Cohort');
+const Registration     = require('../models/Registration');
+const StudentProgress  = require('../models/StudentProgress.model');
 
 // ══════════════════════════════════════════════════════════════════════════
 //  HELPERS
@@ -77,7 +77,13 @@ function refreshWeeks(cohort) {
 
 /**
  * Compute live enrolled/approved/pending/avgScore for a cohort
- * by looking at registrations and coursework.
+ * by looking at registrations and student progress.
+ *
+ * NOTE ON avgScore SCALE: StudentProgress.weekProgress[week].score is
+ * averaged here as-is (no *10 conversion). Confirm what scale
+ * courseworkquestion.controller.js actually grades on (0–10? 0–100?)
+ * and adjust the `avgScore` line below if it needs converting to a
+ * percentage.
  */
 async function computeStats(cohort) {
   try {
@@ -89,18 +95,26 @@ async function computeStats(cohort) {
       Registration.countDocuments({ status: 'pending' }),
     ]);
 
-    // Average graded coursework score across all weeks
-    const scoreAgg = await Coursework.aggregate([
-      { $match: { graded: true, score: { $ne: null } } },
-      { $group: { _id: null, avg: { $avg: '$score' } } },
+    // weekProgress is a Map (week "1"-"6" -> { score, graded, ... }) stored
+    // per student, not a flat collection — flatten it before averaging.
+    const scoreAgg = await StudentProgress.aggregate([
+      { $project: { weekScores: { $objectToArray: '$weekProgress' } } },
+      { $unwind: '$weekScores' },
+      {
+        $match: {
+          'weekScores.v.graded': true,
+          'weekScores.v.score': { $ne: null },
+        },
+      },
+      { $group: { _id: null, avg: { $avg: '$weekScores.v.score' } } },
     ]);
 
-    const avgScore = scoreAgg.length
-      ? Math.round((scoreAgg[0].avg / 10) * 100)   // convert 0-10 → percentage
-      : 0;
+    // ⚠️ Confirm grading scale before trusting this number — see note above.
+    const avgScore = scoreAgg.length ? Math.round(scoreAgg[0].avg) : 0;
 
     return { enrolled, approved, pending, avgScore };
-  } catch {
+  } catch (err) {
+    console.error('[computeStats]', err.message);
     return { enrolled: 0, approved: 0, pending: 0, avgScore: 0 };
   }
 }

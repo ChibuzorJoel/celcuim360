@@ -3,8 +3,10 @@
 'use strict';
 
 const Registration = require('../models/Registration');
-const jwt          = require('jsonwebtoken');
-const bcrypt       = require('bcryptjs');
+const jwt           = require('jsonwebtoken');
+const bcrypt        = require('bcryptjs');
+const crypto         = require('crypto');
+const emailService   = require('../services/email.service');
 
 const JWT_SECRET  = process.env.JWT_SECRET || 'celcium360_strong_secret_2026';
 const JWT_EXPIRES = '7d';
@@ -174,5 +176,128 @@ exports.getMe = async (req, res) => {
   } catch (error) {
     console.error('[getMe]', error);
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  POST /api/auth/forgot-password
+//
+//  Always returns the same generic success message whether or not the email
+//  exists, to prevent this endpoint from being used to enumerate accounts.
+//  Generates a random token, stores only its SHA-256 hash on the user record,
+//  and emails the raw token as part of a reset link. The raw token is never
+//  persisted — only the hash — mirroring how the password itself is stored.
+// ─────────────────────────────────────────────────────────────────────────────
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email?.trim()) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
+    const user = await Registration.findOne({ email: email.toLowerCase().trim() });
+
+    const genericResponse = {
+      success: true,
+      message: 'If an account exists for this email, a password reset link has been sent.',
+    };
+
+    if (!user) return res.json(genericResponse);
+
+    const rawToken    = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    user.resetPasswordToken   = hashedToken;
+    user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
+    await user.save({ validateBeforeSave: false });
+
+    const clientUrl = (process.env.CLIENT_URL || 'https://celcium360solutions.com').replace(/\/$/, '');
+    const resetUrl  = `${clientUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+
+    const sent = await emailService.sendPasswordResetEmail({
+      to:       user.email,
+      fullName: user.fullName,
+      resetUrl,
+    });
+
+    if (!sent) {
+      // Don't leave behind a token the user has no way to redeem
+      user.resetPasswordToken   = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(502).json({
+        success: false,
+        message: 'Could not send reset email. Please try again shortly.',
+      });
+    }
+
+    return res.json(genericResponse);
+
+  } catch (error) {
+    console.error('[forgotPassword]', error);
+    return res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  POST /api/auth/reset-password
+//
+//  Body: { email, token, newPassword }
+//  Verifies the hashed token matches and hasn't expired, then assigns the new
+//  plain-text password — the model's pre-save hook is responsible for hashing
+//  it (same pattern as change-password in auth.routes.js).
+// ─────────────────────────────────────────────────────────────────────────────
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+
+    if (!email || !token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, token, and new password are required.',
+      });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters.',
+      });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await Registration.findOne({
+      email:                email.toLowerCase().trim(),
+      resetPasswordToken:   hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select('+resetPasswordToken +resetPasswordExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    // Assign plain text — pre-save hook in Registration.js hashes it
+    user.password             = newPassword;
+    user.resetPasswordToken   = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    // Fire-and-forget confirmation email — don't block the response on it
+    emailService.sendPasswordResetSuccess({ to: user.email, fullName: user.fullName }).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in.',
+    });
+
+  } catch (error) {
+    console.error('[resetPassword]', error);
+    return res.status(500).json({ success: false, message: 'Password reset failed. Please try again.' });
   }
 };

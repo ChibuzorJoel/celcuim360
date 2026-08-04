@@ -1,6 +1,6 @@
 // controllers/registration.controller.js
 // Handles all student registration, file serving, profile, and admin operations.
-// Stack: Express · Mongoose · Multer · bcryptjs · jsonwebtoken · nodemailer
+// Stack: Express · Mongoose · Multer · bcryptjs · jsonwebtoken
 
 'use strict';
 
@@ -9,10 +9,10 @@ const fs         = require('fs');
 const https      = require('https');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const multer     = require('multer');
-const Registration = require('../models/Registration');
-const telegram     = require('../services/telegram.service');
+const Registration  = require('../models/Registration');
+const telegram      = require('../services/telegram.service');
+const emailService  = require('../services/email.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  JWT SECRET
@@ -101,55 +101,12 @@ function sendError(res, status, message, details) {
   return res.status(status).json({ success: false, message, ...(details ? { details } : {}) });
 }
 
-function getMailer() {
-  return nodemailer.createTransport({
-    host:   process.env.SMTP_HOST   || 'smtp.gmail.com',
-    port:   Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-}
-
-async function sendConfirmationEmail(record) {
-  if (!process.env.SMTP_USER) return;
-  try {
-    await getMailer().sendMail({
-      from:    `"Celcium360" <${process.env.SMTP_USER}>`,
-      to:      record.email,
-      subject: `Registration Received — ${record.registrationId}`,
-      html: `
-        <p>Dear ${record.fullName},</p>
-        <p>Your registration has been received and is under review.</p>
-        <p><strong>Registration ID:</strong> ${record.registrationId}</p>
-        <p>We will notify you once your application is processed.</p>
-        <br/><p>Celcium360 Solutions Limited</p>
-      `,
-    });
-  } catch (err) {
-    console.warn('[Email] Confirmation email failed:', err.message);
-  }
-}
-
-async function sendStatusEmail(record) {
-  if (!process.env.SMTP_USER) return;
-  try {
-    const approved = record.status === 'approved';
-    await getMailer().sendMail({
-      from:    `"Celcium360" <${process.env.SMTP_USER}>`,
-      to:      record.email,
-      subject: `Application ${approved ? 'Approved' : 'Update'} — ${record.registrationId}`,
-      html: approved
-        ? `<p>Dear ${record.fullName},</p><p>Congratulations! Your application has been <strong>approved</strong>. You may now log in to the student portal.</p>`
-        : `<p>Dear ${record.fullName},</p><p>Your application was not approved at this time.</p>${
-            record.rejectionReason
-              ? `<p><strong>Reason:</strong> ${record.rejectionReason}</p>`
-              : ''
-          }<p>Please contact support if you have questions.</p>`,
-    });
-  } catch (err) {
-    console.warn('[Email] Status email failed:', err.message);
-  }
-}
+// NOTE: the old getMailer()/sendConfirmationEmail()/sendStatusEmail() using
+// raw nodemailer + SMTP_* env vars have been removed. All outbound mail now
+// goes through services/email.service.js (Gmail or Mailtrap, controlled by
+// EMAIL_PROVIDER), so templates and the "from" identity stay consistent with
+// the auth controller's password-reset emails. See the two call sites below:
+// submitRegistration() and adminUpdateStatus().
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  uploadFilesToTelegram
@@ -289,7 +246,12 @@ module.exports.submitRegistration = async (req, res) => {
       storedOnTelegram,
     });
 
-    sendConfirmationEmail(record);
+    // Fire-and-forget — don't block the response on the email send
+    emailService.sendRegistrationConfirmation({
+      to:             record.email,
+      fullName:       record.fullName,
+      registrationId: record.registrationId,
+    }).catch(err => console.warn('[Email] Confirmation email failed:', err.message));
 
     return res.status(201).json({
       success: true,
@@ -624,7 +586,15 @@ module.exports.adminUpdateStatus = async (req, res) => {
     ).select('-password');
 
     if (!student) return sendError(res, 404, 'Registration not found.');
-    sendStatusEmail(student);
+
+    // Fire-and-forget — don't block the response on the email send
+    emailService.sendStatusUpdate({
+      to:               student.email,
+      fullName:         student.fullName,
+      registrationId:   student.registrationId,
+      status:           student.status,
+      rejectionReason:  student.rejectionReason,
+    }).catch(err => console.warn('[Email] Status email failed:', err.message));
 
     return res.json({
       success: true,

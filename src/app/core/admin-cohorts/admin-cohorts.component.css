@@ -134,3 +134,26 @@
   .cohort-grid { grid-template-columns: 1fr; }
   .cohort-stats { grid-template-columns: repeat(2, 1fr); }
 }
+/* ── Additions for edit modal / status states — append to admin-cohorts.component.css ── */
+
+select.form-input {
+  appearance: none;
+  cursor: pointer;
+}
+
+.error-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.loading-note {
+  font-size: 12px;
+  color: #666;
+  padding: 20px 0;
+  text-align: center;
+}

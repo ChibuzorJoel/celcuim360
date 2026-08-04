@@ -10,6 +10,8 @@ const registrationSchema = new mongoose.Schema(
     phone:            { type: String, required: true, trim: true },
     category:         { type: String, enum: ['nysc', 'graduate'], required: true },
     password:         { type: String, required: true, select: false },
+    resetPasswordToken:   { type: String, select: false },
+    resetPasswordExpires: { type: Date,   select: false },
     status:           { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     rejectionReason:  { type: String },
     submittedAt:      { type: Date, default: Date.now },
