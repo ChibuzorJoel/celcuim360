@@ -1,21 +1,29 @@
 // services/email.service.js
 //
-// Single email utility for the whole app. Switches between Gmail and Mailtrap
-// via EMAIL_PROVIDER, exposes one sendMail() primitive, and a set of
-// pre-built template functions used by the controllers.
+// Single email utility for the whole app. Switches between cPanel/generic SMTP,
+// Gmail, and Mailtrap via EMAIL_PROVIDER, exposes one sendMail() primitive, and
+// a set of pre-built template functions used by the controllers.
 //
 // ── ENV VARS ─────────────────────────────────────────────────────────────────
 //
-//   EMAIL_PROVIDER        'gmail' | 'mailtrap'   (default: 'gmail')
+//   EMAIL_PROVIDER        'smtp' | 'gmail' | 'mailtrap'   (default: 'smtp')
 //   EMAIL_FROM_NAME        e.g. "Celcium360 Solutions"
 //   EMAIL_FROM_ADDRESS      address shown in the "from" field
 //
-//   # Gmail (App Password required — NOT your normal Gmail password):
+//   # 'smtp' — cPanel mailbox or any other standard SMTP account
+//   //   (recommended here since the domain is already hosted on cPanel):
+//   SMTP_HOST               e.g. mail.celcium360solutions.com
+//   SMTP_PORT               465 (SSL) or 587 (STARTTLS)
+//   SMTP_SECURE             'true' for port 465, 'false' for port 587
+//   SMTP_USER               full mailbox address, e.g. no-reply@celcium360solutions.com
+//   SMTP_PASS               mailbox password set in cPanel → Email Accounts
+//
+//   # 'gmail' (App Password required — NOT your normal Gmail password):
 //   GMAIL_USER             your@gmail.com
 //   GMAIL_APP_PASSWORD     16-char app password from
 //                           https://myaccount.google.com/apppasswords
 //
-//   # Mailtrap (sending — use "Sending Domains", not the testing inbox, for prod):
+//   # 'mailtrap' (sending — use "Sending Domains", not the testing inbox, for prod):
 //   MAILTRAP_HOST           e.g. live.smtp.mailtrap.io
 //   MAILTRAP_PORT           587
 //   MAILTRAP_USER
@@ -29,9 +37,9 @@
 
 const nodemailer = require('nodemailer');
 
-const PROVIDER   = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
+const PROVIDER   = (process.env.EMAIL_PROVIDER || 'smtp').toLowerCase();
 const FROM_NAME   = process.env.EMAIL_FROM_NAME    || 'Celcium360 Solutions';
-const FROM_ADDR    = process.env.EMAIL_FROM_ADDRESS || process.env.GMAIL_USER || process.env.MAILTRAP_USER;
+const FROM_ADDR    = process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || process.env.GMAIL_USER || process.env.MAILTRAP_USER;
 const CLIENT_URL   = (process.env.CLIENT_URL || 'https://celcium360solutions.com').replace(/\/$/, '');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -51,13 +59,30 @@ function buildTransport() {
     });
   }
 
-  // Default: Gmail
+  if (PROVIDER === 'gmail') {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+  }
+
+  // Default: 'smtp' — cPanel mailbox or any generic SMTP provider
   return nodemailer.createTransport({
-    service: 'gmail',
+    host:   process.env.SMTP_HOST,
+    port:   Number(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE !== 'false', // true for 465, false for 587/STARTTLS
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
+    // Fail fast instead of hanging for minutes if the host is unreachable
+    // or the port is blocked by the hosting platform's egress rules.
+    connectionTimeout: 10_000, // time to establish the TCP connection
+    greetingTimeout:   10_000, // time to receive the server's initial greeting
+    socketTimeout:     15_000, // time for the whole exchange once connected
   });
 }
 

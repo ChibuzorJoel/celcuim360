@@ -41,6 +41,7 @@ import { AdminContactComponent } from './core/admin-contact/admin-contact.compon
 import { AdminCohortsComponent } from './core/admin-cohorts/admin-cohorts.component';
 import { AdminAnalyticsComponent } from './core/admin-analytics/admin-analytics.component';
 import { AdminPaymentsComponent } from './core/admin-payments/admin-payments.component';
+import { ResetPasswordComponent } from './pages/reset-password/reset-password.component';
 
 @NgModule({
   declarations: [
@@ -77,6 +78,7 @@ import { AdminPaymentsComponent } from './core/admin-payments/admin-payments.com
     AdminCohortsComponent,
     AdminAnalyticsComponent,
     AdminPaymentsComponent,
+    ResetPasswordComponent,
   ],
   imports: [
     BrowserModule,

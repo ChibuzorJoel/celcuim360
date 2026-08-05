@@ -29,6 +29,7 @@ import { AdminContactComponent } from './core/admin-contact/admin-contact.compon
 import { AdminCohortsComponent } from './core/admin-cohorts/admin-cohorts.component';
 import { AdminAnalyticsComponent } from './core/admin-analytics/admin-analytics.component';
 import { AdminPaymentsComponent } from './core/admin-payments/admin-payments.component';
+import { ResetPasswordComponent } from './pages/reset-password/reset-password.component';
 
 // Uncomment as you add more admin pages:
 // import { AdminContactComponent }    from './core/admin-contact/admin-contact.component';
@@ -57,6 +58,7 @@ const routes: Routes = [
   // ── Auth routes (no public navbar) ───────────────────────────────────────
   { path: 'login',         component: LoginComponent        },
   { path: 'student-login', component: StudentLoginComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
 
   // ── Admin (shell + sidebar, no public navbar, all protected) ─────────────
   //
